@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { FormEvent } from 'react';
 import { User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/authContext';
@@ -23,6 +24,8 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState<LoginError | null>(null);
 
   const { login } = useAuth();
+  const navigate = useNavigate();
+
 
   // Función para manejar cambios en los inputs
   const handleInputChange = (field: keyof LoginFormData) => 
@@ -84,12 +87,12 @@ const LoginPage: React.FC = () => {
     setError(null);
 
     try {
-      await login(formData.email, formData.password);
-      // El redirect se manejará en el componente padre o router
-    } catch (err) {
-      console.error('Login error:', err);
-      setError(getErrorMessage(err));
-    } finally {
+  await login(formData.email, formData.password);
+  navigate('/dashboard'); // ✅ redirige al dashboard
+} catch (err) {
+  console.error('Login error:', err);
+  setError(getErrorMessage(err));
+} finally {
       setLoading(false);
     }
   };
