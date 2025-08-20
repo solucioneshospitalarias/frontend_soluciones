@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { X, Trash2, AlertTriangle } from 'lucide-react';
+import { X, Trash2, AlertTriangle, UserX } from 'lucide-react';
 import { deleteUser } from '../services/userService';
 import type { User } from '../types/user';
 
 interface EliminarEmpleadoModalProps {
   show: boolean;
   onClose: () => void;
-  onDeleted: () => void;
+  onDeleted: () => Promise<void>;
   user: User | null;
 }
 
@@ -18,6 +18,7 @@ const EliminarEmpleadoModal: React.FC<EliminarEmpleadoModalProps> = ({
 }) => {
   const [deleting, setDeleting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'disable' | 'delete'>('disable');
 
   const handleDelete = async () => {
     if (!user) return;
@@ -27,11 +28,21 @@ const EliminarEmpleadoModal: React.FC<EliminarEmpleadoModalProps> = ({
 
     try {
       await deleteUser(user.id);
-      onDeleted();
+      alert('✅ Empleado procesado exitosamente');
+      await onDeleted();
       onClose();
     } catch (err: any) {
-      console.error('Error al eliminar empleado:', err);
-      setError(err.response?.data?.message || 'Error al eliminar el empleado. Intenta de nuevo.');
+      console.error('Error al procesar empleado:', err);
+      const errorMessage = err.message || 'Error al procesar el empleado. Intenta de nuevo.';
+      
+      // Si el error menciona que fue desactivado, no es realmente un error
+      if (errorMessage.includes('desactivado') || errorMessage.includes('deshabilitado')) {
+        alert('ℹ️ El usuario ha sido desactivado exitosamente');
+        await onDeleted();
+        onClose();
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setDeleting(false);
     }
@@ -39,21 +50,26 @@ const EliminarEmpleadoModal: React.FC<EliminarEmpleadoModalProps> = ({
 
   const handleClose = () => {
     setError(null);
+    setDeleteMode('disable');
     onClose();
   };
 
   if (!show || !user) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-red-500 to-red-600 rounded-lg text-white">
-              <Trash2 className="w-5 h-5" />
+            <div className={`p-2 rounded-lg text-white ${
+              deleteMode === 'delete' 
+                ? 'bg-gradient-to-r from-red-500 to-red-600' 
+                : 'bg-gradient-to-r from-orange-500 to-orange-600'
+            }`}>
+              {deleteMode === 'delete' ? <Trash2 className="w-5 h-5" /> : <UserX className="w-5 h-5" />}
             </div>
-            Eliminar Empleado
+            {deleteMode === 'delete' ? 'Eliminar Empleado' : 'Desactivar Empleado'}
           </h2>
           <button
             onClick={handleClose}
@@ -68,18 +84,63 @@ const EliminarEmpleadoModal: React.FC<EliminarEmpleadoModalProps> = ({
         <div className="p-6">
           {/* Warning Icon */}
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-              <AlertTriangle className="w-8 h-8 text-red-600" />
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+              deleteMode === 'delete' ? 'bg-red-100' : 'bg-orange-100'
+            }`}>
+              <AlertTriangle className={`w-8 h-8 ${
+                deleteMode === 'delete' ? 'text-red-600' : 'text-orange-600'
+              }`} />
+            </div>
+          </div>
+
+          {/* Action Mode Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Selecciona la acción a realizar:
+            </label>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="deleteMode"
+                  value="disable"
+                  checked={deleteMode === 'disable'}
+                  onChange={(e) => setDeleteMode(e.target.value as 'disable' | 'delete')}
+                  className="text-orange-600 border-gray-300 focus:ring-orange-500"
+                />
+                <span className="ml-2 text-gray-700">
+                  <strong>Desactivar</strong> - El empleado se mantiene en el sistema pero inactivo
+                </span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="deleteMode"
+                  value="delete"
+                  checked={deleteMode === 'delete'}
+                  onChange={(e) => setDeleteMode(e.target.value as 'disable' | 'delete')}
+                  className="text-red-600 border-gray-300 focus:ring-red-500"
+                />
+                <span className="ml-2 text-gray-700">
+                  <strong>Eliminar</strong> - Se borra permanentemente del sistema
+                </span>
+              </label>
             </div>
           </div>
 
           {/* Warning Message */}
           <div className="text-center mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              ¿Estás seguro de que quieres eliminar este empleado?
+              {deleteMode === 'delete' 
+                ? '¿Estás seguro de que quieres eliminar este empleado?'
+                : '¿Estás seguro de que quieres desactivar este empleado?'
+              }
             </h3>
             <p className="text-gray-600 mb-4">
-              Esta acción no se puede deshacer. Se eliminará permanentemente la información de:
+              {deleteMode === 'delete'
+                ? 'Esta acción no se puede deshacer. Se eliminará permanentemente:'
+                : 'El empleado será marcado como inactivo pero sus datos se conservarán:'
+              }
             </p>
             
             {/* Employee Info */}
@@ -120,11 +181,24 @@ const EliminarEmpleadoModal: React.FC<EliminarEmpleadoModalProps> = ({
             </div>
           )}
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <div className={`border rounded-lg p-4 mb-6 ${
+            deleteMode === 'delete' 
+              ? 'bg-red-50 border-red-200' 
+              : 'bg-orange-50 border-orange-200'
+          }`}>
             <div className="flex items-start gap-2">
-              <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-              <div className="text-yellow-800 text-sm">
-                <strong>Advertencia:</strong> Esta acción eliminará permanentemente todos los datos del empleado del sistema.
+              <AlertTriangle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                deleteMode === 'delete' ? 'text-red-600' : 'text-orange-600'
+              }`} />
+              <div className={`text-sm ${
+                deleteMode === 'delete' ? 'text-red-800' : 'text-orange-800'
+              }`}>
+                <strong>
+                  {deleteMode === 'delete' ? 'Advertencia:' : 'Información:'}
+                </strong> {deleteMode === 'delete' 
+                  ? 'Esta acción eliminará permanentemente todos los datos del empleado del sistema.'
+                  : 'El empleado podrá ser reactivado posteriormente desde el panel de administración.'
+                }
               </div>
             </div>
           </div>
@@ -142,17 +216,21 @@ const EliminarEmpleadoModal: React.FC<EliminarEmpleadoModalProps> = ({
           <button
             onClick={handleDelete}
             disabled={deleting}
-            className="px-6 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`px-6 py-2 text-white rounded-lg font-semibold flex items-center gap-2 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed ${
+              deleteMode === 'delete'
+                ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
+                : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700'
+            }`}
           >
             {deleting ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                Eliminando...
+                {deleteMode === 'delete' ? 'Eliminando...' : 'Desactivando...'}
               </>
             ) : (
               <>
-                <Trash2 className="w-4 h-4" />
-                Eliminar Empleado
+                {deleteMode === 'delete' ? <Trash2 className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
+                {deleteMode === 'delete' ? 'Eliminar Empleado' : 'Desactivar Empleado'}
               </>
             )}
           </button>

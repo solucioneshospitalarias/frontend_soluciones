@@ -7,6 +7,7 @@ import {
   FileText,
   LogOut,
   Menu,
+  Activity,
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
@@ -26,6 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/dashboard' },
     { id: 'employees', label: 'Gestión de empleados', icon: Users, path: '/employees' },
+    { id: 'evaluaciones', label: 'Sistema de Evaluaciones', icon: Activity, path: '/evaluaciones' },
     { id: 'periods', label: 'Gestión de períodos', icon: Calendar, path: '/periods' },
     { id: 'monitoring', label: 'Monitoreo de Evaluaciones', icon: Target, path: '/monitoring' },
     { id: 'reports', label: 'Reportes y Análisis', icon: FileText, path: '/reports' },

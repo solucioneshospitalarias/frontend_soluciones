@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/authContext';
 import LoginPage from './pages/auth/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import GestionEmpleadosPage from './pages/GestionEmpleadosPage';
+import GestionEvaluacionesPage from './pages/GestionEvaluacionesPage';
 import Sidebar from './components/Sidebar';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -45,6 +46,16 @@ const AppContent: React.FC = () => (
           <ProtectedRoute>
             <MainLayout>
               <GestionEmpleadosPage />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/evaluaciones"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <GestionEvaluacionesPage />
             </MainLayout>
           </ProtectedRoute>
         }

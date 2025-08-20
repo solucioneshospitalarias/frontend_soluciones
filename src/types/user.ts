@@ -1,43 +1,75 @@
-export interface Role {
-  id: number;
-  name: string;
-}
-
 export interface User {
   id: number;
   name: string;
+  first_name: string;
+  last_name: string;
   email: string;
+  document: string;
   is_active: boolean;
+  role_id: number;
+  position_id: number;
+  department_id: number;
+  role_name?: string;
   position?: string;
   department?: string;
-  document?: string;
-  hire_date?: string;
-  created_at?: string;
-  updated_at?: string;
-  role?: Role; // ✅ Agregado
+  hire_date: string;
+  created_at: string;
+  updated_at: string;
 }
 
-
 export interface UserCreateDTO {
+  first_name: string;
+  last_name: string;
   email: string;
   document: string;
   password: string;
-  firstName: string;
-  lastName: string;
-  roleID: number;
-  positionID: number;
-  hireDate: string; // formato YYYY-MM-DD
+  role_id: number;
+  position_id: number;
+  department_id: number;
+  hire_date: string;
 }
 
 export interface UserUpdateDTO {
-  name?: string;
+  first_name?: string;
+  last_name?: string;
   email?: string;
-  is_active?: boolean;
   document?: string;
+  is_active?: boolean;
+  role_id?: number;
+  position_id?: number;
+  department_id?: number;
   hire_date?: string;
-  roleID?: number;
-  positionID?: number;
-  departmentID?: number;
 }
 
-
+export interface UserResponse {
+  id: number;
+  first_name: string;
+  last_name: string;
+  name: string;
+  email: string;
+  document: string;
+  is_active: boolean;
+  role_id: number;
+  position_id: number;
+  department_id: number;
+  role?: {
+    id: number;
+    name: string;
+    description?: string;
+  };
+  position?: {
+    id: number;
+    name: string;
+    description?: string;
+    department_id: number;
+    department_name: string;
+  };
+  department?: {
+    id: number;
+    name: string;
+    description?: string;
+  };
+  hire_date: string;
+  created_at: string;
+  updated_at: string;
+}
