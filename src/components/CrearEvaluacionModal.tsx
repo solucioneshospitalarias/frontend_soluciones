@@ -1,10 +1,7 @@
-// src/components/CrearEvaluacionModal.tsx
-// ✅ Modal corregido con tipos actualizados
-
 import React, { useState, useEffect } from 'react';
 import { Activity, X, Loader2, Plus, Calendar, FileCheck, Users, Search, Check } from 'lucide-react';
-import { getPeriods, getTemplates, getCriteria, getEmployees, createEvaluationsFromTemplate } from '../services/evaluationService';
-import type { Evaluation, Period, Template, Criteria, Employee, CreateEvaluationsFromTemplateDTO } from '../services/evaluationService';
+import { getPeriods, getTemplates, getEmployees, createEvaluationsFromTemplate } from '../services/evaluationService';
+import type { Evaluation, Period, Template, Employee, CreateEvaluationsFromTemplateDTO } from '../types/evaluation';
 
 interface CrearEvaluacionModalProps {
   show: boolean;
@@ -34,7 +31,6 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({ show, onClo
   const [periods, setPeriods] = useState<Period[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [criteria, setCriteria] = useState<Criteria[]>([]);
   
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
@@ -42,7 +38,6 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({ show, onClo
   const [showSuccess, setShowSuccess] = useState(false);
   const [employeeSearch, setEmployeeSearch] = useState('');
 
-  // Cargar datos cuando se abre el modal
   useEffect(() => {
     if (show) {
       loadRequiredData();
@@ -52,16 +47,14 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({ show, onClo
   const loadRequiredData = async () => {
     setLoadingData(true);
     try {
-      const [periodsData, templatesData, criteriaData, employeesData] = await Promise.all([
+      const [periodsData, templatesData, employeesData] = await Promise.all([
         getPeriods().catch(() => []),
         getTemplates().catch(() => []),
-        getCriteria().catch(() => []),
         getEmployees().catch(() => [])
       ]);
 
       setPeriods(Array.isArray(periodsData) ? periodsData : []);
       setTemplates(Array.isArray(templatesData) ? templatesData : []);
-      setCriteria(Array.isArray(criteriaData) ? criteriaData : []);
       setEmployees(Array.isArray(employeesData) ? employeesData : []);
 
     } catch (err) {
@@ -79,7 +72,6 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({ show, onClo
     if (error) setError(null);
   };
 
-  // ✅ Corregir el toggleEmployee para usar tipos number
   const toggleEmployee = (employeeId: number) => {
     const employeeIdStr = employeeId.toString();
     setForm(prev => ({
@@ -105,7 +97,6 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({ show, onClo
     }));
   };
 
-  // ✅ Corregir filteredEmployees para usar nombres correctos
   const filteredEmployees = employees.filter(emp =>
     `${emp.first_name} ${emp.last_name}`.toLowerCase().includes(employeeSearch.toLowerCase()) ||
     emp.email.toLowerCase().includes(employeeSearch.toLowerCase()) ||
@@ -151,13 +142,17 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({ show, onClo
       setShowSuccess(true);
       
       setTimeout(() => {
-        // ✅ Crear un objeto Evaluation con tipos correctos
         const mockEvaluation: Evaluation = {
           id: Date.now(),
+          employee_id: 0,
           employee_name: `${result.count} empleados`,
+          evaluator_id: parseInt(form.evaluatorId),
           evaluator_name: 'Evaluador actual',
+          period_id: parseInt(form.periodId),
           period_name: selectedPeriod?.name || '',
+          template_id: parseInt(form.templateId),
           status: 'pending',
+          criteria: [],
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
@@ -166,9 +161,9 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({ show, onClo
         handleClose();
       }, 2000);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creating evaluations:', err);
-      setError(err.message || 'Error al crear las evaluaciones');
+      setError((err as Error).message || 'Error al crear las evaluaciones');
     } finally {
       setLoading(false);
     }
@@ -233,7 +228,7 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({ show, onClo
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 
-                {/* Información básica */}
+                {/* Basic Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -266,7 +261,7 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({ show, onClo
                   </div>
                 </div>
 
-                {/* Selección de período y plantilla */}
+                {/* Period and Template Selection */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -313,16 +308,10 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({ show, onClo
                         </option>
                       ))}
                     </select>
-                    {selectedTemplate && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        {/* ✅ Corregir acceso a criteria */}
-                        {selectedTemplate.criteria?.length || 0} criterios configurados
-                      </p>
-                    )}
                   </div>
                 </div>
 
-                {/* Selección de empleados */}
+                {/* Employee Selection */}
                 <div>
                   <div className="flex justify-between items-center mb-4">
                     <h4 className="text-lg font-medium text-gray-900 flex items-center gap-2">
@@ -349,7 +338,7 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({ show, onClo
                     </div>
                   </div>
 
-                  {/* Búsqueda de empleados */}
+                  {/* Employee Search */}
                   <div className="relative mb-4">
                     <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
                     <input
@@ -362,7 +351,7 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({ show, onClo
                     />
                   </div>
 
-                  {/* Lista de empleados */}
+                  {/* Employee List */}
                   <div className="border border-gray-200 rounded-lg max-h-64 overflow-y-auto">
                     {filteredEmployees.length === 0 ? (
                       <p className="text-gray-500 text-sm p-4">No se encontraron empleados</p>
@@ -388,7 +377,6 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({ show, onClo
                               )}
                             </div>
                             <div className="flex-1">
-                              {/* ✅ Usar nombres correctos de propiedades */}
                               <p className="font-medium text-sm">{employee.first_name} {employee.last_name}</p>
                               <p className="text-xs text-gray-500">{employee.position}</p>
                               <p className="text-xs text-gray-400">{employee.email}</p>

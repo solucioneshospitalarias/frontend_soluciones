@@ -1,9 +1,13 @@
+// src/context/authContext.tsx
+// ✅ ARREGLADO PARA REACT FAST REFRESH
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 import type { AuthContextType, User } from '../types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// ✅ COMPONENTE PRINCIPAL
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +57,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth debe usarse dentro de AuthProvider');

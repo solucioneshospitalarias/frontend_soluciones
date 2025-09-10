@@ -1,6 +1,5 @@
 import { API_BASE_URL } from '../constants/api';
 
-// Types para las estadísticas del dashboard
 export interface DashboardStats {
   totalEmployees: number;
   activeEmployees: number;
@@ -41,169 +40,222 @@ export interface DepartmentStats {
   average_score: number;
 }
 
-// Helper function para headers de autenticación
+// Interfaces para los datos de los endpoints
+interface UserData {
+  id: number;
+  is_active: boolean;
+  department?: string;
+}
+
+interface PeriodData {
+  id: number;
+  status: 'active' | 'inactive';
+}
+
+interface CriteriaData {
+  id: number;
+  name: string;
+}
+
+interface TemplateData {
+  id: number;
+  name: string;
+}
+
+interface EvaluationData {
+  id: number;
+  status: 'in_progress' | 'completed' | 'pending';
+  progress?: number;
+}
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   return {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
+    'Authorization': `Bearer ${token || ''}`,
   };
 };
 
-// ==================== DASHBOARD SERVICE ====================
 export class DashboardService {
-  // Obtener estadísticas generales del dashboard
   static async getDashboardStats(): Promise<DashboardStats> {
     try {
-      // Si tienes un endpoint específico para stats del dashboard
       const response = await fetch(`${API_BASE_URL}/dashboard/stats`, {
         method: 'GET',
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
       });
 
       if (response.ok) {
-        return response.json();
+        const data = await response.json();
+        console.log('✅ Dashboard stats loaded:', data);
+        return data;
       }
 
-      // Si no tienes endpoint específico, construir stats desde múltiples endpoints
       const [users, periods, criteria, templates, evaluations] = await Promise.all([
         this.fetchUsers(),
         this.fetchPeriods(),
         this.fetchCriteria(),
         this.fetchTemplates(),
-        this.fetchEvaluations()
+        this.fetchEvaluations(),
       ]);
 
       return this.calculateStats(users, periods, criteria, templates, evaluations);
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      // Retornar stats por defecto en caso de error
+    } catch (error: unknown) {
+      console.error('❌ Error fetching dashboard stats:', error);
       return this.getDefaultStats();
     }
   }
 
-  // Obtener actividad reciente
   static async getRecentActivity(): Promise<RecentActivity[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/dashboard/activity`, {
         method: 'GET',
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
       });
 
       if (response.ok) {
-        return response.json();
+        const data = await response.json();
+        console.log('✅ Recent activity loaded:', data);
+        return data;
       }
 
-      // Si no hay endpoint, retornar actividad simulada
       return this.getSimulatedActivity();
-    } catch (error) {
-      console.error('Error fetching recent activity:', error);
+    } catch (error: unknown) {
+      console.error('❌ Error fetching recent activity:', error);
       return this.getSimulatedActivity();
     }
   }
 
-  // Obtener progreso de evaluaciones
   static async getEvaluationProgress(): Promise<EvaluationProgress[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/dashboard/evaluation-progress`, {
         method: 'GET',
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
       });
 
       if (response.ok) {
-        return response.json();
+        const data = await response.json();
+        console.log('✅ Evaluation progress loaded:', data);
+        return data;
       }
 
-      // Simular datos si no hay endpoint
       return this.getSimulatedProgress();
-    } catch (error) {
-      console.error('Error fetching evaluation progress:', error);
+    } catch (error: unknown) {
+      console.error('❌ Error fetching evaluation progress:', error);
       return this.getSimulatedProgress();
     }
   }
 
-  // Obtener estadísticas por departamento
   static async getDepartmentStats(): Promise<DepartmentStats[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/dashboard/departments`, {
         method: 'GET',
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
       });
 
       if (response.ok) {
-        return response.json();
+        const data = await response.json();
+        console.log('✅ Department stats loaded:', data);
+        return data;
       }
 
       return this.getSimulatedDepartmentStats();
-    } catch (error) {
-      console.error('Error fetching department stats:', error);
+    } catch (error: unknown) {
+      console.error('❌ Error fetching department stats:', error);
       return this.getSimulatedDepartmentStats();
     }
   }
 
-  // Métodos privados para obtener datos individuales
-  private static async fetchUsers(): Promise<any[]> {
+  private static async fetchUsers(): Promise<UserData[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/users`, {
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
       });
-      return response.ok ? response.json() : [];
-    } catch {
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Users fetched:', data);
+        return Array.isArray(data) ? data : (data.users || data.data || []);
+      }
+      return [];
+    } catch (error: unknown) {
+      console.error('❌ Error fetching users:', error);
       return [];
     }
   }
 
-  private static async fetchPeriods(): Promise<any[]> {
+  private static async fetchPeriods(): Promise<PeriodData[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/periods`, {
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
       });
-      return response.ok ? response.json() : [];
-    } catch {
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Periods fetched:', data);
+        return Array.isArray(data) ? data : (data.periods || data.data || []);
+      }
+      return [];
+    } catch (error: unknown) {
+      console.error('❌ Error fetching periods:', error);
       return [];
     }
   }
 
-  private static async fetchCriteria(): Promise<any[]> {
+  private static async fetchCriteria(): Promise<CriteriaData[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/criteria`, {
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
       });
-      return response.ok ? response.json() : [];
-    } catch {
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Criteria fetched:', data);
+        return Array.isArray(data) ? data : (data.criteria || data.data || []);
+      }
+      return [];
+    } catch (error: unknown) {
+      console.error('❌ Error fetching criteria:', error);
       return [];
     }
   }
 
-  private static async fetchTemplates(): Promise<any[]> {
+  private static async fetchTemplates(): Promise<TemplateData[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/templates`, {
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
       });
-      return response.ok ? response.json() : [];
-    } catch {
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Templates fetched:', data);
+        return Array.isArray(data) ? data : (data.templates || data.data || []);
+      }
+      return [];
+    } catch (error: unknown) {
+      console.error('❌ Error fetching templates:', error);
       return [];
     }
   }
 
-  private static async fetchEvaluations(): Promise<any[]> {
+  private static async fetchEvaluations(): Promise<EvaluationData[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/evaluations`, {
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
       });
-      return response.ok ? response.json() : [];
-    } catch {
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Evaluations fetched:', data);
+        return Array.isArray(data) ? data : (data.evaluations || data.data || []);
+      }
+      return [];
+    } catch (error: unknown) {
+      console.error('❌ Error fetching evaluations:', error);
       return [];
     }
   }
 
-  // Calcular estadísticas desde datos individuales
   private static calculateStats(
-    users: any[], 
-    periods: any[], 
-    criteria: any[], 
-    templates: any[], 
-    evaluations: any[]
+    users: UserData[],
+    periods: PeriodData[],
+    criteria: CriteriaData[],
+    templates: TemplateData[],
+    evaluations: EvaluationData[]
   ): DashboardStats {
     const activeEmployees = users.filter(u => u.is_active).length;
     const inactiveEmployees = users.filter(u => !u.is_active).length;
@@ -212,11 +264,9 @@ export class DashboardService {
     const completedEvaluations = evaluations.filter(e => e.status === 'completed').length;
     const pendingEvaluations = evaluations.filter(e => e.status === 'pending').length;
 
-    // Calcular progreso promedio
     const totalProgress = evaluations.reduce((sum, e) => sum + (e.progress || 0), 0);
     const averageProgress = evaluations.length > 0 ? Math.round(totalProgress / evaluations.length) : 0;
 
-    // Obtener departamentos únicos
     const uniqueDepartments = new Set(users.map(u => u.department).filter(Boolean)).size;
 
     return {
@@ -231,11 +281,10 @@ export class DashboardService {
       activeEvaluations,
       completedEvaluations,
       pendingEvaluations,
-      averageProgress
+      averageProgress,
     };
   }
 
-  // Datos por defecto en caso de error
   private static getDefaultStats(): DashboardStats {
     return {
       totalEmployees: 0,
@@ -249,11 +298,10 @@ export class DashboardService {
       activeEvaluations: 0,
       completedEvaluations: 0,
       pendingEvaluations: 0,
-      averageProgress: 0
+      averageProgress: 0,
     };
   }
 
-  // Actividad simulada para demo
   private static getSimulatedActivity(): RecentActivity[] {
     return [
       {
@@ -262,7 +310,7 @@ export class DashboardService {
         title: 'Evaluación Completada',
         description: 'Juan Pérez completó la evaluación de Mensajeros',
         user: 'Juan Pérez',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString() // 30 min ago
+        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
       },
       {
         id: 2,
@@ -270,7 +318,7 @@ export class DashboardService {
         title: 'Nuevo Empleado',
         description: 'Se registró a María García en el sistema',
         user: 'Admin',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() // 2 hours ago
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
       },
       {
         id: 3,
@@ -278,7 +326,7 @@ export class DashboardService {
         title: 'Nueva Plantilla',
         description: 'Se creó la plantilla "Evaluación Supervisores"',
         user: 'Admin',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString() // 4 hours ago
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
       },
       {
         id: 4,
@@ -286,12 +334,11 @@ export class DashboardService {
         title: 'Evaluación Iniciada',
         description: 'Se inició evaluación para 8 empleados administrativos',
         user: 'Carlos López',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString() // 6 hours ago
-      }
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+      },
     ];
   }
 
-  // Progreso simulado para demo
   private static getSimulatedProgress(): EvaluationProgress[] {
     return [
       {
@@ -299,26 +346,25 @@ export class DashboardService {
         progress: 75,
         total_evaluations: 12,
         completed_evaluations: 9,
-        in_progress_evaluations: 3
+        in_progress_evaluations: 3,
       },
       {
         template_name: 'Supervisores',
         progress: 100,
         total_evaluations: 3,
         completed_evaluations: 3,
-        in_progress_evaluations: 0
+        in_progress_evaluations: 0,
       },
       {
         template_name: 'Administrativos',
         progress: 25,
         total_evaluations: 8,
         completed_evaluations: 2,
-        in_progress_evaluations: 6
-      }
+        in_progress_evaluations: 6,
+      },
     ];
   }
 
-  // Estadísticas de departamento simuladas
   private static getSimulatedDepartmentStats(): DepartmentStats[] {
     return [
       {
@@ -326,33 +372,31 @@ export class DashboardService {
         total_employees: 15,
         active_employees: 14,
         evaluations_completed: 12,
-        average_score: 85.5
+        average_score: 85.5,
       },
       {
         department_name: 'Administración',
         total_employees: 8,
         active_employees: 8,
         evaluations_completed: 6,
-        average_score: 92.3
+        average_score: 92.3,
       },
       {
         department_name: 'Recursos Humanos',
         total_employees: 4,
         active_employees: 4,
         evaluations_completed: 4,
-        average_score: 88.7
-      }
+        average_score: 88.7,
+      },
     ];
   }
 }
 
-// Función de conveniencia para obtener estadísticas de evaluación
 export const getEvaluationStats = () => DashboardService.getDashboardStats();
 
-// Exportar todas las funciones principales
 export const dashboardService = {
   getDashboardStats: DashboardService.getDashboardStats,
   getRecentActivity: DashboardService.getRecentActivity,
   getEvaluationProgress: DashboardService.getEvaluationProgress,
-  getDepartmentStats: DashboardService.getDepartmentStats
+  getDepartmentStats: DashboardService.getDepartmentStats,
 };

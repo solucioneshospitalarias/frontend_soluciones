@@ -1,5 +1,5 @@
 // src/components/CrearPeriodoModal.tsx
-// ✅ Modal corregido con tipos, API real y campos completos
+// ✅ Modal corregido con formato de fechas correcto para Go time.Time
 
 import React, { useState } from 'react';
 import { Calendar, X, Loader2, Plus } from 'lucide-react';
@@ -18,8 +18,8 @@ interface PeriodForm {
   description: string;
   startDate: string;
   endDate: string;
-  dueDate: string;     // ✅ Campo agregado
-  isActive: boolean;   // ✅ Campo agregado
+  dueDate: string;     
+  isActive: boolean;   
 }
 
 const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, onCreated }) => {
@@ -28,13 +28,23 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
     description: '',
     startDate: '',
     endDate: '',
-    dueDate: '',      // ✅ Inicializado
-    isActive: true,   // ✅ Por defecto activo
+    dueDate: '',      
+    isActive: true,   
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // ✅ Función helper para convertir fecha YYYY-MM-DD a ISO 8601
+  const formatDateForBackend = (dateString: string): string => {
+    if (!dateString) return '';
+    
+    // Convertir YYYY-MM-DD a YYYY-MM-DDTHH:mm:ssZ
+    // Usar medianoche UTC para evitar problemas de timezone
+    const date = new Date(dateString + 'T00:00:00.000Z');
+    return date.toISOString();
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -87,17 +97,25 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
     setError(null);
 
     try {
-      // ✅ Crear el DTO con la estructura correcta del backend
+      // ✅ Crear el DTO con fechas en formato ISO 8601 completo
       const periodData: CreatePeriodDTO = {
         name: form.name.trim(),
         description: form.description.trim(),
-        start_date: form.startDate,  // ✅ snake_case
-        end_date: form.endDate,      // ✅ snake_case
-        due_date: form.dueDate,      // ✅ snake_case
-        is_active: form.isActive     // ✅ snake_case
+        start_date: formatDateForBackend(form.startDate),  // ✅ Formato ISO completo
+        end_date: formatDateForBackend(form.endDate),      // ✅ Formato ISO completo
+        due_date: formatDateForBackend(form.dueDate),      // ✅ Formato ISO completo
+        is_active: form.isActive     
       };
 
       console.log('🔄 Creating period with data:', periodData);
+      console.log('📅 Formatted dates:', {
+        original: { start: form.startDate, end: form.endDate, due: form.dueDate },
+        formatted: { 
+          start: periodData.start_date, 
+          end: periodData.end_date, 
+          due: periodData.due_date 
+        }
+      });
 
       // ✅ Usar la API real del servicio
       const newPeriod = await createPeriod(periodData);
@@ -113,9 +131,20 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
         handleClose();
       }, 1500);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Error creating period:', err);
-      setError(err.message || 'Error al crear el período');
+      
+      // ✅ Mejorar el manejo de errores de fecha
+      let errorMessage = 'Error al crear el período';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      if (errorMessage.includes('parsing time') || errorMessage.includes('cannot parse')) {
+        errorMessage = 'Error en el formato de fecha. Por favor, verifica que todas las fechas sean válidas.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -157,27 +186,22 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
     return suggestions;
   };
 
-  // ✅ Función helper para formatear fechas
+  // ✅ Función helper para formatear fechas en la UI
   const formatDate = (dateString: string) => {
     try {
-      // ✅ Debug: Ver qué tipo de fecha recibimos
-      console.log('🔄 Formatting date:', dateString, typeof dateString);
+      if (!dateString) return '';
       
       const date = new Date(dateString);
       
       if (isNaN(date.getTime())) {
-        console.warn('❌ Invalid date:', dateString);
         return dateString;
       }
       
-      const formatted = date.toLocaleDateString('es-ES', {
+      return date.toLocaleDateString('es-ES', {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
       });
-      
-      console.log('✅ Formatted date:', dateString, '->', formatted);
-      return formatted;
     } catch (error) {
       console.error('❌ Error formatting date:', dateString, error);
       return dateString;

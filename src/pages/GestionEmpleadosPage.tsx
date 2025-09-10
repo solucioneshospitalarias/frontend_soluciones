@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Users, Plus, Search, Filter, X, UserCheck, UserX, Building, Briefcase, Calendar, Eye, Edit, Trash2 } from 'lucide-react';
+import { Users, Plus, Search, Filter, X, UserCheck, UserX, Building, Briefcase, Eye, Edit, Trash2 } from 'lucide-react';
 import { getUsers } from '../services/userService';
 import type { User } from '../types/user';
 import CrearEmpleadoModal from '../components/CrearEmpleadoModal';
@@ -66,8 +66,9 @@ const GestionEmpleadosPage: React.FC = () => {
   // Filtrar empleados
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
+      const fullName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
       const matchesSearch = 
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (user.position && user.position.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (user.department && user.department.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -316,7 +317,7 @@ const GestionEmpleadosPage: React.FC = () => {
         Mostrando {filteredUsers.length} de {users.length} empleados
       </div>
 
-      {/* Employee Table */}
+      {/* Employee Table with Scroll */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
@@ -343,96 +344,93 @@ const GestionEmpleadosPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Empleado</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Contacto</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Cargo</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Departamento</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Estado</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredUsers.map((user, index) => (
-                  <tr key={user.id} className={`hover:bg-gray-50 transition-colors ${
-                    index % 2 === 0 ? 'bg-white' : 'bg-gray-25'
-                  }`}>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                          {user.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                        </div>
-                        <div className="ml-3">
-                          <div className="text-sm font-semibold text-gray-900">{user.name}</div>
-                          <div className="text-xs text-gray-500">ID: {user.id}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">{user.email}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center text-sm text-gray-900">
-                        <Briefcase className="w-4 h-4 mr-2 text-gray-400" />
-                        {user.position || '—'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center text-sm text-gray-900">
-                        <Building className="w-4 h-4 mr-2 text-gray-400" />
-                        {user.department || '—'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                        user.is_active
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {user.is_active ? (
-                          <>
-                            <UserCheck className="w-3 h-3 mr-1" />
-                            Activo
-                          </>
-                        ) : (
-                          <>
-                            <UserX className="w-3 h-3 mr-1" />
-                            Inactivo
-                          </>
-                        )}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <button 
-                          onClick={() => handleVerEmpleado(user.id)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Ver detalles"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleEditarEmpleado(user.id)}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          title="Editar empleado"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleEliminarEmpleado(user)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Eliminar empleado"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+            <div className="max-h-[500px] overflow-y-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Empleado</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Contacto</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Cargo</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Departamento</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Estado</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredUsers.map((user, index) => {
+                    const fullName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
+                    return (
+                      <tr key={user.id} className={`hover:bg-gray-50 transition-colors ${
+                        index % 2 === 0 ? 'bg-white' : 'bg-gray-25'
+                      }`}>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-semibold text-gray-900">{fullName}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">{user.email}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center text-sm text-gray-900">
+                            <Briefcase className="w-4 h-4 mr-2 text-gray-400" />
+                            {user.position || '—'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center text-sm text-gray-900">
+                            <Building className="w-4 h-4 mr-2 text-gray-400" />
+                            {user.department || '—'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                            user.is_active
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {user.is_active ? (
+                              <>
+                                <UserCheck className="w-3 h-3 mr-1" />
+                                Activo
+                              </>
+                            ) : (
+                              <>
+                                <UserX className="w-3 h-3 mr-1" />
+                                Inactivo
+                              </>
+                            )}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center space-x-2">
+                            <button 
+                              onClick={() => handleVerEmpleado(user.id)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Ver detalles"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => handleEditarEmpleado(user.id)}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              title="Editar empleado"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => handleEliminarEmpleado(user)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Eliminar empleado"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

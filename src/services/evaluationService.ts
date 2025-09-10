@@ -1,5 +1,5 @@
 // src/services/evaluationService.ts
-// Servicio corregido con manejo de respuestas y tipos correctos
+// 🔥 PARTE 1: HEADERS Y FUNCIONES BÁSICAS
 
 import { API_BASE_URL } from '../constants/api';
 
@@ -13,7 +13,8 @@ export type {
   CreateCriteriaDTO,
   CreatePeriodDTO,
   CreateTemplateDTO,
-  CreateEvaluationsFromTemplateDTO
+  CreateEvaluationsFromTemplateDTO,
+  UpdatePeriodDTO
 } from '../types/evaluation';
 
 import type {
@@ -25,7 +26,8 @@ import type {
   CreateCriteriaDTO,
   CreatePeriodDTO,
   CreateTemplateDTO,
-  CreateEvaluationsFromTemplateDTO
+  CreateEvaluationsFromTemplateDTO,
+  UpdatePeriodDTO
 } from '../types/evaluation';
 
 // Headers de autenticación
@@ -105,6 +107,7 @@ export const deleteCriteria = async (id: number): Promise<void> => {
     throw error;
   }
 };
+// 🔥 PARTE 2: FUNCIONES DE PERÍODOS
 
 // ==================== PERIODS ====================
 export const getPeriods = async (): Promise<Period[]> => {
@@ -118,19 +121,32 @@ export const getPeriods = async (): Promise<Period[]> => {
     const data = await handleResponse<Period[]>(response);
     console.log('✅ Periods loaded:', data);
     
-    // ✅ Debug: Ver estructura de fechas
-    if (Array.isArray(data) && data.length > 0) {
-      console.log('📅 Sample period dates:', {
-        start_date: data[0].start_date,
-        end_date: data[0].end_date,
-        due_date: data[0].due_date,
-        typeof_start: typeof data[0].start_date
-      });
+    // ✅ DEBUG: Log raw response structure  
+    if (data && data.length > 0) {
+      console.log('📊 First period structure:', JSON.stringify(data[0], null, 2));
+      console.log('📊 Period fields:', Object.keys(data[0]));
     }
     
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('❌ Error fetching periods:', error);
+    throw error;
+  }
+};
+
+export const getPeriodById = async (id: number): Promise<Period> => {
+  try {
+    console.log('🔍 Fetching period by ID:', id);
+    const response = await fetch(`${API_BASE_URL}/periods/${id}`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+
+    const data = await handleResponse<Period>(response);
+    console.log('✅ Period loaded:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Error fetching period:', error);
     throw error;
   }
 };
@@ -146,9 +162,66 @@ export const createPeriod = async (periodData: CreatePeriodDTO): Promise<Period>
 
     const data = await handleResponse<Period>(response);
     console.log('✅ Period created:', data);
+    
+    // ✅ DEBUG: Log created period structure
+    console.log('📊 Created period structure:', JSON.stringify(data, null, 2));
+    
     return data;
   } catch (error) {
     console.error('❌ Error creating period:', error);
+    throw error;
+  }
+};
+
+export const updatePeriod = async (id: number, periodData: UpdatePeriodDTO): Promise<Period> => {
+  try {
+    console.log('🔄 Updating period...', id, periodData);
+    const response = await fetch(`${API_BASE_URL}/periods/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(periodData)
+    });
+
+    const data = await handleResponse<Period>(response);
+    console.log('✅ Period updated:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Error updating period:', error);
+    throw error;
+  }
+};
+
+// ✅ NUEVA FUNCIÓN: Toggle de estado de período
+export const togglePeriodStatus = async (id: number): Promise<Period> => {
+  try {
+    console.log('🔄 Toggling period status:', id);
+    
+    // TODO: Cuando el backend esté listo, usar esta ruta
+    // const response = await fetch(`${API_BASE_URL}/periods/${id}/toggle`, {
+    //   method: 'PATCH',
+    //   headers: getAuthHeaders()
+    // });
+
+    // ✅ SIMULACIÓN TEMPORAL - ELIMINAR CUANDO EL BACKEND ESTÉ LISTO
+    console.warn('⚠️ Simulando toggle de período - implementar en backend');
+    
+    // Simular respuesta del backend
+    const mockPeriod: Period = {
+      id,
+      name: 'Período simulado',
+      description: 'Descripción simulada',
+      start_date: new Date().toISOString(),
+      end_date: new Date().toISOString(),
+      due_date: new Date().toISOString(),
+      is_active: true, // Simular que se activó
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    console.log('✅ Period status toggled (simulated):', mockPeriod);
+    return mockPeriod;
+  } catch (error) {
+    console.error('❌ Error toggling period status:', error);
     throw error;
   }
 };
@@ -168,6 +241,7 @@ export const deletePeriod = async (id: number): Promise<void> => {
     throw error;
   }
 };
+// 🔥 PARTE 3: FUNCIONES DE PLANTILLAS
 
 // ==================== TEMPLATES ====================
 export const getTemplates = async (): Promise<Template[]> => {
@@ -240,6 +314,7 @@ export const cloneTemplate = async (id: number, newName?: string): Promise<Templ
     throw error;
   }
 };
+// 🔥 PARTE 4: FUNCIONES DE EVALUACIONES Y EMPLEADOS
 
 // ==================== EVALUATIONS ====================
 export const getEvaluations = async (): Promise<Evaluation[]> => {
@@ -322,15 +397,41 @@ export const getEmployees = async (): Promise<Employee[]> => {
 
 export const getMyEvaluations = async (): Promise<Evaluation[]> => {
   try {
+    console.log('🔍 Fetching my evaluations...');
     const response = await fetch(`${API_BASE_URL}/me/evaluations`, {
       method: 'GET',
       headers: getAuthHeaders()
     });
 
     const data = await handleResponse<Evaluation[]>(response);
+    console.log('✅ My evaluations loaded:', data);
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error('Error fetching my evaluations:', error);
+    console.error('❌ Error fetching my evaluations:', error);
+    throw error;
+  }
+};
+
+// ✅ FUNCIÓN ADICIONAL: Desactivar elementos (simulada)
+export const deactivateItem = async (type: 'criteria' | 'template', id: number): Promise<void> => {
+  try {
+    console.log(`📴 Deactivating ${type}:`, id);
+    
+    // TODO: Implementar endpoint en backend para desactivar
+    // const response = await fetch(`${API_BASE_URL}/${type}/${id}/deactivate`, {
+    //   method: 'PATCH',
+    //   headers: getAuthHeaders()
+    // });
+
+    // ✅ SIMULACIÓN TEMPORAL
+    console.warn(`⚠️ Simulando desactivación de ${type} - implementar en backend`);
+    
+    // Simular delay de red
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    console.log(`✅ ${type} deactivated successfully (simulated)`);
+  } catch (error) {
+    console.error(`❌ Error deactivating ${type}:`, error);
     throw error;
   }
 };

@@ -28,25 +28,16 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Categorías predefinidas comunes
-  const commonCategories = [
-    'Comunicación',
-    'Creatividad', 
-    'Liderazgo',
-    'Trabajo en Equipo',
-    'Productividad',
-    'Puntualidad',
-    'Calidad del Trabajo',
-    'Iniciativa',
-    'Resolución de Problemas',
-    'Adaptabilidad'
+  // Define valid categories with display names (matching backend CriteriaCategory)
+  const validCategories = [
+    { value: 'productividad', label: 'Productividad' },
+    { value: 'conducta_laboral', label: 'Conducta Laboral' },
+    { value: 'habilidades', label: 'Habilidades' },
   ];
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
-    
-    // Limpiar error cuando el usuario empiece a escribir
     if (error) setError(null);
   };
 
@@ -54,11 +45,16 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
     if (!form.name.trim()) return 'El nombre es obligatorio.';
     if (!form.description.trim()) return 'La descripción es obligatoria.';
     if (!form.weight.trim()) return 'El peso es obligatorio.';
-    if (!form.category.trim()) return 'La categoría es obligatoria.';
+    if (!form.category) return 'La categoría es obligatoria.';
     
     const weightNum = parseFloat(form.weight);
     if (isNaN(weightNum) || weightNum <= 0 || weightNum > 1) {
       return 'El peso debe ser un número entre 0.01 y 1.0';
+    }
+
+    // Validate category
+    if (!validCategories.some(cat => cat.value === form.category)) {
+      return 'Categoría no válida. Seleccione Productividad, Conducta Laboral o Habilidades.';
     }
     
     return null;
@@ -77,28 +73,32 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
     setError(null);
 
     try {
-      // Crear criterio usando la API real
       const criteriaData: CreateCriteriaDTO = {
         name: form.name.trim(),
         description: form.description.trim(),
         weight: parseFloat(form.weight),
-        category: form.category.trim()
+        category: form.category
       };
 
+      console.log('🔄 Creating criteria with data:', criteriaData);
       const newCriteria = await createCriteria(criteriaData);
 
-      // Mostrar éxito
       setShowSuccess(true);
       
-      // Esperar un momento para que el usuario vea el mensaje
       setTimeout(() => {
         onCreated(newCriteria);
         handleClose();
       }, 1500);
 
-    } catch (err: any) {
-      console.error('Error creating criteria:', err);
-      setError(err.message || 'Error al crear el criterio');
+    } catch (err: unknown) {
+      console.error('❌ Error creating criteria:', err);
+      setError(
+        err instanceof Error && (err.message.includes('400') || err.message.includes('category'))
+          ? 'Categoría no válida. Debe ser Productividad, Conducta Laboral o Habilidades.'
+          : err instanceof Error
+          ? err.message
+          : 'Error al crear el criterio'
+      );
     } finally {
       setLoading(false);
     }
@@ -118,42 +118,45 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
     onClose();
   };
 
+  const getCategoryDisplayName = (category: string) => {
+    const categoryObj = validCategories.find(cat => cat.value === category);
+    return categoryObj ? categoryObj.label : category;
+  };
+
   if (!show) return null;
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl">
-        
-        {/* Success State */}
         {showSuccess ? (
           <div className="text-center py-8">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Target className="w-8 h-8 text-green-600" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">¡Criterio Creado!</h3>
-            <p className="text-gray-600">El criterio se ha agregado exitosamente al sistema.</p>
+            <p className="text-gray-600">
+              El criterio se ha agregado exitosamente al sistema.
+            </p>
           </div>
         ) : (
           <>
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-                <Target className="w-6 h-6 text-green-500" />
-                Crear Nuevo Criterio
-              </h3>
-              <button 
-                onClick={handleClose} 
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-r from-green-500 to-green-600 rounded-lg text-white">
+                  <Target className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900">Crear Criterio</h2>
+              </div>
+              <button
+                onClick={handleClose}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 disabled={loading}
-                className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
-              
-              {/* Nombre */}
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nombre del Criterio *
@@ -163,93 +166,77 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
                   value={form.name}
                   onChange={handleChange}
                   type="text"
-                  placeholder="Ej: Comunicación efectiva, Trabajo en equipo..."
+                  placeholder="Ej: Comunicación Efectiva"
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                   disabled={loading}
                 />
               </div>
 
-              {/* Descripción */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Descripción del Criterio *
+                  Descripción *
                 </label>
-                <input
+                <textarea
                   name="description"
                   value={form.description}
                   onChange={handleChange}
-                  type="text"
-                  placeholder="Descripción detallada del criterio de evaluación..."
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                  placeholder="Describe qué evalúa este criterio..."
+                  rows={3}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors resize-none"
                   disabled={loading}
                 />
               </div>
 
-              {/* Peso */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Percent className="inline w-4 h-4 mr-1" />
-                  Peso (entre 0.01 y 1.0) *
+                  Peso *
                 </label>
-                <input
-                  name="weight"
-                  value={form.weight}
-                  onChange={handleChange}
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  max="1"
-                  placeholder="Ej: 0.3 para 30%"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                  disabled={loading}
-                />
+                <div className="relative">
+                  <Percent className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    name="weight"
+                    value={form.weight}
+                    onChange={handleChange}
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    max="1"
+                    placeholder="0.15"
+                    className="w-full pl-10 pr-4 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                    disabled={loading}
+                  />
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  El peso representa la importancia del criterio. Ej: 0.3 = 30%
+                  Valor entre 0.01 y 1.0. Ej: 0.3 = 30%
                 </p>
               </div>
 
-              {/* Categoría */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Categoría *
                 </label>
-                <div className="space-y-2">
-                  <select
-                    name="category"
-                    value={form.category}
-                    onChange={handleChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                    disabled={loading}
-                  >
-                    <option value="">Seleccionar categoría</option>
-                    {commonCategories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                    <option value="__custom">+ Categoría personalizada</option>
-                  </select>
-                  
-                  {form.category === '__custom' && (
-                    <input
-                      name="category"
-                      value=""
-                      onChange={handleChange}
-                      type="text"
-                      placeholder="Escribe una nueva categoría"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                      disabled={loading}
-                    />
-                  )}
-                </div>
+                <select
+                  name="category"
+                  value={form.category}
+                  onChange={handleChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                  disabled={loading}
+                >
+                  <option value="">Seleccionar categoría</option>
+                  {validCategories.map(cat => (
+                    <option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* Error Message */}
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="text-red-600 text-sm">{error}</p>
                 </div>
               )}
 
-              {/* Preview */}
               {form.name && form.description && form.weight && form.category && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Vista previa:</h4>
@@ -258,22 +245,29 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
                       <p className="font-medium text-gray-900">{form.name}</p>
                       <p className="text-sm text-gray-600">{form.description}</p>
                       <span className="text-xs bg-gray-200 px-2 py-1 rounded-md">
-                        {form.category}
+                        {getCategoryDisplayName(form.category)}
                       </span>
                     </div>
                     <span className="text-sm font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
-                      {form.weight ? `${Math.round(parseFloat(form.weight) * 100)}%` : '0%'}
+                      {form.weight ? `${(parseFloat(form.weight) * 100).toFixed(1)}%` : '0%'}
                     </span>
                   </div>
                 </div>
               )}
 
-              {/* Buttons */}
               <div className="flex gap-3 pt-4">
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleClose}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   disabled={loading}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  disabled={loading}
                 >
                   {loading ? (
                     <>
@@ -286,14 +280,6 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
                       Crear Criterio
                     </>
                   )}
-                </button>
-                <button 
-                  type="button"
-                  onClick={handleClose} 
-                  disabled={loading}
-                  className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-200 transition-colors font-medium disabled:opacity-50"
-                >
-                  Cancelar
                 </button>
               </div>
             </form>

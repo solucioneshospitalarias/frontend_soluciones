@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createUser } from '../services/userService';
 import { referenceService, type ReferenceData } from '../services/referenceService';
 import type { UserCreateDTO } from '../types/user';
-import { Briefcase, UserCheck, X, Loader2, Shield } from 'lucide-react';
+import { Briefcase, UserCheck, X, Loader2, Shield, Calendar } from 'lucide-react';
 
 interface CrearEmpleadoModalProps {
   show: boolean;
@@ -19,11 +19,11 @@ const CrearEmpleadoModal: React.FC<CrearEmpleadoModalProps> = ({ show, onClose, 
     password: '',
     role_id: 0,
     position_id: 0,
-    department_id: 0, // Se calculará automáticamente desde la posición
+    department_id: 0,
     hire_date: '',
   });
 
-  const [references, setReferences] = useState<ReferenceData>({});
+  const [references, setReferences] = useState<ReferenceData>({ roles: [], positions: [] });
   const [loadingReferences, setLoadingReferences] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +37,7 @@ const CrearEmpleadoModal: React.FC<CrearEmpleadoModalProps> = ({ show, onClose, 
 
   // Actualizar department_id cuando cambie la posición
   useEffect(() => {
-    if (form.position_id && references.positions) {
+    if (form.position_id && references.positions && references.positions.length > 0) {
       const selectedPosition = references.positions.find(pos => pos.id === form.position_id);
       if (selectedPosition) {
         setForm(prev => ({ ...prev, department_id: selectedPosition.department_id }));
@@ -52,11 +52,11 @@ const CrearEmpleadoModal: React.FC<CrearEmpleadoModalProps> = ({ show, onClose, 
     setError(null);
     try {
       const data = await referenceService.getFormReferences();
+      console.log('📚 Referencias cargadas:', data);
       setReferences(data);
-      console.log('Referencias cargadas:', data);
     } catch (err) {
-      console.error('Error cargando referencias:', err);
-      setError('Error al cargar las opciones del formulario');
+      console.error('❌ Error cargando referencias:', err);
+      setError('Error al cargar las opciones del formulario. Por favor, intenta de nuevo.');
     } finally {
       setLoadingReferences(false);
     }
@@ -105,7 +105,7 @@ const CrearEmpleadoModal: React.FC<CrearEmpleadoModalProps> = ({ show, onClose, 
         hire_date: `${form.hire_date}T00:00:00Z`,
       };
 
-      console.log('Enviando payload:', payload);
+      console.log('🚀 Enviando payload:', payload);
       await createUser(payload);
       alert('✅ Empleado creado exitosamente');
       await onCreated();
@@ -123,9 +123,17 @@ const CrearEmpleadoModal: React.FC<CrearEmpleadoModalProps> = ({ show, onClose, 
         hire_date: '',
       });
       onClose();
-    } catch (err: any) {
-      console.error('Error creating user:', err);
-      setError(err.response?.data?.details || err.message || 'Error al crear empleado');
+    } catch (err: unknown) {
+      console.error('❌ Error creating user:', err);
+      let errorMessage = 'Error al crear empleado';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+        if ('response' in err && err.response && typeof err.response === 'object' && 'data' in err.response) {
+          const responseData = err.response as { data?: { details?: string } };
+          errorMessage = responseData.data?.details || errorMessage;
+        }
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -149,7 +157,7 @@ const CrearEmpleadoModal: React.FC<CrearEmpleadoModalProps> = ({ show, onClose, 
 
   // Obtener el departamento de la posición seleccionada
   const getSelectedPositionDepartment = () => {
-    if (form.position_id && references.positions) {
+    if (form.position_id && references.positions && references.positions.length > 0) {
       const selectedPosition = references.positions.find(pos => pos.id === form.position_id);
       return selectedPosition?.department_name || '';
     }
@@ -185,38 +193,50 @@ const CrearEmpleadoModal: React.FC<CrearEmpleadoModalProps> = ({ show, onClose, 
             <div className="border border-gray-200 rounded-xl p-4">
               <h4 className="font-semibold text-gray-800 mb-4">Información Personal</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  name="first_name"
-                  value={form.first_name}
-                  onChange={handleChange}
-                  type="text"
-                  placeholder="Nombre(s)"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                />
-                <input
-                  name="last_name"
-                  value={form.last_name}
-                  onChange={handleChange}
-                  type="text"
-                  placeholder="Apellidos"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                />
-                <input
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  type="email"
-                  placeholder="Correo electrónico"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                />
-                <input
-                  name="document"
-                  value={form.document}
-                  onChange={handleChange}
-                  type="text"
-                  placeholder="Documento de identidad"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nombre(s)</label>
+                  <input
+                    name="first_name"
+                    value={form.first_name}
+                    onChange={handleChange}
+                    type="text"
+                    placeholder="Nombre(s)"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Apellidos</label>
+                  <input
+                    name="last_name"
+                    value={form.last_name}
+                    onChange={handleChange}
+                    type="text"
+                    placeholder="Apellidos"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico</label>
+                  <input
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    type="email"
+                    placeholder="Correo electrónico"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Documento de Identidad</label>
+                  <input
+                    name="document"
+                    value={form.document}
+                    onChange={handleChange}
+                    type="text"
+                    placeholder="Documento de identidad"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                  />
+                </div>
               </div>
             </div>
 
@@ -224,21 +244,30 @@ const CrearEmpleadoModal: React.FC<CrearEmpleadoModalProps> = ({ show, onClose, 
             <div className="border border-gray-200 rounded-xl p-4">
               <h4 className="font-semibold text-gray-800 mb-4">Credenciales de Acceso</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  type="password"
-                  placeholder="Contraseña (mínimo 6 caracteres)"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                />
-                <input
-                  name="hire_date"
-                  value={form.hire_date}
-                  onChange={handleChange}
-                  type="date"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+                  <input
+                    name="password"
+                    value={form.password}
+                    onChange={handleChange}
+                    type="password"
+                    placeholder="Contraseña (mínimo 6 caracteres)"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="inline w-4 h-4 mr-1" />
+                    Fecha de Contratación
+                  </label>
+                  <input
+                    name="hire_date"
+                    value={form.hire_date}
+                    onChange={handleChange}
+                    type="date"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                  />
+                </div>
               </div>
             </div>
 
@@ -259,11 +288,15 @@ const CrearEmpleadoModal: React.FC<CrearEmpleadoModalProps> = ({ show, onClose, 
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                   >
                     <option value={0}>Seleccionar rol</option>
-                    {references.roles?.map(role => (
-                      <option key={role.id} value={role.id}>
-                        {role.name} - {role.description}
-                      </option>
-                    ))}
+                    {references.roles && references.roles.length > 0 ? (
+                      references.roles.map(role => (
+                        <option key={role.id} value={role.id}>
+                          {role.name}{role.description ? ` - ${role.description}` : ''}
+                        </option>
+                      ))
+                    ) : (
+                      <option disabled>No hay roles disponibles</option>
+                    )}
                   </select>
                 </div>
 
@@ -280,12 +313,16 @@ const CrearEmpleadoModal: React.FC<CrearEmpleadoModalProps> = ({ show, onClose, 
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                   >
                     <option value={0}>Seleccionar cargo</option>
-                    {references.positions?.map(position => (
-                      <option key={position.id} value={position.id}>
-                        {position.name} - {position.department_name}
-                        {position.description && ` (${position.description})`}
-                      </option>
-                    ))}
+                    {references.positions && references.positions.length > 0 ? (
+                      references.positions.map(position => (
+                        <option key={position.id} value={position.id}>
+                          {position.name} - {position.department_name}
+                          {position.description ? ` (${position.description})` : ''}
+                        </option>
+                      ))
+                    ) : (
+                      <option disabled>No hay cargos disponibles</option>
+                    )}
                   </select>
                   {form.position_id > 0 && getSelectedPositionDepartment() && (
                     <p className="text-sm text-blue-600 mt-1">

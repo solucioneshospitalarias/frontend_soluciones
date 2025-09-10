@@ -1,13 +1,9 @@
-// src/pages/GestionEvaluacionesPage.tsx
-// ✅ SECCIÓN 1: Imports y Estados Corregidos
-
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Settings,
   Calendar,
   Target,
   FileCheck,
-  Users,
   Plus,
   Search,
   Edit,
@@ -295,11 +291,11 @@ const GestionEvaluacionesPage: React.FC = () => {
             onConfirm: hideConfirmation
           });
 
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error(`❌ Error deleting ${type}:`, err);
           showConfirmation({
             title: 'Error',
-            message: `Error al eliminar el ${typeName}: ${err.message}`,
+            message: `Error al eliminar el ${typeName}: ${(err as Error).message}`,
             type: 'danger',
             onConfirm: hideConfirmation
           });
@@ -334,11 +330,11 @@ const GestionEvaluacionesPage: React.FC = () => {
         onConfirm: hideConfirmation
       });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Error cloning template:', err);
       showConfirmation({
         title: 'Error',
-        message: `Error al clonar la plantilla: ${err.message}`,
+        message: `Error al clonar la plantilla: ${(err as Error).message}`,
         type: 'danger',
         onConfirm: hideConfirmation
       });
