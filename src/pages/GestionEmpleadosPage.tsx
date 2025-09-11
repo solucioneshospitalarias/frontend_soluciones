@@ -11,8 +11,8 @@ import EliminarEmpleadoModal from '../components/EliminarEmpleadoModal';
 
 interface FilterState {
   status: 'all' | 'active' | 'inactive';
-  department: number | '';
-  position: number | '';
+  department: string | ''; // Changed to string to match user.department
+  position: string | '';   // Changed to string to match user.position
 }
 
 const GestionEmpleadosPage: React.FC = () => {
@@ -47,6 +47,8 @@ const GestionEmpleadosPage: React.FC = () => {
         getUsers(),
         referenceService.getFormReferences()
       ]);
+      console.log('Users cargados:', userData);
+      console.log('References cargadas:', refData);
       setUsers(userData);
       setReferences(refData);
     } catch (err) {
@@ -65,11 +67,14 @@ const GestionEmpleadosPage: React.FC = () => {
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       const fullName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
+      const positionName = user.position || '';
+      const departmentName = user.department || '';
+
       const matchesSearch = 
         fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (user.position && user.position.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (user.department && user.department.toLowerCase().includes(searchTerm.toLowerCase()));
+        positionName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        departmentName.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus = 
         filters.status === 'all' ||
@@ -78,15 +83,15 @@ const GestionEmpleadosPage: React.FC = () => {
 
       const matchesDepartment = 
         !filters.department || 
-        (references.departments?.find(d => d.id === filters.department)?.name === user.department);
+        user.department === filters.department;
 
       const matchesPosition = 
         !filters.position || 
-        (references.positions?.find(p => p.id === filters.position)?.name === user.position);
+        user.position === filters.position;
 
       return matchesSearch && matchesStatus && matchesDepartment && matchesPosition;
     });
-  }, [users, references, searchTerm, filters]);
+  }, [users, searchTerm, filters]);
 
   const activeFiltersCount = Object.values(filters).filter(value => value && value !== 'all').length;
 
@@ -270,15 +275,12 @@ const GestionEmpleadosPage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Departamento</label>
                 <select
                   value={filters.department}
-                  onChange={(e) => setFilters(prev => ({
-                    ...prev,
-                    department: e.target.value === '' ? '' : Number(e.target.value)
-                  }))}
+                  onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Todos los departamentos</option>
                   {references.departments?.map(dept => (
-                    <option key={dept.id} value={dept.id}>{dept.name}</option>
+                    <option key={dept.id} value={dept.name}>{dept.name}</option>
                   ))}
                 </select>
               </div>
@@ -288,15 +290,12 @@ const GestionEmpleadosPage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Cargo</label>
                 <select
                   value={filters.position}
-                  onChange={(e) => setFilters(prev => ({
-                    ...prev,
-                    position: e.target.value === '' ? '' : Number(e.target.value)
-                  }))}
+                  onChange={(e) => setFilters(prev => ({ ...prev, position: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Todos los cargos</option>
                   {references.positions?.map(pos => (
-                    <option key={pos.id} value={pos.id}>{pos.name}</option>
+                    <option key={pos.id} value={pos.name}>{pos.name}</option>
                   ))}
                 </select>
               </div>
@@ -365,6 +364,12 @@ const GestionEmpleadosPage: React.FC = () => {
                 <tbody className="divide-y divide-gray-200">
                   {filteredUsers.map((user, index) => {
                     const fullName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
+                    console.log(`User ${user.id}:`, { 
+                      position: user.position, 
+                      position_id: user.position_id, 
+                      department: user.department, 
+                      department_id: user.department_id 
+                    });
                     return (
                       <tr key={user.id} className={`hover:bg-gray-50 transition-colors ${
                         index % 2 === 0 ? 'bg-white' : 'bg-gray-25'

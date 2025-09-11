@@ -14,9 +14,9 @@ interface RawUserResponse {
   department_id?: number;
   role?: { name: string };
   role_name?: string;
-  position?: { name: string };
+  position?: { name: string } | string;
   position_name?: string;
-  department?: { name: string };
+  department?: { name: string } | string;
   department_name?: string;
   hire_date?: string;
   created_at?: string;
@@ -34,6 +34,14 @@ const getAuthHeaders = () => {
 const transformUserResponse = (userResponse: RawUserResponse): User => {
   console.log('🔄 Transforming user response:', userResponse);
   
+  const position = typeof userResponse.position === 'string' 
+    ? userResponse.position 
+    : userResponse.position?.name || userResponse.position_name || '';
+
+  const department = typeof userResponse.department === 'string' 
+    ? userResponse.department 
+    : userResponse.department?.name || userResponse.department_name || '';
+
   return {
     id: userResponse.id,
     name: userResponse.name || `${userResponse.first_name || ''} ${userResponse.last_name || ''}`.trim(),
@@ -46,8 +54,8 @@ const transformUserResponse = (userResponse: RawUserResponse): User => {
     position_id: userResponse.position_id || 0,
     department_id: userResponse.department_id || 0,
     role_name: userResponse.role?.name || userResponse.role_name || '',
-    position: userResponse.position?.name || userResponse.position_name || '',
-    department: userResponse.department?.name || userResponse.department_name || '',
+    position: position,
+    department: department,
     hire_date: userResponse.hire_date || '',
     created_at: userResponse.created_at || '',
     updated_at: userResponse.updated_at || '',
