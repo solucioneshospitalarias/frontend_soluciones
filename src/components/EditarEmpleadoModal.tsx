@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { getUserById, updateUser } from '../services/userService';
 import { referenceService, type ReferenceData } from '../services/referenceService';
 import type { User, UserUpdateDTO } from '../types/user';
-import { Building, Briefcase, UserCheck, X, Loader2, Shield, Calendar, Mail, Hash, Save, AlertCircle } from 'lucide-react';
+import { Briefcase, UserCheck, X, Loader2, Shield, Calendar, Mail, Hash, Save, AlertCircle } from 'lucide-react';
+import { AxiosError } from 'axios'; // Import AxiosError for proper typing
 
 interface EditarEmpleadoModalProps {
   show: boolean;
@@ -18,7 +19,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
   userId 
 }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [form, setForm] = useState<UserUpdateDTO>({});
+  const [form, setForm] = useState<Partial<UserUpdateDTO>>({});
   const [references, setReferences] = useState<ReferenceData>({});
   const [loadingUser, setLoadingUser] = useState(false);
   const [loadingReferences, setLoadingReferences] = useState(false);
@@ -91,7 +92,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
     let parsedValue: string | number | boolean = value;
 
     if (name === 'role_id' || name === 'position_id' || name === 'department_id') {
-      parsedValue = parseInt(value) || 0;
+      parsedValue = value === '' ? 0 : parseInt(value);
     } else if (type === 'checkbox') {
       parsedValue = (e.target as HTMLInputElement).checked;
     }
@@ -128,10 +129,10 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
     if (!form.document?.trim()) {
       errors.document = 'El documento es obligatorio.';
     }
-    if (form.role_id === 0) {
+    if (!form.role_id) {
       errors.role_id = 'Debes seleccionar un rol.';
     }
-    if (form.position_id === 0) {
+    if (!form.position_id) {
       errors.position_id = 'Debes seleccionar un cargo.';
     }
     if (form.hire_date && new Date(form.hire_date) > new Date()) {
@@ -154,15 +155,21 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
       const payload: UserUpdateDTO = {
         ...form,
         hire_date: form.hire_date ? `${form.hire_date}T00:00:00Z` : undefined,
-      };
+      } as UserUpdateDTO; // Type assertion to ensure payload matches UserUpdateDTO
 
       await updateUser(userId, payload);
       alert('✅ Empleado actualizado exitosamente');
       await onUpdated();
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error updating user:', err);
-      setError(err.response?.data?.details || err.message || 'Error al actualizar empleado');
+      // Type the error as AxiosError
+      const axiosError = err as AxiosError<{ details?: string }>;
+      setError(
+        axiosError.response?.data?.details ||
+        axiosError.message ||
+        'Error al actualizar empleado'
+      );
     } finally {
       setLoading(false);
     }
@@ -345,13 +352,13 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                     </label>
                     <select
                       name="role_id"
-                      value={form.role_id || 0}
+                      value={form.role_id ?? ''} // Use nullish coalescing to handle undefined
                       onChange={handleChange}
                       className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                         fieldErrors.role_id ? 'border-red-300' : 'border-gray-300'
                       }`}
                     >
-                      <option value={0}>Seleccionar rol</option>
+                      <option value="">Seleccionar rol</option>
                       {references.roles?.map(role => (
                         <option key={role.id} value={role.id}>
                           {role.name} - {role.description}
@@ -371,13 +378,13 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                     </label>
                     <select
                       name="position_id"
-                      value={form.position_id || 0}
+                      value={form.position_id ?? ''} // Use nullish coalescing to handle undefined
                       onChange={handleChange}
                       className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                         fieldErrors.position_id ? 'border-red-300' : 'border-gray-300'
                       }`}
                     >
-                      <option value={0}>Seleccionar cargo</option>
+                      <option value="">Seleccionar cargo</option>
                       {references.positions?.map(position => (
                         <option key={position.id} value={position.id}>
                           {position.name} - {position.department_name}

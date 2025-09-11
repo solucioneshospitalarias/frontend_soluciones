@@ -156,9 +156,9 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
         handleClose();
       }, 1500);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Error creating template:', err);
-      setError(err.message || 'Error al crear la plantilla');
+      setError((err as Error).message || 'Error al crear la plantilla');
     } finally {
       setLoading(false);
     }
