@@ -1,17 +1,8 @@
 import React from 'react';
-import {
-  BarChart3,
-  Users,
-  Calendar,
-  Target,
-  FileText,
-  LogOut,
-  Menu,
-  Activity,
-  User,
-} from 'lucide-react';
+import { BarChart3, Users, Calendar, Target, FileText, LogOut, Menu, Activity, User } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
+import { canManageEmployees, canManageEvaluations, canAccessEvaluatorView } from '../utils/permissions';
 import soluciones from '../assets/soluciones-ico.png';
 
 interface SidebarProps {
@@ -23,13 +14,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const userRole = user?.role?.name?.toLowerCase() || '';
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/dashboard' },
-    { id: 'employees', label: 'Gestión de empleados', icon: Users, path: '/employees' },
-    { id: 'evaluaciones', label: 'Sistema de Evaluaciones', icon: Activity, path: '/evaluaciones' },
-    { id: 'periods', label: 'Gestión de períodos', icon: Calendar, path: '/periods' },
-    { id: 'monitoring', label: 'Monitoreo de Evaluaciones', icon: Target, path: '/monitoring' },
+    ...(canManageEmployees(userRole)
+      ? [{ id: 'employees', label: 'Gestión de empleados', icon: Users, path: '/employees' }]
+      : []),
+    ...(canManageEvaluations(userRole)
+      ? [
+          { id: 'evaluaciones', label: 'Sistema de Evaluaciones', icon: Activity, path: '/evaluaciones' },
+          { id: 'periods', label: 'Gestión de períodos', icon: Calendar, path: '/periods' },
+        ]
+      : []),
+    ...(canAccessEvaluatorView(userRole)
+      ? [{ id: 'my-evaluations', label: 'Mis Evaluaciones', icon: Target, path: '/my-evaluations' }]
+      : []),
     { id: 'reports', label: 'Reportes y Análisis', icon: FileText, path: '/reports' },
   ];
 
