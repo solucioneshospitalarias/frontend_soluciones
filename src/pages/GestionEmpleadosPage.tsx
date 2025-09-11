@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Users, Plus, Search, Filter, X, UserCheck, UserX, Building, Briefcase, Eye, Edit, Trash2 } from 'lucide-react';
 import { getUsers } from '../services/userService';
+import { referenceService } from '../services/referenceService';
+import type { ReferenceData } from '../services/referenceService';
 import type { User } from '../types/user';
 import CrearEmpleadoModal from '../components/CrearEmpleadoModal';
 import VerEmpleadoModal from '../components/VerEmpleadoModal';
@@ -9,12 +11,13 @@ import EliminarEmpleadoModal from '../components/EliminarEmpleadoModal';
 
 interface FilterState {
   status: 'all' | 'active' | 'inactive';
-  department: string;
-  position: string;
+  department: number | '';
+  position: number | '';
 }
 
 const GestionEmpleadosPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const [references, setReferences] = useState<ReferenceData>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -40,11 +43,15 @@ const GestionEmpleadosPage: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const userData = await getUsers();
+      const [userData, refData] = await Promise.all([
+        getUsers(),
+        referenceService.getFormReferences()
+      ]);
       setUsers(userData);
+      setReferences(refData);
     } catch (err) {
-      console.error('Error al obtener empleados:', err);
-      setError('No se pudieron cargar los empleados. Intenta de nuevo más tarde.');
+      console.error('Error al obtener datos:', err);
+      setError('No se pudieron cargar los empleados o referencias. Intenta de nuevo más tarde.');
     } finally {
       setLoading(false);
     }
@@ -53,15 +60,6 @@ const GestionEmpleadosPage: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, []);
-
-  // Obtener listas únicas para filtros
-  const uniqueDepartments = useMemo(() => 
-    [...new Set(users.map(user => user.department).filter(Boolean))], [users]
-  );
-  
-  const uniquePositions = useMemo(() => 
-    [...new Set(users.map(user => user.position).filter(Boolean))], [users]
-  );
 
   // Filtrar empleados
   const filteredUsers = useMemo(() => {
@@ -79,14 +77,16 @@ const GestionEmpleadosPage: React.FC = () => {
         (filters.status === 'inactive' && !user.is_active);
 
       const matchesDepartment = 
-        !filters.department || user.department === filters.department;
+        !filters.department || 
+        (references.departments?.find(d => d.id === filters.department)?.name === user.department);
 
       const matchesPosition = 
-        !filters.position || user.position === filters.position;
+        !filters.position || 
+        (references.positions?.find(p => p.id === filters.position)?.name === user.position);
 
       return matchesSearch && matchesStatus && matchesDepartment && matchesPosition;
     });
-  }, [users, searchTerm, filters]);
+  }, [users, references, searchTerm, filters]);
 
   const activeFiltersCount = Object.values(filters).filter(value => value && value !== 'all').length;
 
@@ -103,8 +103,8 @@ const GestionEmpleadosPage: React.FC = () => {
     total: users.length,
     active: users.filter(u => u.is_active).length,
     inactive: users.filter(u => !u.is_active).length,
-    departments: uniqueDepartments.length
-  }), [users, uniqueDepartments]);
+    departments: references.departments?.length || 0
+  }), [users, references]);
 
   // Funciones para manejar los modales
   const handleVerEmpleado = (userId: number) => {
@@ -270,12 +270,15 @@ const GestionEmpleadosPage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Departamento</label>
                 <select
                   value={filters.department}
-                  onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
+                  onChange={(e) => setFilters(prev => ({
+                    ...prev,
+                    department: e.target.value === '' ? '' : Number(e.target.value)
+                  }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Todos los departamentos</option>
-                  {uniqueDepartments.map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
+                  {references.departments?.map(dept => (
+                    <option key={dept.id} value={dept.id}>{dept.name}</option>
                   ))}
                 </select>
               </div>
@@ -285,12 +288,15 @@ const GestionEmpleadosPage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Cargo</label>
                 <select
                   value={filters.position}
-                  onChange={(e) => setFilters(prev => ({ ...prev, position: e.target.value }))}
+                  onChange={(e) => setFilters(prev => ({
+                    ...prev,
+                    position: e.target.value === '' ? '' : Number(e.target.value)
+                  }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Todos los cargos</option>
-                  {uniquePositions.map(pos => (
-                    <option key={pos} value={pos}>{pos}</option>
+                  {references.positions?.map(pos => (
+                    <option key={pos.id} value={pos.id}>{pos.name}</option>
                   ))}
                 </select>
               </div>
@@ -317,7 +323,7 @@ const GestionEmpleadosPage: React.FC = () => {
         Mostrando {filteredUsers.length} de {users.length} empleados
       </div>
 
-      {/* Employee Table with Scroll */}
+      {/* Employee Table */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
