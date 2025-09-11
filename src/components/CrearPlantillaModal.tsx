@@ -1,10 +1,8 @@
 // src/components/CrearPlantillaModal.tsx
-// ✅ Modal corregido con tipos actualizados
-
 import React, { useState, useEffect } from 'react';
 import { FileCheck, X, Loader2, Plus, Target, Trash2, Percent } from 'lucide-react';
 import { getCriteria, createTemplate } from '../services/evaluationService';
-import type { Template, Criteria, CreateTemplateDTO } from '../services/evaluationService';
+import type { Template, Criteria, CreateTemplateDTO } from '../types/evaluation';
 
 interface CrearPlantillaModalProps {
   show: boolean;
@@ -15,7 +13,7 @@ interface CrearPlantillaModalProps {
 interface PlantillaForm {
   name: string;
   description: string;
-  selectedCriteria: { criteriaId: number; weight: number }[]; // ✅ criteriaId como number
+  selectedCriteria: { criteriaId: number; weight: number; category: 'productividad' | 'conducta_laboral' | 'habilidades' }[];
 }
 
 const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose, onCreated }) => {
@@ -31,7 +29,6 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Cargar criterios disponibles cuando se abre el modal
   useEffect(() => {
     if (show) {
       loadCriteria();
@@ -54,11 +51,9 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
-    
     if (error) setError(null);
   };
 
-  // ✅ Corregir addCriteria para usar tipos number
   const addCriteria = (criteria: Criteria) => {
     if (form.selectedCriteria.some(sc => sc.criteriaId === criteria.id)) {
       return; // Ya está agregado
@@ -68,12 +63,15 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
       ...prev,
       selectedCriteria: [
         ...prev.selectedCriteria,
-        { criteriaId: criteria.id, weight: criteria.weight || 0.1 }
+        {
+          criteriaId: criteria.id,
+          weight: criteria.weight || 10, // Usar peso del criterio o 10 por defecto
+          category: criteria.category
+        }
       ]
     }));
   };
 
-  // ✅ Corregir removeCriteria para usar tipos number
   const removeCriteria = (criteriaId: number) => {
     setForm(prev => ({
       ...prev,
@@ -81,42 +79,93 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
     }));
   };
 
-  // ✅ Corregir updateCriteriaWeight para usar tipos number
   const updateCriteriaWeight = (criteriaId: number, weight: number) => {
     setForm(prev => ({
       ...prev,
       selectedCriteria: prev.selectedCriteria.map(sc =>
-        sc.criteriaId === criteriaId ? { ...sc, weight } : sc
+        sc.criteriaId === criteriaId ? { ...sc, weight: isNaN(weight) ? 0.1 : Math.max(0.1, Math.min(100, weight)) } : sc
       )
     }));
   };
 
-  const getTotalWeight = () => {
-    return form.selectedCriteria.reduce((sum, sc) => sum + sc.weight, 0);
-  };
-
-  const normalizeWeights = () => {
-    const total = getTotalWeight();
-    if (total === 0) return;
-
+  const updateCriteriaCategory = (criteriaId: number, category: 'productividad' | 'conducta_laboral' | 'habilidades') => {
     setForm(prev => ({
       ...prev,
-      selectedCriteria: prev.selectedCriteria.map(sc => ({
-        ...sc,
-        weight: Number((sc.weight / total).toFixed(3))
-      }))
+      selectedCriteria: prev.selectedCriteria.map(sc =>
+        sc.criteriaId === criteriaId ? { ...sc, category } : sc
+      )
     }));
+  };
+
+  const getTotalWeightByCategory = (category: 'productividad' | 'conducta_laboral' | 'habilidades') => {
+    return form.selectedCriteria
+      .filter(sc => sc.category === category)
+      .reduce((sum, sc) => sum + sc.weight, 0);
+  };
+
+  const normalizeWeightsByCategory = () => {
+    const categories: ('productividad' | 'conducta_laboral' | 'habilidades')[] = ['productividad', 'conducta_laboral', 'habilidades'];
+    
+    setForm(prev => {
+      let updatedCriteria = [...prev.selectedCriteria];
+      
+      categories.forEach(category => {
+        const categoryCriteria = updatedCriteria.filter(sc => sc.category === category);
+        const totalWeight = categoryCriteria.reduce((sum, sc) => sum + sc.weight, 0);
+        
+        if (totalWeight > 0 && categoryCriteria.length > 0) {
+          // Normalizar para que sume 100%
+          const scale = 100 / totalWeight;
+          updatedCriteria = updatedCriteria.map(sc => {
+            if (sc.category === category) {
+              const newWeight = sc.weight * scale;
+              // Redondear a 2 decimales y asegurar que esté entre 0.1 y 100
+              return { ...sc, weight: Math.max(0.1, Math.min(100, Number(newWeight.toFixed(2)))) };
+            }
+            return sc;
+          });
+          
+          // Ajustar el último criterio para garantizar que sume exactamente 100%
+          const finalCategoryCriteria = updatedCriteria.filter(sc => sc.category === category);
+          const finalTotal = finalCategoryCriteria.reduce((sum, sc) => sum + sc.weight, 0);
+          if (Math.abs(finalTotal - 100) > 0.01 && finalCategoryCriteria.length > 0) {
+            const lastCriteria = finalCategoryCriteria[finalCategoryCriteria.length - 1];
+            updatedCriteria = updatedCriteria.map(sc => {
+              if (sc.criteriaId === lastCriteria.criteriaId) {
+                return { ...sc, weight: Number((sc.weight + (100 - finalTotal)).toFixed(2)) };
+              }
+              return sc;
+            });
+          }
+        }
+      });
+      
+      console.log('🔄 Normalized weights:', JSON.stringify(updatedCriteria, null, 2));
+      
+      return { ...prev, selectedCriteria: updatedCriteria };
+    });
   };
 
   const validateForm = (): string | null => {
     if (!form.name.trim()) return 'El nombre de la plantilla es obligatorio.';
     if (form.selectedCriteria.length === 0) return 'Debe seleccionar al menos un criterio.';
     
-    const totalWeight = getTotalWeight();
-    if (Math.abs(totalWeight - 1) > 0.01) {
-      return 'La suma de los pesos debe ser igual a 1.0 (100%). Use el botón "Normalizar" para ajustar automáticamente.';
+    const categories: ('productividad' | 'conducta_laboral' | 'habilidades')[] = ['productividad', 'conducta_laboral', 'habilidades'];
+    const validationErrors: string[] = [];
+
+    categories.forEach(category => {
+      const totalWeight = getTotalWeightByCategory(category);
+      if (totalWeight > 0 && Math.abs(totalWeight - 100) > 0.01) {
+        validationErrors.push(
+          `Los pesos de ${category} deben sumar exactamente 100% (actual: ${totalWeight.toFixed(2)}%)`
+        );
+      }
+    });
+
+    if (validationErrors.length > 0) {
+      return validationErrors.join('. ') + '. Use el botón "Normalizar" para ajustar automáticamente.';
     }
-    
+
     return null;
   };
 
@@ -133,17 +182,26 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
     setError(null);
 
     try {
-      // ✅ Crear usando la API real
+      // Agrupar criterios por categoría, enviar pesos como están (en porcentaje 0-100)
+      const criteriaByCategory = {
+        productivity: form.selectedCriteria
+          .filter(sc => sc.category === 'productividad')
+          .map(sc => ({ criteria_id: sc.criteriaId, weight: sc.weight })), // Enviar como porcentaje
+        work_conduct: form.selectedCriteria
+          .filter(sc => sc.category === 'conducta_laboral')
+          .map(sc => ({ criteria_id: sc.criteriaId, weight: sc.weight })), // Enviar como porcentaje
+        skills: form.selectedCriteria
+          .filter(sc => sc.category === 'habilidades')
+          .map(sc => ({ criteria_id: sc.criteriaId, weight: sc.weight })) // Enviar como porcentaje
+      };
+
       const templateData: CreateTemplateDTO = {
         name: form.name.trim(),
         description: form.description.trim() || undefined,
-        criteria: form.selectedCriteria.map(sc => ({
-          criteria_id: sc.criteriaId,
-          weight: sc.weight
-        }))
+        criteria: criteriaByCategory
       };
 
-      console.log('🔄 Creating template with data:', templateData);
+      console.log('🔄 Creating template with data:', JSON.stringify(templateData, null, 2));
 
       const newTemplate = await createTemplate(templateData);
 
@@ -177,7 +235,6 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
     onClose();
   };
 
-  // ✅ Corregir getCriteriaById para usar tipos number
   const getCriteriaById = (id: number) => {
     return availableCriteria.find(c => c.id === id);
   };
@@ -280,8 +337,12 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                               >
                                 <div className="flex-1">
                                   <p className="font-medium text-sm">{criteria.description}</p>
-                                  <p className="text-xs text-gray-500">{criteria.category}</p>
-                                  <p className="text-xs text-purple-600">Peso sugerido: {Math.round((criteria.weight || 0) * 100)}%</p>
+                                  <p className="text-xs text-gray-500">
+                                    {criteria.category === 'productividad' ? 'Productividad' :
+                                     criteria.category === 'conducta_laboral' ? 'Conducta Laboral' :
+                                     'Habilidades'}
+                                  </p>
+                                  <p className="text-xs text-purple-600">Peso sugerido: {criteria.weight.toFixed(2)}%</p>
                                 </div>
                                 <button
                                   type="button"
@@ -303,13 +364,23 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                         <h5 className="font-medium text-gray-700">Criterios Seleccionados</h5>
                         {form.selectedCriteria.length > 0 && (
                           <div className="text-sm">
-                            <span className={`font-medium ${Math.abs(getTotalWeight() - 1) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
-                              Total: {Math.round(getTotalWeight() * 100)}%
-                            </span>
+                            {['productividad', 'conducta_laboral', 'habilidades'].map(category => {
+                              const total = getTotalWeightByCategory(category as 'productividad' | 'conducta_laboral' | 'habilidades');
+                              return (
+                                <span
+                                  key={category}
+                                  className={`block ${Math.abs(total - 100) < 0.01 || total === 0 ? 'text-green-600' : 'text-red-600'}`}
+                                >
+                                  {category === 'productividad' ? 'Productividad' :
+                                   category === 'conducta_laboral' ? 'Conducta Laboral' :
+                                   'Habilidades'}: {total.toFixed(2)}%
+                                </span>
+                              );
+                            })}
                             <button
                               type="button"
-                              onClick={normalizeWeights}
-                              className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition-colors"
+                              onClick={normalizeWeightsByCategory}
+                              className="mt-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition-colors"
                               disabled={loading}
                             >
                               Normalizar
@@ -328,8 +399,17 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                               <div key={sc.criteriaId} className="p-3 bg-gray-50 rounded-lg mb-2">
                                 <div className="flex justify-between items-start mb-2">
                                   <div className="flex-1">
-                                    <p className="font-medium text-sm">{criteria?.description}</p>
-                                    <p className="text-xs text-gray-500">{criteria?.category}</p>
+                                    <p className="font-medium text-sm">{criteria?.description || 'Criterio desconocido'}</p>
+                                    <select
+                                      value={sc.category}
+                                      onChange={(e) => updateCriteriaCategory(sc.criteriaId, e.target.value as 'productividad' | 'conducta_laboral' | 'habilidades')}
+                                      className="text-xs text-gray-500 bg-gray-100 rounded px-2 py-1 mt-1"
+                                      disabled={loading}
+                                    >
+                                      <option value="productividad">Productividad</option>
+                                      <option value="conducta_laboral">Conducta Laboral</option>
+                                      <option value="habilidades">Habilidades</option>
+                                    </select>
                                   </div>
                                   <button
                                     type="button"
@@ -345,17 +425,17 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                                   <Percent className="w-3 h-3 text-gray-400" />
                                   <input
                                     type="number"
-                                    step="0.001"
-                                    min="0"
-                                    max="1"
+                                    step="0.1"
+                                    min="0.1"
+                                    max="100"
                                     value={sc.weight}
-                                    onChange={(e) => updateCriteriaWeight(sc.criteriaId, parseFloat(e.target.value) || 0)}
+                                    onChange={(e) => updateCriteriaWeight(sc.criteriaId, parseFloat(e.target.value))}
                                     className="flex-1 text-sm p-1 border border-gray-300 rounded focus:ring-1 focus:ring-purple-500"
-                                    placeholder="0.000"
+                                    placeholder="0.0"
                                     disabled={loading}
                                   />
                                   <span className="text-xs text-gray-500 min-w-[40px]">
-                                    {Math.round(sc.weight * 100)}%
+                                    {sc.weight.toFixed(2)}%
                                   </span>
                                 </div>
                               </div>
@@ -388,7 +468,11 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                       {form.selectedCriteria.length} criterios configurados
                     </p>
                     <p className="text-xs text-purple-600">
-                      Pesos: {form.selectedCriteria.map(sc => `${Math.round(sc.weight * 100)}%`).join(', ')}
+                      Pesos por categoría:
+                      {['productividad', 'conducta_laboral', 'habilidades'].map(category => {
+                        const total = getTotalWeightByCategory(category as 'productividad' | 'conducta_laboral' | 'habilidades');
+                        return total > 0 ? `${category === 'productividad' ? 'Productividad' : category === 'conducta_laboral' ? 'Conducta Laboral' : 'Habilidades'}: ${total.toFixed(2)}%` : null;
+                      }).filter(Boolean).join(', ')}
                     </p>
                   </div>
                 </div>

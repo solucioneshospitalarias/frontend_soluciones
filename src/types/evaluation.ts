@@ -5,9 +5,9 @@ export interface Criteria {
   id: number;
   name: string;
   description: string;
-  weight: number;
-  category: string;
-  is_active: boolean; // ✅ Para soft delete
+  weight: number; // En escala 0.1 a 100, según el backend
+  category: 'productividad' | 'conducta_laboral' | 'habilidades';
+  is_active: boolean; // Para soft delete
 }
 
 export interface Period {
@@ -17,7 +17,7 @@ export interface Period {
   start_date: string;
   end_date: string;
   due_date: string;
-  is_active: boolean; // ✅ Para soft delete
+  is_active: boolean; // Para soft delete
   status?: string;
   created_at: string;
   updated_at: string;
@@ -28,7 +28,7 @@ export interface Template {
   name: string;
   description?: string;
   position?: string;
-  is_active: boolean; // ✅ Para soft delete
+  is_active: boolean; // Para soft delete
   criteria: TemplateCriteria[];
   created_at: string;
   updated_at: string;
@@ -37,25 +37,25 @@ export interface Template {
 export interface TemplateCriteria {
   id: number;
   criteria_id: number;
-  weight: number;
+  weight: number; // En escala 0.1 a 100
   criteria: Criteria;
 }
 
 export interface Evaluation {
   id: number;
-  employee_id: number;  
+  employee_id: number;
   employee_name: string;
-  evaluator_id: number;     
+  evaluator_id: number;
   evaluator_name: string;
-  period_id: number;    
+  period_id: number;
   period_name: string;
   template_id: number;
   status: 'pending' | 'in_progress' | 'completed' | 'overdue';
   criteria: {
     criteriaId: number;
     description: string;
-    category: 'productivity' | 'work_conduct' | 'skills';
-    weight: number;
+    category: 'productividad' | 'conducta_laboral' | 'habilidades';
+    weight: number; // En escala 0.1 a 100
     score?: number;
   }[];
   created_at: string;
@@ -76,8 +76,8 @@ export interface Employee {
 export interface CreateCriteriaDTO {
   name: string;
   description: string;
-  weight: number;
-  category: string;
+  weight: number; // En escala 0.1 a 100
+  category: 'productividad' | 'conducta_laboral' | 'habilidades';
 }
 
 export interface CreatePeriodDTO {
@@ -94,9 +94,10 @@ export interface CreateTemplateDTO {
   description?: string;
   position?: string;
   criteria: {
-    criteria_id: number;
-    weight: number;
-  }[];
+    productivity: { criteria_id: number; weight: number }[];
+    work_conduct: { criteria_id: number; weight: number }[];
+    skills: { criteria_id: number; weight: number }[];
+  };
 }
 
 export interface CreateEvaluationsFromTemplateDTO {
@@ -106,7 +107,7 @@ export interface CreateEvaluationsFromTemplateDTO {
   employee_ids: number[];
 }
 
-// ✅ DTOs para soft delete (deshabilitar)
+// DTOs para soft delete (deshabilitar)
 export interface SoftDeleteDTO {
   is_active: boolean;
 }
@@ -123,8 +124,8 @@ export interface UpdatePeriodDTO {
 export interface UpdateCriteriaDTO {
   name?: string;
   description?: string;
-  weight?: number;
-  category?: string;
+  weight?: number; // En escala 0.1 a 100
+  category?: 'productividad' | 'conducta_laboral' | 'habilidades';
   is_active?: boolean;
 }
 
@@ -134,7 +135,7 @@ export interface UpdateTemplateDTO {
   is_active?: boolean;
   criteria?: {
     criteria_id: number;
-    weight: number;
+    weight: number; // En escala 0.1 a 100
   }[];
 }
 
