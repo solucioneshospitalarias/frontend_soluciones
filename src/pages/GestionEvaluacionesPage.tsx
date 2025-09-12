@@ -447,7 +447,6 @@ const GestionEvaluacionesPage: React.FC = () => {
                           <Calendar className="w-3 h-3" />
                           {formatDate(period.start_date)} – {formatDate(period.end_date)}
                         </div>
-                        <div className="text-xs text-gray-500">ID: {period.id}</div>
                         {period.description && (
                           <div className="text-xs text-gray-600">{period.description}</div>
                         )}
@@ -535,14 +534,14 @@ const GestionEvaluacionesPage: React.FC = () => {
                       className={`group p-4 border border-gray-200 rounded-xl bg-white hover:shadow-lg hover:border-green-200 transition mb-3 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-semibold text-gray-900">{criterio.description}</h4>
+                        <h4 className="font-semibold text-gray-900">{criterio.name}</h4>
                         <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
                           {Math.round(criterio.weight * 100)}%
                         </span>
                       </div>
                       <div className="text-sm text-gray-600 space-y-1">
+                        <p className="text-gray-600">{criterio.description}</p>
                         <span className="bg-gray-100 px-2 py-1 rounded-md text-xs">{criterio.category}</span>
-                        <div className="text-xs text-gray-500">ID: {criterio.id} | Nombre: {criterio.name}</div>
                       </div>
                       <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
@@ -554,7 +553,7 @@ const GestionEvaluacionesPage: React.FC = () => {
                           <Edit className="w-4 h-4 text-green-600" />
                         </button>
                         <button
-                          onClick={() => handleDelete('criteria', criterio.id, criterio.description)}
+                          onClick={() => handleDelete('criteria', criterio.id, criterio.name)}
                           className="p-2 hover:bg-red-50 rounded-lg"
                           title="Eliminar criterio"
                           disabled={isDeleting}
@@ -623,14 +622,11 @@ const GestionEvaluacionesPage: React.FC = () => {
                         </span>
                       </div>
                       <div className="text-sm text-gray-600 space-y-1">
+                        <p className="text-gray-600">{template.description}</p>
                         <div className="flex justify-between">
                           <span>Criterios: {criteriaCount}</span>
-                          <span>ID: {template.id}</span>
+                          <span>Pesos: {criteriaWeights}</span>
                         </div>
-                        <div className="text-xs text-gray-500">Pesos: {criteriaWeights}</div>
-                        {template.description && (
-                          <div className="text-xs text-gray-600">{template.description}</div>
-                        )}
                       </div>
                       <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
@@ -916,10 +912,6 @@ const GestionEvaluacionesPage: React.FC = () => {
                               <span className="font-medium">{formatDate(evaluation.completed_at)}</span>
                             </div>
                           )}
-                          <div className="flex justify-between">
-                            <span>ID:</span>
-                            <span className="font-medium text-xs">{evaluation.id}</span>
-                          </div>
                         </div>
                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
