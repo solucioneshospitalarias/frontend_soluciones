@@ -3,19 +3,35 @@ import { getPeriodById, updatePeriod } from '../services/evaluationService';
 import type { Period, UpdatePeriodDTO } from '../types/evaluation';
 import { Calendar, X, Loader2, AlertCircle, Save, Clock } from 'lucide-react';
 
+interface ConfirmationState {
+  show: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  type: 'danger' | 'warning' | 'info' | 'success';
+  loading: boolean;
+}
+
 interface EditarPeriodoModalProps {
   show: boolean;
   onClose: () => void;
   onUpdated: () => Promise<void>;
   periodId: number | null;
+  confirmationState?: ConfirmationState;
+  setConfirmationState: React.Dispatch<React.SetStateAction<ConfirmationState>>;
 }
 
 const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({ 
   show, 
   onClose, 
   onUpdated, 
-  periodId 
+  periodId,
+  confirmationState,  // Desestructuramos el nombre original de la prop
+  setConfirmationState
 }) => {
+  // Asignamos _confirmationState para ignorarla intencionalmente (silencia ESLint/TS)
+  const _confirmationState = confirmationState;  // Ahora está "usada" aquí, pero ignorada
+
   const [period, setPeriod] = useState<Period | null>(null);
   const [form, setForm] = useState<UpdatePeriodDTO>({});
   const [loading, setLoading] = useState(false);
@@ -23,36 +39,43 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  // Función para mostrar confirmación usando el estado padre
+  const showConfirmation = (config: Omit<ConfirmationState, 'show' | 'loading'>) => {
+    setConfirmationState({
+      ...config,
+      show: true,
+      loading: false
+    });
+  };
+
   useEffect(() => {
     if (show && periodId) {
+      const loadPeriodData = async () => {
+        setLoadingPeriod(true);
+        setError(null);
+        try {
+          const periodData = await getPeriodById(periodId);
+          setPeriod(periodData);
+          
+          setForm({
+            name: periodData.name,
+            description: periodData.description,
+            start_date: periodData.start_date ? new Date(periodData.start_date).toISOString().split('T')[0] : '',
+            end_date: periodData.end_date ? new Date(periodData.end_date).toISOString().split('T')[0] : '',
+            due_date: periodData.due_date ? new Date(periodData.due_date).toISOString().split('T')[0] : '',
+            is_active: periodData.is_active,
+          });
+        } catch (err) {
+          console.error('Error cargando período:', err);
+          setError('Error al cargar los datos del período');
+        } finally {
+          setLoadingPeriod(false);
+        }
+      };
+
       loadPeriodData();
     }
-  }, [show, periodId]);
-
-  const loadPeriodData = async () => {
-    if (!periodId) return;
-    
-    setLoadingPeriod(true);
-    setError(null);
-    try {
-      const periodData = await getPeriodById(periodId);
-      setPeriod(periodData);
-      
-      setForm({
-        name: periodData.name,
-        description: periodData.description,
-        start_date: periodData.start_date ? new Date(periodData.start_date).toISOString().split('T')[0] : '',
-        end_date: periodData.end_date ? new Date(periodData.end_date).toISOString().split('T')[0] : '',
-        due_date: periodData.due_date ? new Date(periodData.due_date).toISOString().split('T')[0] : '',
-        is_active: periodData.is_active,
-      });
-    } catch (err) {
-      console.error('Error cargando período:', err);
-      setError('Error al cargar los datos del período');
-    } finally {
-      setLoadingPeriod(false);
-    }
-  };
+  }, [show, periodId]); // Dependencias correctas; loadPeriodData ya no es una dependencia externa
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -142,13 +165,29 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
       };
 
       await updatePeriod(periodId, payload);
-      alert('✅ Período actualizado exitosamente');
-      await onUpdated();
-      onClose();
+      
+      // Mostrar confirmación de éxito usando el modal padre
+      showConfirmation({
+        title: '¡Período Actualizado!',
+        message: `El período "${form.name}" se ha actualizado exitosamente.`,
+        type: 'success',
+        onConfirm: async () => {
+          await onUpdated();
+          onClose();
+        }
+      });
     } catch (err: unknown) {
       console.error('Error updating period:', err);
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(errorMessage || 'Error al actualizar período');
+      
+      // Mostrar confirmación de error usando el modal padre
+      showConfirmation({
+        title: 'Error',
+        message: `Error al actualizar el período: ${errorMessage}`,
+        type: 'danger',
+        onConfirm: () => {} // No hace nada adicional, solo cierra
+      });
     } finally {
       setLoading(false);
     }
@@ -284,7 +323,7 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
                       value={form.end_date || ''}
                       onChange={handleChange}
                       type="date"
-                      min={form.start_date}
+                      min={form.start_date || undefined}
                       className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                         fieldErrors.end_date ? 'border-red-300' : 'border-gray-300'
                       }`}
@@ -315,7 +354,7 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
                       value={form.due_date || ''}
                       onChange={handleChange}
                       type="date"
-                      min={form.start_date}
+                      min={form.start_date || undefined}
                       className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                         fieldErrors.due_date ? 'border-red-300' : 'border-gray-300'
                       }`}
