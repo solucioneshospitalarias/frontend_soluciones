@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getPeriodById, updatePeriod } from '../services/evaluationService';
 import type { Period, UpdatePeriodDTO } from '../types/evaluation';
-import { Calendar, X, Loader2, AlertCircle, Save, Clock } from 'lucide-react';
+import { Calendar, X, Loader2, AlertCircle, Save, Clock, Info } from 'lucide-react';
 
 interface ConfirmationState {
   show: boolean;
@@ -26,11 +26,10 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
   onClose, 
   onUpdated, 
   periodId,
-  confirmationState,  // Desestructuramos el nombre original de la prop
+  confirmationState,
   setConfirmationState
 }) => {
-  // Asignamos _confirmationState para ignorarla intencionalmente (silencia ESLint/TS)
-  const _confirmationState = confirmationState;  // Ahora está "usada" aquí, pero ignorada
+  const _confirmationState = confirmationState;
 
   const [period, setPeriod] = useState<Period | null>(null);
   const [form, setForm] = useState<UpdatePeriodDTO>({});
@@ -39,7 +38,6 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  // Función para mostrar confirmación usando el estado padre
   const showConfirmation = (config: Omit<ConfirmationState, 'show' | 'loading'>) => {
     setConfirmationState({
       ...config,
@@ -63,7 +61,7 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
             start_date: periodData.start_date ? new Date(periodData.start_date).toISOString().split('T')[0] : '',
             end_date: periodData.end_date ? new Date(periodData.end_date).toISOString().split('T')[0] : '',
             due_date: periodData.due_date ? new Date(periodData.due_date).toISOString().split('T')[0] : '',
-            is_active: periodData.is_active,
+            // Removemos is_active del form - se calcula automáticamente
           });
         } catch (err) {
           console.error('Error cargando período:', err);
@@ -75,19 +73,14 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
 
       loadPeriodData();
     }
-  }, [show, periodId]); // Dependencias correctas; loadPeriodData ya no es una dependencia externa
+  }, [show, periodId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    let parsedValue: string | boolean = value;
-
-    if (type === 'checkbox') {
-      parsedValue = (e.target as HTMLInputElement).checked;
-    }
+    const { name, value } = e.target;
 
     setForm(prev => ({
       ...prev,
-      [name]: parsedValue,
+      [name]: value,
     }));
 
     if (fieldErrors[name]) {
@@ -146,6 +139,26 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
     return date.toISOString();
   };
 
+  // Función para determinar qué estado tendrá según las fechas
+  const calculateExpectedStatus = () => {
+    if (!form.start_date || !form.end_date || !form.due_date) return null;
+    
+    const now = new Date();
+    const startDate = new Date(form.start_date);
+    const endDate = new Date(form.end_date);
+    const dueDate = new Date(form.due_date);
+
+    if (now.getTime() < startDate.getTime()) {
+      return { status: 'draft', label: 'Borrador', color: 'text-gray-600', bg: 'bg-gray-100' };
+    } else if (now.getTime() > dueDate.getTime()) {
+      return { status: 'completed', label: 'Completado', color: 'text-blue-600', bg: 'bg-blue-100' };
+    } else if (now.getTime() >= startDate.getTime() && now.getTime() <= endDate.getTime()) {
+      return { status: 'active', label: 'Activo', color: 'text-green-600', bg: 'bg-green-100' };
+    } else {
+      return { status: 'draft', label: 'Borrador', color: 'text-gray-600', bg: 'bg-gray-100' };
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -161,15 +174,14 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
         start_date: form.start_date ? formatDateForBackend(form.start_date) : undefined,
         end_date: form.end_date ? formatDateForBackend(form.end_date) : undefined,
         due_date: form.due_date ? formatDateForBackend(form.due_date) : undefined,
-        is_active: form.is_active,
+        // Removemos is_active - se determina automáticamente por fechas
       };
 
       await updatePeriod(periodId, payload);
       
-      // Mostrar confirmación de éxito usando el modal padre
       showConfirmation({
         title: '¡Período Actualizado!',
-        message: `El período "${form.name}" se ha actualizado exitosamente.`,
+        message: `El período "${form.name}" se ha actualizado exitosamente. Su estado se actualizará automáticamente según las fechas.`,
         type: 'success',
         onConfirm: async () => {
           await onUpdated();
@@ -181,12 +193,11 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(errorMessage || 'Error al actualizar período');
       
-      // Mostrar confirmación de error usando el modal padre
       showConfirmation({
         title: 'Error',
         message: `Error al actualizar el período: ${errorMessage}`,
         type: 'danger',
-        onConfirm: () => {} // No hace nada adicional, solo cierra
+        onConfirm: () => {}
       });
     } finally {
       setLoading(false);
@@ -204,11 +215,13 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
   const suggestDueDate = () => {
     if (form.end_date) {
       const endDate = new Date(form.end_date);
-      endDate.setDate(endDate.getDate() + 7); // 1 semana después
+      endDate.setDate(endDate.getDate() + 7);
       const suggested = endDate.toISOString().split('T')[0];
       setForm(prev => ({ ...prev, due_date: suggested }));
     }
   };
+
+  const expectedStatus = calculateExpectedStatus();
 
   if (!show) return null;
 
@@ -369,33 +382,25 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
                 </div>
               </div>
 
-              <div className="border border-gray-200 rounded-xl p-4">
-                <h4 className="font-semibold text-gray-800 mb-4">
-                  Estado del Período
-                </h4>
-                <div className="flex gap-6">
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      name="is_active_radio"
-                      checked={form.is_active === true}
-                      onChange={() => setForm(prev => ({ ...prev, is_active: true }))}
-                      className="text-green-600 border-gray-300 focus:ring-green-500"
-                    />
-                    <span className="ml-2 text-gray-700">Activo</span>
-                  </label>
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      name="is_active_radio"
-                      checked={form.is_active === false}
-                      onChange={() => setForm(prev => ({ ...prev, is_active: false }))}
-                      className="text-red-600 border-gray-300 focus:ring-red-500"
-                    />
-                    <span className="ml-2 text-gray-700">Inactivo</span>
-                  </label>
+              {/* Estado automático calculado */}
+              {expectedStatus && (
+                <div className="border border-blue-200 rounded-xl p-4 bg-blue-50">
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Info className="w-4 h-4 text-blue-600" />
+                    Estado del Período (Automático)
+                  </h4>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${expectedStatus.bg} ${expectedStatus.color}`}>
+                        {expectedStatus.label}
+                      </span>
+                      <p className="text-sm text-gray-600 mt-2">
+                        El estado se calcula automáticamente según las fechas configuradas.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="flex gap-3 pt-6 border-t border-gray-200">
                 <button
