@@ -39,7 +39,7 @@ import CrearPeriodoModal from '../components/CrearPeriodoModal';
 import CrearPlantillaModal from '../components/CrearPlantillaModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CrearEvaluacionModal from '../components/CrearEvaluacionModal';
-import EditarPeriodoModal from '../components/EditarPeriodoModal'; // ← NUEVO: Import del modal de editar
+import EditarPeriodoModal from '../components/EditarPeriodoModal';
 
 interface Stats {
   totalPeriods: number;
@@ -62,7 +62,6 @@ interface ConfirmationState {
 const GestionEvaluacionesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'periodos' | 'criterios' | 'plantillas'>('periodos');
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [periods, setPeriods] = useState<Period[]>([]);
   const [criteria, setCriteria] = useState<Criteria[]>([]);
@@ -76,7 +75,6 @@ const GestionEvaluacionesPage: React.FC = () => {
   const [showCrearPeriodoModal, setShowCrearPeriodoModal] = useState(false);
   const [showCrearPlantillaModal, setShowCrearPlantillaModal] = useState(false);
   const [showCrearEvaluacionModal, setShowCrearEvaluacionModal] = useState(false);
-  // ← NUEVO: Estados para el modal de editar período
   const [showEditarPeriodoModal, setShowEditarPeriodoModal] = useState(false);
   const [editingPeriodId, setEditingPeriodId] = useState<number | null>(null);
   const [confirmationState, setConfirmationState] = useState<ConfirmationState>({
@@ -130,15 +128,8 @@ const GestionEvaluacionesPage: React.FC = () => {
     }
   };
 
-  const refreshData = async () => {
-    setRefreshing(true);
-    await loadAllData();
-    setRefreshing(false);
-  };
-
-  // ← NUEVO: Función para manejar actualización de período (después de handlePeriodCreated)
   const handlePeriodUpdated = async () => {
-    await loadAllData(); // Recarga todos los datos
+    await loadAllData();
     setShowEditarPeriodoModal(false);
     setEditingPeriodId(null);
   };
@@ -313,7 +304,7 @@ const GestionEvaluacionesPage: React.FC = () => {
     try {
       console.log('📋 Cloning template...');
       const clonedTemplate = await cloneTemplate(template.id, newName.trim());
-      setTemplates(prev => [...prev, clonedTemplate]);
+      setTemplates(prev => [clonedTemplate, ...prev]);
       showConfirmation({
         title: '¡Plantilla Clonada!',
         message: `La plantilla "${newName}" se ha creado exitosamente.`,
@@ -352,7 +343,7 @@ const GestionEvaluacionesPage: React.FC = () => {
   };
 
   const handleCriteriaCreated = (newCriteria: Criteria) => {
-    setCriteria(prev => [...prev, newCriteria]);
+    setCriteria(prev => [newCriteria, ...prev]);
     setShowCrearCriterioModal(false);
     showConfirmation({
       title: '¡Criterio Creado!',
@@ -363,7 +354,7 @@ const GestionEvaluacionesPage: React.FC = () => {
   };
 
   const handlePeriodCreated = (newPeriod: Period) => {
-    setPeriods(prev => [...prev, newPeriod]);
+    setPeriods(prev => [newPeriod, ...prev]);
     setShowCrearPeriodoModal(false);
     showConfirmation({
       title: '¡Período Creado!',
@@ -376,7 +367,7 @@ const GestionEvaluacionesPage: React.FC = () => {
   const handleTemplateCreated = (newTemplate: Template) => {
     console.log('🔄 Adding new template:', newTemplate);
     setTemplates(prev => {
-      const updatedTemplates = [...prev, newTemplate];
+      const updatedTemplates = [newTemplate, ...prev];
       console.log('✅ Updated templates state:', updatedTemplates);
       return updatedTemplates;
     });
@@ -390,7 +381,7 @@ const GestionEvaluacionesPage: React.FC = () => {
   };
 
   const handleEvaluationCreated = (newEvaluation: Evaluation) => {
-    setEvaluations(prev => [...prev, newEvaluation]);
+    setEvaluations(prev => [newEvaluation, ...prev]);
     setShowCrearEvaluacionModal(false);
     showConfirmation({
       title: '¡Evaluaciones Creadas!',
@@ -462,7 +453,6 @@ const GestionEvaluacionesPage: React.FC = () => {
                         )}
                       </div>
                       <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {/* ← CAMBIADO: Ahora abre el modal en lugar de console.log */}
                         <button
                           onClick={() => {
                             setEditingPeriodId(period.id);
@@ -747,15 +737,6 @@ const GestionEvaluacionesPage: React.FC = () => {
                 <p className="text-gray-600 mt-1">Gestión integral de evaluaciones al personal</p>
               </div>
             </div>
-            <button
-              onClick={refreshData}
-              disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-              title="Actualizar datos"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Actualizando...' : 'Actualizar'}
-            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
@@ -1008,7 +989,6 @@ const GestionEvaluacionesPage: React.FC = () => {
         onClose={() => setShowCrearEvaluacionModal(false)}
         onCreated={handleEvaluationCreated}
       />
-      {/* ← NUEVO: JSX del modal de editar período (antes de ConfirmationModal) */}
       <EditarPeriodoModal
         show={showEditarPeriodoModal}
         onClose={() => {
