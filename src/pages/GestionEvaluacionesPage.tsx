@@ -39,6 +39,7 @@ import CrearPeriodoModal from '../components/CrearPeriodoModal';
 import CrearPlantillaModal from '../components/CrearPlantillaModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CrearEvaluacionModal from '../components/CrearEvaluacionModal';
+import EditarPeriodoModal from '../components/EditarPeriodoModal'; // ← NUEVO: Import del modal de editar
 
 interface Stats {
   totalPeriods: number;
@@ -75,6 +76,9 @@ const GestionEvaluacionesPage: React.FC = () => {
   const [showCrearPeriodoModal, setShowCrearPeriodoModal] = useState(false);
   const [showCrearPlantillaModal, setShowCrearPlantillaModal] = useState(false);
   const [showCrearEvaluacionModal, setShowCrearEvaluacionModal] = useState(false);
+  // ← NUEVO: Estados para el modal de editar período
+  const [showEditarPeriodoModal, setShowEditarPeriodoModal] = useState(false);
+  const [editingPeriodId, setEditingPeriodId] = useState<number | null>(null);
   const [confirmationState, setConfirmationState] = useState<ConfirmationState>({
     show: false,
     title: '',
@@ -130,6 +134,13 @@ const GestionEvaluacionesPage: React.FC = () => {
     setRefreshing(true);
     await loadAllData();
     setRefreshing(false);
+  };
+
+  // ← NUEVO: Función para manejar actualización de período (después de handlePeriodCreated)
+  const handlePeriodUpdated = async () => {
+    await loadAllData(); // Recarga todos los datos
+    setShowEditarPeriodoModal(false);
+    setEditingPeriodId(null);
   };
 
   const stats: Stats = useMemo(() => {
@@ -451,8 +462,12 @@ const GestionEvaluacionesPage: React.FC = () => {
                         )}
                       </div>
                       <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* ← CAMBIADO: Ahora abre el modal en lugar de console.log */}
                         <button
-                          onClick={() => console.log('Edit period:', period)}
+                          onClick={() => {
+                            setEditingPeriodId(period.id);
+                            setShowEditarPeriodoModal(true);
+                          }}
                           className="p-2 hover:bg-blue-50 rounded-lg"
                           title="Editar período"
                           disabled={isDeleting}
@@ -992,6 +1007,17 @@ const GestionEvaluacionesPage: React.FC = () => {
         show={showCrearEvaluacionModal}
         onClose={() => setShowCrearEvaluacionModal(false)}
         onCreated={handleEvaluationCreated}
+      />
+      {/* ← NUEVO: JSX del modal de editar período (antes de ConfirmationModal) */}
+      <EditarPeriodoModal
+        show={showEditarPeriodoModal}
+        onClose={() => {
+          setShowEditarPeriodoModal(false);
+          setEditingPeriodId(null);
+        }}
+        onUpdated={handlePeriodUpdated}
+        periodId={editingPeriodId}
+        setConfirmationState={setConfirmationState}
       />
       <ConfirmationModal
         show={confirmationState.show}

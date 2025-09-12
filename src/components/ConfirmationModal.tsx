@@ -4,7 +4,7 @@ import { X, Loader2, AlertTriangle, CheckCircle, Info, AlertCircle } from 'lucid
 interface ConfirmationModalProps {
   show: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;  // ← Ajustado: permite async
   title: string;
   message: string;
   type: 'danger' | 'warning' | 'info' | 'success';
@@ -67,9 +67,10 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   const config = getTypeConfig();
   const IconComponent = config.icon;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (loading) return;
-    onConfirm();
+    await onConfirm();  // Await por si es async (como en tu caso con loadAllData)
+    onClose();  // ← NUEVO: Cierra el modal después de onConfirm
   };
 
   const handleClose = () => {
