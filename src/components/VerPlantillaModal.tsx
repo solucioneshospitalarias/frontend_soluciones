@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getTemplateById } from '../services/evaluationService';
-import { FileCheck, X, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { FileCheck, X, Loader2, AlertCircle } from 'lucide-react';
 
 interface VerPlantillaModalProps {
   show: boolean;
@@ -94,16 +94,6 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
     }
   };
 
-  const getStatusInfo = () => {
-    if (!template) return { color: 'gray', text: 'Desconocido', icon: AlertCircle };
-
-    if (template.is_active) {
-      return { color: 'green', text: 'Activa', icon: CheckCircle };
-    } else {
-      return { color: 'gray', text: 'Inactiva', icon: AlertCircle };
-    }
-  };
-
   const getCategoryDisplayName = (category: string) => {
     const categoryMap: Record<string, string> = {
       'productivity': 'Productividad',
@@ -115,22 +105,31 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
 
   const getCategoryColor = (category: string) => {
     const colorMap: Record<string, string> = {
-      'productivity': 'bg-blue-100 text-blue-800',
-      'work_conduct': 'bg-green-100 text-green-800',
-      'skills': 'bg-purple-100 text-purple-800'
+      'productivity': 'bg-blue-50 text-blue-800',
+      'work_conduct': 'bg-green-50 text-green-800',
+      'skills': 'bg-purple-50 text-purple-800'
     };
-    return colorMap[category] || 'bg-gray-100 text-gray-800';
+    return colorMap[category] || 'bg-gray-50 text-gray-800';
+  };
+
+  const getValidationStatus = () => {
+    if (!template?.summary.is_valid_weights) {
+      return (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 mb-4">
+          <AlertCircle className="w-4 h-4 text-red-500" />
+          <p className="text-red-600 text-sm">Los pesos no son válidos. Por favor, verifique la configuración.</p>
+        </div>
+      );
+    }
+    return null;
   };
 
   if (!show) return null;
 
-  const statusInfo = getStatusInfo();
-  const StatusIcon = statusInfo.icon;
-
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
+      <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
           <h3 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
             <FileCheck className="w-6 h-6 text-purple-500" />
             Detalles de la Plantilla
@@ -156,33 +155,41 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
               <p className="text-red-600 text-sm">{error}</p>
             </div>
           ) : template ? (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* Información General */}
-              <div className="border border-gray-200 rounded-xl p-4">
-                <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <FileCheck className="w-4 h-4" />
+              <div className="border border-gray-200 rounded-xl p-6">
+                <h4 className="font-semibold text-gray-800 mb-6 text-xl flex items-center gap-2">
+                  <FileCheck className="w-5 h-5 text-purple-500" />
                   Información General
                 </h4>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Nombre de la Plantilla
                     </label>
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <p className="text-gray-900 font-medium">{template.name}</p>
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                      <p className="text-gray-900 font-medium text-lg">{template.name}</p>
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Estado
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Resumen
                     </label>
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <StatusIcon className={`w-4 h-4 text-${statusInfo.color}-500`} />
-                        <span className={`text-${statusInfo.color}-700 font-medium`}>
-                          {statusInfo.text}
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Total Criterios:</span>
+                        <span className="font-medium">{template.summary.total_criteria}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Categorías Usadas:</span>
+                        <span className="font-medium">{template.summary.categories_used}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Pesos Válidos:</span>
+                        <span className={`font-medium ${template.summary.is_valid_weights ? 'text-green-600' : 'text-red-600'}`}>
+                          {template.summary.is_valid_weights ? 'Sí' : 'No'}
                         </span>
                       </div>
                     </div>
@@ -190,56 +197,52 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
                 </div>
 
                 {template.description && (
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="mt-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Descripción
                     </label>
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <p className="text-gray-900">{template.description}</p>
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                      <p className="text-gray-900 leading-relaxed">{template.description}</p>
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Criterios por Categoría */}
-              <div className="border border-gray-200 rounded-xl p-4">
-                <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <FileCheck className="w-4 h-4" />
-                  Criterios ({template.summary.total_criteria})
+              <div className="border border-gray-200 rounded-xl p-6">
+                <h4 className="font-semibold text-gray-800 mb-6 text-xl flex items-center gap-2">
+                  <FileCheck className="w-5 h-5 text-purple-500" />
+                  Criterios
                 </h4>
                 
-                <div className="space-y-6">
+                {getValidationStatus()}
+
+                <div className="space-y-8">
                   {/* Productividad */}
                   {template.criteria.productivity.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                          <h5 className="font-medium text-gray-800">
+                          <h5 className="font-medium text-gray-800 text-lg">
                             {getCategoryDisplayName('productivity')}
                           </h5>
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor('productivity')}`}>
+                          <span className={`px-3 py-1 text-sm font-medium rounded-full ${getCategoryColor('productivity')}`}>
                             {template.criteria.productivity.length} criterio{template.criteria.productivity.length !== 1 ? 's' : ''}
                           </span>
                         </div>
-                        <span className="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">
-                          {template.summary.weights_summary.productivity}%
+                        <span className="text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
+                          {template.summary.weights_summary.productivity.toFixed(2)}%
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-1 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {template.criteria.productivity.map((criterion) => (
-                          <div key={criterion.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <p className="text-gray-900 font-medium">
-                                  {criterion.criteria.name}
-                                </p>
-                                <p className="text-sm text-gray-600 mt-1">
-                                  {criterion.criteria.description}
-                                </p>
-                              </div>
-                              <span className="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg ml-4">
-                                {criterion.weight}%
+                          <div key={criterion.id} className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div className="space-y-2">
+                              <p className="text-gray-900 font-medium">{criterion.criteria.name}</p>
+                              <p className="text-sm text-gray-600">{criterion.criteria.description}</p>
+                              <span className="inline-block text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                {criterion.weight.toFixed(2)}%
                               </span>
                             </div>
                           </div>
@@ -250,35 +253,29 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
 
                   {/* Conducta Laboral */}
                   {template.criteria.work_conduct.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                          <h5 className="font-medium text-gray-800">
+                          <h5 className="font-medium text-gray-800 text-lg">
                             {getCategoryDisplayName('work_conduct')}
                           </h5>
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor('work_conduct')}`}>
+                          <span className={`px-3 py-1 text-sm font-medium rounded-full ${getCategoryColor('work_conduct')}`}>
                             {template.criteria.work_conduct.length} criterio{template.criteria.work_conduct.length !== 1 ? 's' : ''}
                           </span>
                         </div>
-                        <span className="text-sm font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
-                          {template.summary.weights_summary.work_conduct}%
+                        <span className="text-sm font-bold text-green-600 bg-green-50 px-3 py-1 rounded-lg">
+                          {template.summary.weights_summary.work_conduct.toFixed(2)}%
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-1 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {template.criteria.work_conduct.map((criterion) => (
-                          <div key={criterion.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <p className="text-gray-900 font-medium">
-                                  {criterion.criteria.name}
-                                </p>
-                                <p className="text-sm text-gray-600 mt-1">
-                                  {criterion.criteria.description}
-                                </p>
-                              </div>
-                              <span className="text-sm font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg ml-4">
-                                {criterion.weight}%
+                          <div key={criterion.id} className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div className="space-y-2">
+                              <p className="text-gray-900 font-medium">{criterion.criteria.name}</p>
+                              <p className="text-sm text-gray-600">{criterion.criteria.description}</p>
+                              <span className="inline-block text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">
+                                {criterion.weight.toFixed(2)}%
                               </span>
                             </div>
                           </div>
@@ -289,35 +286,29 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
 
                   {/* Habilidades */}
                   {template.criteria.skills.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                          <h5 className="font-medium text-gray-800">
+                          <h5 className="font-medium text-gray-800 text-lg">
                             {getCategoryDisplayName('skills')}
                           </h5>
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor('skills')}`}>
+                          <span className={`px-3 py-1 text-sm font-medium rounded-full ${getCategoryColor('skills')}`}>
                             {template.criteria.skills.length} criterio{template.criteria.skills.length !== 1 ? 's' : ''}
                           </span>
                         </div>
-                        <span className="text-sm font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded-lg">
-                          {template.summary.weights_summary.skills}%
+                        <span className="text-sm font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-lg">
+                          {template.summary.weights_summary.skills.toFixed(2)}%
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-1 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {template.criteria.skills.map((criterion) => (
-                          <div key={criterion.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <p className="text-gray-900 font-medium">
-                                  {criterion.criteria.name}
-                                </p>
-                                <p className="text-sm text-gray-600 mt-1">
-                                  {criterion.criteria.description}
-                                </p>
-                              </div>
-                              <span className="text-sm font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded-lg ml-4">
-                                {criterion.weight}%
+                          <div key={criterion.id} className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div className="space-y-2">
+                              <p className="text-gray-900 font-medium">{criterion.criteria.name}</p>
+                              <p className="text-sm text-gray-600">{criterion.criteria.description}</p>
+                              <span className="inline-block text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded">
+                                {criterion.weight.toFixed(2)}%
                               </span>
                             </div>
                           </div>
@@ -326,31 +317,10 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
                     </div>
                   )}
 
-                  {/* Resumen general */}
-                  <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                      <div>
-                        <p className="text-2xl font-bold text-purple-900">{template.summary.total_criteria}</p>
-                        <p className="text-xs text-purple-700">Total Criterios</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-purple-900">{template.summary.categories_used}</p>
-                        <p className="text-xs text-purple-700">Categorías</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-purple-900">
-                          {template.summary.weights_summary.productivity + template.summary.weights_summary.work_conduct + template.summary.weights_summary.skills}%
-                        </p>
-                        <p className="text-xs text-purple-700">Peso Total</p>
-                      </div>
-                      <div>
-                        <p className={`text-2xl font-bold ${template.summary.is_valid_weights ? 'text-green-900' : 'text-red-900'}`}>
-                          {template.summary.is_valid_weights ? '✓' : '✗'}
-                        </p>
-                        <p className="text-xs text-purple-700">Pesos Válidos</p>
-                      </div>
-                    </div>
-                  </div>
+                  {/* Si no hay criterios */}
+                  {template.summary.total_criteria === 0 && (
+                    <p className="text-gray-500 text-sm text-center py-4">No hay criterios asociados a esta plantilla.</p>
+                  )}
                 </div>
               </div>
 
