@@ -30,6 +30,7 @@ import type {
   Evaluation,
   Employee,
   CreateCriteriaDTO,
+  UpdateCriteriaDTO,
   CreatePeriodDTO,
   CreateTemplateDTO,
   CreateEvaluationsFromTemplateDTO,
@@ -101,6 +102,27 @@ export const createCriteria = async (
     return data;
   } catch (error) {
     console.error("❌ Error creating criteria:", error);
+    throw error;
+  }
+};
+
+export const updateCriteria = async (
+  id: number,
+  criteriaData: UpdateCriteriaDTO
+): Promise<Criteria> => {
+  try {
+    console.log("🔄 Updating criteria...", id, criteriaData);
+    const response = await fetch(`${API_BASE_URL}/criteria/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(criteriaData),
+    });
+
+    const data = await handleResponse<Criteria>(response);
+    console.log("✅ Criteria updated:", data);
+    return data;
+  } catch (error) {
+    console.error("❌ Error updating criteria:", error);
     throw error;
   }
 };

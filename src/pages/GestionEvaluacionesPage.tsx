@@ -40,6 +40,7 @@ import CrearPlantillaModal from '../components/CrearPlantillaModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CrearEvaluacionModal from '../components/CrearEvaluacionModal';
 import EditarPeriodoModal from '../components/EditarPeriodoModal';
+import EditarCriterioModal from '../components/EditarCriterioModal'; // Added import
 
 interface Stats {
   totalPeriods: number;
@@ -77,6 +78,8 @@ const GestionEvaluacionesPage: React.FC = () => {
   const [showCrearEvaluacionModal, setShowCrearEvaluacionModal] = useState(false);
   const [showEditarPeriodoModal, setShowEditarPeriodoModal] = useState(false);
   const [editingPeriodId, setEditingPeriodId] = useState<number | null>(null);
+  const [showEditarCriterioModal, setShowEditarCriterioModal] = useState(false); // Added state
+  const [editingCriteriaId, setEditingCriteriaId] = useState<number | null>(null); // Added state
   const [confirmationState, setConfirmationState] = useState<ConfirmationState>({
     show: false,
     title: '',
@@ -132,6 +135,12 @@ const GestionEvaluacionesPage: React.FC = () => {
     await loadAllData();
     setShowEditarPeriodoModal(false);
     setEditingPeriodId(null);
+  };
+
+  const handleCriteriaUpdated = async () => { // Added handler
+    await loadAllData();
+    setShowEditarCriterioModal(false);
+    setEditingCriteriaId(null);
   };
 
   const stats: Stats = useMemo(() => {
@@ -545,7 +554,10 @@ const GestionEvaluacionesPage: React.FC = () => {
                       </div>
                       <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() => console.log('Edit criteria:', criterio)}
+                          onClick={() => {
+                            setEditingCriteriaId(criterio.id);
+                            setShowEditarCriterioModal(true);
+                          }}
                           className="p-2 hover:bg-green-50 rounded-lg"
                           title="Editar criterio"
                           disabled={isDeleting}
@@ -989,6 +1001,16 @@ const GestionEvaluacionesPage: React.FC = () => {
         }}
         onUpdated={handlePeriodUpdated}
         periodId={editingPeriodId}
+        setConfirmationState={setConfirmationState}
+      />
+      <EditarCriterioModal // Added modal
+        show={showEditarCriterioModal}
+        onClose={() => {
+          setShowEditarCriterioModal(false);
+          setEditingCriteriaId(null);
+        }}
+        onUpdated={handleCriteriaUpdated}
+        criteriaId={editingCriteriaId}
         setConfirmationState={setConfirmationState}
       />
       <ConfirmationModal
