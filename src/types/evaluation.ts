@@ -2,7 +2,7 @@ export interface Criteria {
   id: number;
   name: string;
   description: string;
-  weight: number; 
+  weight: number;
   category: 'productividad' | 'conducta_laboral' | 'habilidades';
   is_active: boolean;
 }
@@ -26,7 +26,7 @@ export interface Template {
   description?: string;
   position?: string;
   is_active: boolean;
-  criteria: TemplateCriteria[];
+  criteria?: TemplateCriteria[]; // Made optional to handle undefined/null
   created_at: string;
   updated_at: string;
 }
@@ -49,13 +49,11 @@ export interface Employee {
 
 // ==================== NUEVOS TIPOS PARA CALIFICACIÓN ====================
 
-// DTO para enviar puntuaciones al backend
 export interface PuntuacionCriterioDTO {
   assigned_criteria_id: number;
   score: number; // 1-5
 }
 
-// Información básica de usuario (viene del backend)
 export interface InfoBasicaUsuarioDTO {
   id: number;
   first_name: string;
@@ -64,7 +62,6 @@ export interface InfoBasicaUsuarioDTO {
   position: string;
 }
 
-// Período simplificado (viene del backend)
 export interface PeriodoEvaluacionDTO {
   id: number;
   name: string;
@@ -74,7 +71,6 @@ export interface PeriodoEvaluacionDTO {
   is_active: boolean;
 }
 
-// Plantilla simplificada (viene del backend)  
 export interface PlantillaEvaluacionDTO {
   id: number;
   name: string;
@@ -82,7 +78,6 @@ export interface PlantillaEvaluacionDTO {
   is_active: boolean;
 }
 
-// Criterio con detalles (viene del backend)
 export interface CriterioEvaluacionDTO {
   id: number;
   name: string;
@@ -92,7 +87,6 @@ export interface CriterioEvaluacionDTO {
   category?: 'productividad' | 'conducta_laboral' | 'habilidades';
 }
 
-// Puntuación individual de un criterio (viene del backend)
 export interface RespuestaPuntuacionDTO {
   id: number; // assigned_criteria_id
   criteria_id: number;
@@ -102,7 +96,6 @@ export interface RespuestaPuntuacionDTO {
   criteria: CriterioEvaluacionDTO;
 }
 
-// Evaluación completa para calificar (viene del backend)
 export interface EvaluacionParaCalificarDTO {
   id: number;
   status: string;
@@ -119,9 +112,6 @@ export interface EvaluacionParaCalificarDTO {
   scores: RespuestaPuntuacionDTO[];
 }
 
-// ==================== LISTAS Y RESÚMENES ====================
-
-// Resumen de evaluación para listas (viene del backend)
 export interface ResumenEvaluacionDTO {
   id: number;
   employee_name: string;
@@ -131,7 +121,6 @@ export interface ResumenEvaluacionDTO {
   completed_at?: string;
 }
 
-// Mis evaluaciones organizadas (viene del backend)
 export interface MisEvaluacionesRespuestaDTO {
   as_employee: {
     evaluations: ResumenEvaluacionDTO[];
@@ -151,8 +140,6 @@ export interface MisEvaluacionesRespuestaDTO {
   };
 }
 
-// ==================== FILTROS Y PARÁMETROS ====================
-
 export interface FiltrosEvaluacionParams {
   evaluator_id?: number;
   employee_id?: number;
@@ -160,32 +147,21 @@ export interface FiltrosEvaluacionParams {
   status?: string;
 }
 
-// ==================== TIPOS PARA LA UI ====================
-
-// Estados posibles de una evaluación
 export type EstadoEvaluacion = 'pending' | 'in_progress' | 'completed' | 'overdue';
-
-// Categorías de criterios
 export type CategoríaCriterio = 'productividad' | 'conducta_laboral' | 'habilidades';
-
-// Modo de vista de evaluaciones
 export type ModoEvaluacion = 'evaluador' | 'evaluado';
 
-// Información sobre el peso de un criterio (para tooltips)
 export interface InfoPeso {
   nivel: 'alto' | 'medio' | 'bajo';
   color: string;
   texto: string;
 }
 
-// Opción de puntuación
 export interface OpcionPuntuacion {
   valor: number;
   etiqueta: string;
   descripcion?: string;
 }
-
-// ==================== DTOs EXISTENTES (MANTENER) ====================
 
 export interface CreateCriteriaDTO {
   name: string;
@@ -252,7 +228,6 @@ export interface UpdateTemplateDTO {
   }[];
 }
 
-// Interfaz para evaluaciones básica (mantener compatibilidad)
 export interface Evaluation {
   id: number;
   employee_id: number;
@@ -275,7 +250,6 @@ export interface Evaluation {
   completed_at?: string;
 }
 
-// Respuesta genérica de la API
 export interface RespuestaAPI<T> {
   success: boolean;
   message?: string;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileCheck, X, Loader2, Save, Trash2, Percent, Lock, Unlock, RotateCcw, ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { getCriteria, getTemplates, updateTemplate } from '../services/evaluationService';
-import type { Template, Criteria, UpdateTemplateDTO } from '../types/evaluation';
+import type { Criteria, UpdateTemplateDTO, Template } from '../types/evaluation';
 
 interface EditarPlantillaModalProps {
   show: boolean;
@@ -24,11 +24,11 @@ interface PlantillaForm {
   selectedCriteria: SelectedCriteria[];
 }
 
-const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({ 
-  show, 
-  onClose, 
-  onUpdated, 
-  templateId 
+const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
+  show,
+  onClose,
+  onUpdated,
+  templateId
 }) => {
   const [form, setForm] = useState<PlantillaForm>({
     name: '',
@@ -57,7 +57,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
 
   const loadData = async () => {
     if (!templateId) return;
-    
+
     setLoadingData(true);
     try {
       const [templates, criteria] = await Promise.all([
@@ -65,21 +65,36 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
         getCriteria()
       ]);
 
+      console.log('📋 Templates fetched:', templates);
+      console.log('📋 Criteria fetched:', criteria);
+
       const template = templates.find(t => t.id === templateId);
       if (!template) {
         throw new Error('Plantilla no encontrada');
       }
 
+      console.log('📋 Selected template:', template);
+      console.log('📋 Template criteria:', template.criteria);
+
       setOriginalTemplate(template);
       setAvailableCriteria(Array.isArray(criteria) ? criteria : []);
 
-      // Mapear criterios de la plantilla al formato del formulario
-      const selectedCriteria: SelectedCriteria[] = template.criteria.map(tc => ({
-        criteriaId: tc.criteria_id,
-        weight: tc.weight,
-        category: tc.criteria.category,
-        isLocked: false,
-      }));
+      // Convertir criterios al formato del formulario, manejando criteria undefined
+      const selectedCriteria: SelectedCriteria[] = (template.criteria || []).map(tc => {
+        const criteriaData = criteria.find(c => c.id === tc.criteria_id);
+        if (!criteriaData) {
+          console.warn(`⚠️ Criteria with ID ${tc.criteria_id} not found in available criteria`);
+          return null;
+        }
+        return {
+          criteriaId: tc.criteria_id,
+          weight: tc.weight,
+          category: criteriaData.category as 'productividad' | 'conducta_laboral' | 'habilidades',
+          isLocked: false,
+        };
+      }).filter((sc): sc is SelectedCriteria => sc !== null);
+
+      console.log('📋 Mapped selectedCriteria:', selectedCriteria);
 
       setForm({
         name: template.name,
@@ -89,7 +104,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
       });
 
     } catch (err) {
-      console.error('Error loading template data:', err);
+      console.error('❌ Error loading template data:', err);
       setError((err as Error).message || 'Error al cargar los datos de la plantilla');
     } finally {
       setLoadingData(false);
@@ -98,9 +113,9 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
-    setForm(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value 
+    setForm(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
     if (error) setError(null);
   };
@@ -113,7 +128,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
     const newSelected: SelectedCriteria = {
       criteriaId: criteria.id,
       weight: 0,
-      category: criteria.category,
+      category: criteria.category as 'productividad' | 'conducta_laboral' | 'habilidades',
       isLocked: false,
     };
 
@@ -157,13 +172,13 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
   const normalizeWeights = (category: 'productividad' | 'conducta_laboral' | 'habilidades') => {
     const categoryItems = form.selectedCriteria.filter(sc => sc.category === category);
     const unlockedItems = categoryItems.filter(sc => !sc.isLocked);
-    
+
     if (unlockedItems.length === 0) return;
 
     const lockedTotal = categoryItems
       .filter(sc => sc.isLocked)
       .reduce((sum, sc) => sum + sc.weight, 0);
-    
+
     const availableWeight = 100 - lockedTotal;
     const weightPerItem = availableWeight / unlockedItems.length;
 
@@ -181,12 +196,21 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
   const resetToOriginal = () => {
     if (!originalTemplate) return;
 
-    const selectedCriteria: SelectedCriteria[] = originalTemplate.criteria.map(tc => ({
-      criteriaId: tc.criteria_id,
-      weight: tc.weight,
-      category: tc.criteria.category,
-      isLocked: false,
-    }));
+    const selectedCriteria: SelectedCriteria[] = (originalTemplate.criteria || []).map(tc => {
+      const criteriaData = availableCriteria.find(c => c.id === tc.criteria_id);
+      if (!criteriaData) {
+        console.warn(`⚠️ Criteria with ID ${tc.criteria_id} not found in available criteria`);
+        return null;
+      }
+      return {
+        criteriaId: tc.criteria_id,
+        weight: tc.weight,
+        category: criteriaData.category as 'productividad' | 'conducta_laboral' | 'habilidades',
+        isLocked: false,
+      };
+    }).filter((sc): sc is SelectedCriteria => sc !== null);
+
+    console.log('📋 Reset selectedCriteria:', selectedCriteria);
 
     setForm({
       name: originalTemplate.name,
@@ -287,7 +311,11 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
   };
 
   const getCriteriaById = (id: number) => {
-    return availableCriteria.find(c => c.id === id);
+    const criteria = availableCriteria.find(c => c.id === id);
+    if (!criteria) {
+      console.warn(`⚠️ Criteria with ID ${id} not found in availableCriteria`);
+    }
+    return criteria;
   };
 
   const filteredAvailableCriteria = filterCategory === 'todos'
@@ -305,7 +333,6 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl p-6 w-full max-w-4xl max-h-[95vh] overflow-y-auto shadow-2xl">
-        {/* Loading State */}
         {loadingData ? (
           <div className="text-center py-8">
             <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -315,7 +342,6 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
             <p className="text-gray-600">Obteniendo información de la plantilla</p>
           </div>
         ) : showSuccess ? (
-          /* Success State */
           <div className="text-center py-8">
             <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <FileCheck className="w-8 h-8 text-purple-600" />
@@ -325,7 +351,6 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
           </div>
         ) : (
           <>
-            {/* Header */}
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
                 <FileCheck className="w-6 h-6 text-purple-500" />
@@ -357,7 +382,6 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left Column: Basic Info + Available Criteria */}
                 <div className="space-y-6">
                   <div className="space-y-4">
                     <div>
@@ -435,8 +459,8 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                                   <p className="text-sm text-gray-600">{criteria.description}</p>
                                   <div className="flex items-center gap-2 mt-1">
                                     <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                                      criteria.category === 'productividad' 
-                                        ? 'bg-blue-100 text-blue-700' 
+                                      criteria.category === 'productividad'
+                                        ? 'bg-blue-100 text-blue-700'
                                         : criteria.category === 'conducta_laboral'
                                         ? 'bg-green-100 text-green-700'
                                         : 'bg-purple-100 text-purple-700'
@@ -462,13 +486,12 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                   </div>
                 </div>
 
-                {/* Right Column: Selected Criteria */}
                 <div className="space-y-6">
                   <div>
                     <h5 className="font-medium text-gray-700 mb-3">
                       Criterios Seleccionados ({form.selectedCriteria.length})
                     </h5>
-                    
+
                     {form.selectedCriteria.length === 0 ? (
                       <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
                         <p className="text-gray-500">Selecciona criterios de la lista anterior</p>
@@ -479,12 +502,12 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                           const categoryCriteria = groupedSelectedCriteria[category];
                           const totalWeight = getTotalWeightByCategory(category);
                           const isCollapsed = collapsedCategories[category];
-                          
+
                           if (categoryCriteria.length === 0) return null;
 
                           return (
                             <div key={category} className="border border-gray-200 rounded-lg">
-                              <div 
+                              <div
                                 className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer"
                                 onClick={() => setCollapsedCategories(prev => ({ ...prev, [category]: !prev[category] }))}
                               >
@@ -513,7 +536,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                                   </button>
                                 </div>
                               </div>
-                              
+
                               {!isCollapsed && (
                                 <div className="p-3 space-y-3">
                                   {categoryCriteria.map(selectedCriteria => {
@@ -574,14 +597,12 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                 </div>
               </div>
 
-              {/* Error Message */}
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="text-red-600 text-sm">{error}</p>
                 </div>
               )}
 
-              {/* Buttons */}
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
