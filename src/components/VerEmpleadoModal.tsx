@@ -9,6 +9,27 @@ interface VerEmpleadoModalProps {
     userId: number | null;
 }
 
+// Tipos auxiliares para manejar position y department
+interface PositionObject {
+    name: string;
+    id?: number;
+}
+
+interface DepartmentObject {
+    name: string;
+    id?: number;
+}
+
+// Tipo para errores de API
+interface ApiError {
+    response?: {
+        data?: {
+            message?: string;
+        };
+    };
+    message?: string;
+}
+
 const VerEmpleadoModal: React.FC<VerEmpleadoModalProps> = ({
     show,
     onClose,
@@ -39,9 +60,10 @@ const VerEmpleadoModal: React.FC<VerEmpleadoModalProps> = ({
         try {
             const userData = await getUserById(userId);
             setUser(userData);
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error al obtener usuario:', err);
-            setError(err?.response?.data?.message || 'No se pudo cargar la información del empleado');
+            const apiError = err as ApiError;
+            setError(apiError?.response?.data?.message || apiError?.message || 'No se pudo cargar la información del empleado');
         } finally {
             setLoading(false);
         }
@@ -90,6 +112,20 @@ const VerEmpleadoModal: React.FC<VerEmpleadoModalProps> = ({
             console.error('Error getting initials:', error);
             return 'NN';
         }
+    };
+
+    // Función auxiliar para obtener el nombre del cargo
+    const getPositionName = (position: string | PositionObject | undefined): string => {
+        if (!position) return 'Sin cargo';
+        if (typeof position === 'string') return position;
+        return (position as PositionObject).name || 'Sin cargo';
+    };
+
+    // Función auxiliar para obtener el nombre del departamento
+    const getDepartmentName = (department: string | DepartmentObject | undefined): string => {
+        if (!department) return 'Sin departamento';
+        if (typeof department === 'string') return department;
+        return (department as DepartmentObject).name || 'Sin departamento';
     };
 
     if (!show) return null;
@@ -193,9 +229,7 @@ const VerEmpleadoModal: React.FC<VerEmpleadoModalProps> = ({
                                             <span className="text-sm font-medium">Cargo</span>
                                         </div>
                                         <p className="text-gray-900 font-medium">
-                                            {typeof user.position === 'string'
-                                                ? user.position
-                                                : (user.position as any)?.name || 'Sin cargo'}
+                                            {getPositionName(user.position)}
                                         </p>
                                     </div>
                                 )}
@@ -208,13 +242,10 @@ const VerEmpleadoModal: React.FC<VerEmpleadoModalProps> = ({
                                             <span className="text-sm font-medium">Departamento</span>
                                         </div>
                                         <p className="text-gray-900 font-medium">
-                                            {typeof user.department === 'string'
-                                                ? user.department
-                                                : (user.department as any)?.name || 'Sin departamento'}
+                                            {getDepartmentName(user.department)}
                                         </p>
                                     </div>
                                 )}
-
 
                                 {/* Fecha de contratación */}
                                 {user.hire_date && (
