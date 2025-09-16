@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Settings,
   Calendar,
-  Target,
   FileCheck,
   Plus,
   Search,
@@ -37,10 +36,12 @@ import {
 import CrearCriterioModal from '../components/CrearCriterioModal';
 import CrearPeriodoModal from '../components/CrearPeriodoModal';
 import CrearPlantillaModal from '../components/CrearPlantillaModal';
+import EditarPlantillaModal from '../components/EditarPlantillaModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CrearEvaluacionModal from '../components/CrearEvaluacionModal';
 import EditarPeriodoModal from '../components/EditarPeriodoModal';
 import EditarCriterioModal from '../components/EditarCriterioModal';
+import VerPlantillaModal from '../components/VerPlantillaModal';
 
 interface Stats {
   totalPeriods: number;
@@ -61,6 +62,7 @@ interface ConfirmationState {
 }
 
 const GestionEvaluacionesPage: React.FC = () => {
+  // ==================== ESTADOS ====================
   const [activeTab, setActiveTab] = useState<'periodos' | 'criterios' | 'plantillas'>('periodos');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,14 +74,24 @@ const GestionEvaluacionesPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<'todos' | string>('todos');
   const [deletingItems, setDeletingItems] = useState<Set<number>>(new Set());
   const [cloningItems, setCloningItems] = useState<Set<number>>(new Set());
+
+  // ==================== ESTADOS DE MODALES ====================
   const [showCrearCriterioModal, setShowCrearCriterioModal] = useState(false);
   const [showCrearPeriodoModal, setShowCrearPeriodoModal] = useState(false);
   const [showCrearPlantillaModal, setShowCrearPlantillaModal] = useState(false);
+  const [showEditarPlantillaModal, setShowEditarPlantillaModal] = useState(false);
   const [showCrearEvaluacionModal, setShowCrearEvaluacionModal] = useState(false);
   const [showEditarPeriodoModal, setShowEditarPeriodoModal] = useState(false);
-  const [editingPeriodId, setEditingPeriodId] = useState<number | null>(null);
   const [showEditarCriterioModal, setShowEditarCriterioModal] = useState(false);
+  const [showVerPlantillaModal, setShowVerPlantillaModal] = useState(false);
+
+  // ==================== ESTADOS DE EDICIÓN ====================
+  const [editingPeriodId, setEditingPeriodId] = useState<number | null>(null);
   const [editingCriteriaId, setEditingCriteriaId] = useState<number | null>(null);
+  const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
+  const [viewingTemplateId, setViewingTemplateId] = useState<number | null>(null);
+
+  // ==================== ESTADO DE CONFIRMACIÓN ====================
   const [confirmationState, setConfirmationState] = useState<ConfirmationState>({
     show: false,
     title: '',
@@ -89,10 +101,12 @@ const GestionEvaluacionesPage: React.FC = () => {
     loading: false
   });
 
+  // ==================== EFECTOS ====================
   useEffect(() => {
     loadAllData();
   }, []);
 
+  // ==================== FUNCIONES DE CARGA ====================
   const loadAllData = async () => {
     setLoading(true);
     setError(null);
@@ -131,6 +145,7 @@ const GestionEvaluacionesPage: React.FC = () => {
     }
   };
 
+  // ==================== HANDLERS DE ACTUALIZACIÓN ====================
   const handlePeriodUpdated = async () => {
     await loadAllData();
     setShowEditarPeriodoModal(false);
@@ -143,6 +158,23 @@ const GestionEvaluacionesPage: React.FC = () => {
     setEditingCriteriaId(null);
   };
 
+  const handleTemplateUpdated = (updatedTemplate: Template) => {
+    setTemplates(prev => 
+      prev.map(template => 
+        template.id === updatedTemplate.id ? updatedTemplate : template
+      )
+    );
+    setShowEditarPlantillaModal(false);
+    setEditingTemplateId(null);
+    showConfirmation({
+      title: '¡Plantilla Actualizada!',
+      message: `La plantilla "${updatedTemplate.name}" se ha actualizado exitosamente.`,
+      type: 'success',
+      onConfirm: hideConfirmation
+    });
+  };
+
+  // ==================== CÁLCULOS Y MEMO ====================
   const stats: Stats = useMemo(() => {
     const activePeriods = periods.filter(p => p.is_active).length;
     let totalWeight = 0;
@@ -196,6 +228,7 @@ const GestionEvaluacionesPage: React.FC = () => {
     ), [evaluations, searchTerm]
   );
 
+  // ==================== FUNCIONES AUXILIARES ====================
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -228,6 +261,7 @@ const GestionEvaluacionesPage: React.FC = () => {
     }
   };
 
+  // ==================== FUNCIONES DE CONFIRMACIÓN ====================
   const showConfirmation = (config: Omit<ConfirmationState, 'show' | 'loading'>) => {
     setConfirmationState({
       ...config,
@@ -240,6 +274,7 @@ const GestionEvaluacionesPage: React.FC = () => {
     setConfirmationState(prev => ({ ...prev, show: false }));
   };
 
+  // ==================== FUNCIONES DE ELIMINACIÓN ====================
   const handleDelete = async (type: string, id: number, itemName?: string) => {
     const typeNames = {
       period: 'período',
@@ -304,6 +339,7 @@ const GestionEvaluacionesPage: React.FC = () => {
     });
   };
 
+  // ==================== FUNCIÓN DE CLONADO ====================
   const handleClone = async (template: Template) => {
     const newName = prompt(`Nombre para la copia de "${template.name}":`);
     if (!newName || !newName.trim()) return;
@@ -337,6 +373,7 @@ const GestionEvaluacionesPage: React.FC = () => {
     }
   };
 
+  // ==================== FUNCIONES DE CREACIÓN ====================
   const handleCreate = () => {
     switch (activeTab) {
       case 'criterios':
@@ -351,6 +388,7 @@ const GestionEvaluacionesPage: React.FC = () => {
     }
   };
 
+  // ==================== HANDLERS DE CREACIÓN ====================
   const handleCriteriaCreated = (newCriteria: Criteria) => {
     setCriteria(prev => [newCriteria, ...prev]);
     setShowCrearCriterioModal(false);
@@ -400,13 +438,12 @@ const GestionEvaluacionesPage: React.FC = () => {
     });
   };
 
+  // ==================== FUNCIÓN PARA LIMPIAR FILTROS ====================
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedCategory('todos');
   };
-
-  // PARTE 2: Función renderTabContent y JSX de retorno
-
+  // ==================== FUNCIÓN PARA RENDERIZAR CONTENIDO DE TABS ====================
   const renderTabContent = () => {
     switch (activeTab) {
       case 'periodos':
@@ -533,7 +570,7 @@ const GestionEvaluacionesPage: React.FC = () => {
             <div className="max-h-[400px] overflow-y-auto rounded-lg border border-gray-200 p-4">
               {filteredCriteria.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  <Target className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <FileCheck className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p>{criteria.length === 0 ? 'No hay criterios configurados' : 'No se encontraron criterios con los filtros aplicados'}</p>
                 </div>
               ) : (
@@ -621,7 +658,6 @@ const GestionEvaluacionesPage: React.FC = () => {
                 filteredTemplates.map(template => {
                   const isDeleting = deletingItems.has(template.id);
                   const isCloning = cloningItems.has(template.id);
-                  // Manejar la estructura correcta: template.criteria es un array TemplateCriteria[]
                   const criteriaCount = Array.isArray(template.criteria) ? template.criteria.length : 0;
                   const criteriaWeights = Array.isArray(template.criteria) 
                     ? template.criteria.map(c => `${Math.round((c.weight || 0) * 100)}%`).join(', ') 
@@ -647,7 +683,10 @@ const GestionEvaluacionesPage: React.FC = () => {
                       </div>
                       <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() => console.log('View template:', template)}
+                          onClick={() => {
+                            setViewingTemplateId(template.id);
+                            setShowVerPlantillaModal(true);
+                          }}
                           className="p-2 hover:bg-blue-50 rounded-lg"
                           title="Ver detalles"
                           disabled={isDeleting || isCloning}
@@ -655,7 +694,10 @@ const GestionEvaluacionesPage: React.FC = () => {
                           <Eye className="w-4 h-4 text-blue-600" />
                         </button>
                         <button
-                          onClick={() => console.log('Edit template:', template)}
+                          onClick={() => {
+                            setEditingTemplateId(template.id);
+                            setShowEditarPlantillaModal(true);
+                          }}
                           className="p-2 hover:bg-purple-50 rounded-lg"
                           title="Editar plantilla"
                           disabled={isDeleting || isCloning}
@@ -708,6 +750,34 @@ const GestionEvaluacionesPage: React.FC = () => {
     }
   };
 
+  // ==================== COMPONENTE STAT CARD ====================
+  const StatCard: React.FC<{
+    title: string;
+    value: number;
+    icon: React.ReactNode;
+    color: string;
+    subtitle?: string;
+    isPercentage?: boolean;
+  }> = ({ title, value, icon, color, subtitle, isPercentage }) => (
+    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between mb-2">
+        <div className={`p-2 bg-gradient-to-r ${color} rounded-lg text-white`}>
+          {icon}
+        </div>
+      </div>
+      <div>
+        <p className="text-gray-600 text-xs font-medium">{title}</p>
+        <p className="text-xl font-bold text-gray-900">
+          {value}{isPercentage ? '%' : ''}
+        </p>
+        {subtitle && (
+          <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+        )}
+      </div>
+    </div>
+  );
+
+  // ==================== ESTADOS DE CARGA Y ERROR ====================
   if (loading) {
     return (
       <div className="p-6 bg-gradient-to-br from-slate-50 to-gray-100 min-h-screen flex items-center justify-center">
@@ -736,9 +806,11 @@ const GestionEvaluacionesPage: React.FC = () => {
     );
   }
 
+  // ==================== COMPONENTE PRINCIPAL ====================
   return (
     <div className="p-6 bg-gradient-to-br from-slate-50 to-gray-100 min-h-screen">
       <div className="max-w-8xl mx-auto">
+        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -752,6 +824,7 @@ const GestionEvaluacionesPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
             <StatCard
               title="Períodos"
@@ -763,7 +836,7 @@ const GestionEvaluacionesPage: React.FC = () => {
             <StatCard
               title="Criterios"
               value={stats.totalCriteria}
-              icon={<Target className="w-5 h-5" />}
+              icon={<FileCheck className="w-5 h-5" />}
               color="from-green-500 to-green-600"
               subtitle={`${stats.averageWeight}% promedio`}
             />
@@ -798,12 +871,14 @@ const GestionEvaluacionesPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Main Content Grid */}
         <div className="grid grid-cols-12 gap-6">
+          {/* Left Column: Configuration */}
           <div className="col-span-5 flex flex-col">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex-1 flex flex-col">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm">
+                  <div className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-sm">
                     <Settings className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -819,9 +894,10 @@ const GestionEvaluacionesPage: React.FC = () => {
                 </button>
               </div>
 
+              {/* Tab Navigation */}
               <div className="flex bg-gray-50 rounded-xl p-1 mb-4">
                 {(['periodos', 'criterios', 'plantillas'] as const).map(tab => {
-                  const icon = tab === 'periodos' ? Calendar : tab === 'criterios' ? Target : FileCheck;
+                  const icon = tab === 'periodos' ? Calendar : tab === 'criterios' ? FileCheck : FileCheck;
                   const colorClass = activeTab === tab
                     ? 'bg-white text-blue-600 shadow-sm border border-blue-100'
                     : 'text-gray-600 hover:text-gray-900';
@@ -841,16 +917,18 @@ const GestionEvaluacionesPage: React.FC = () => {
                 })}
               </div>
 
+              {/* Tab Content */}
               <div className="flex-1 min-h-[400px]">
                 {renderTabContent()}
               </div>
             </div>
           </div>
 
+          {/* Right Column: Evaluations */}
           <div className="col-span-7 flex flex-col bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-sm">
+                <div className="p-3 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl shadow-sm">
                   <Activity className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -866,6 +944,7 @@ const GestionEvaluacionesPage: React.FC = () => {
               </button>
             </div>
 
+            {/* Search */}
             <div className="flex gap-2 mb-4">
               <div className="relative flex-1">
                 <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
@@ -888,12 +967,13 @@ const GestionEvaluacionesPage: React.FC = () => {
               )}
             </div>
 
+            {/* Evaluations List */}
             <div className="max-h-[400px] overflow-y-auto rounded-lg border border-gray-200 p-4">
               {filteredEvaluations.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  <BarChart3 className="w-12 h-12 mb-4 opacity-50" />
+                  <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p className="text-lg font-medium mb-2">{searchTerm ? 'No se encontraron evaluaciones con los filtros aplicados' : 'No hay evaluaciones'}</p>
-                  <p className="text-sm text-center max-w-md">
+                  <p className="text-sm text-center max-w-md mx-auto">
                     Crea tu primera evaluación seleccionando una plantilla y generando evaluaciones para empleados específicos.
                   </p>
                 </div>
@@ -978,6 +1058,7 @@ const GestionEvaluacionesPage: React.FC = () => {
         </div>
       </div>
 
+      {/* ==================== MODALES ==================== */}
       <CrearCriterioModal
         show={showCrearCriterioModal}
         onClose={() => setShowCrearCriterioModal(false)}
@@ -992,6 +1073,15 @@ const GestionEvaluacionesPage: React.FC = () => {
         show={showCrearPlantillaModal}
         onClose={() => setShowCrearPlantillaModal(false)}
         onCreated={handleTemplateCreated}
+      />
+      <EditarPlantillaModal
+        show={showEditarPlantillaModal}
+        onClose={() => {
+          setShowEditarPlantillaModal(false);
+          setEditingTemplateId(null);
+        }}
+        onUpdated={handleTemplateUpdated}
+        templateId={editingTemplateId}
       />
       <CrearEvaluacionModal
         show={showCrearEvaluacionModal}
@@ -1018,6 +1108,14 @@ const GestionEvaluacionesPage: React.FC = () => {
         criteriaId={editingCriteriaId}
         setConfirmationState={setConfirmationState}
       />
+      <VerPlantillaModal
+        show={showVerPlantillaModal}
+        onClose={() => {
+          setShowVerPlantillaModal(false);
+          setViewingTemplateId(null);
+        }}
+        templateId={viewingTemplateId}
+      />
       <ConfirmationModal
         show={confirmationState.show}
         onClose={hideConfirmation}
@@ -1031,31 +1129,5 @@ const GestionEvaluacionesPage: React.FC = () => {
     </div>
   );
 };
-
-const StatCard: React.FC<{
-  title: string;
-  value: number;
-  icon: React.ReactNode;
-  color: string;
-  subtitle?: string;
-  isPercentage?: boolean;
-}> = ({ title, value, icon, color, subtitle, isPercentage }) => (
-  <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-    <div className="flex items-center justify-between mb-2">
-      <div className={`p-2 bg-gradient-to-r ${color} rounded-lg text-white`}>
-        {icon}
-      </div>
-    </div>
-    <div>
-      <p className="text-gray-600 text-xs font-medium">{title}</p>
-      <p className="text-xl font-bold text-gray-900">
-        {value}{isPercentage ? '%' : ''}
-      </p>
-      {subtitle && (
-        <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
-      )}
-    </div>
-  </div>
-);
 
 export default GestionEvaluacionesPage;

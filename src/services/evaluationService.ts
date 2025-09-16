@@ -13,8 +13,10 @@ export type {
   CreateCriteriaDTO,
   CreatePeriodDTO,
   CreateTemplateDTO,
+  UpdateTemplateDTO,
   CreateEvaluationsFromTemplateDTO,
   UpdatePeriodDTO,
+  UpdateCriteriaDTO,
   EvaluacionParaCalificarDTO,
   ResumenEvaluacionDTO,
   MisEvaluacionesRespuestaDTO,
@@ -33,6 +35,7 @@ import type {
   UpdateCriteriaDTO,
   CreatePeriodDTO,
   CreateTemplateDTO,
+  UpdateTemplateDTO,
   CreateEvaluationsFromTemplateDTO,
   UpdatePeriodDTO,
   EvaluacionParaCalificarDTO,
@@ -142,6 +145,7 @@ export const deleteCriteria = async (id: number): Promise<void> => {
     throw error;
   }
 };
+
 // 🔥 PARTE 2: FUNCIONES DE PERÍODOS
 
 // ==================== PERIODS ====================
@@ -156,12 +160,8 @@ export const getPeriods = async (): Promise<Period[]> => {
     const data = await handleResponse<Period[]>(response);
     console.log("✅ Periods loaded:", data);
 
-    // ✅ DEBUG: Log raw response structure
     if (data && data.length > 0) {
-      console.log(
-        "📊 First period structure:",
-        JSON.stringify(data[0], null, 2)
-      );
+      console.log("📊 First period structure:", JSON.stringify(data[0], null, 2));
       console.log("📊 Period fields:", Object.keys(data[0]));
     }
 
@@ -202,8 +202,6 @@ export const createPeriod = async (
 
     const data = await handleResponse<Period>(response);
     console.log("✅ Period created:", data);
-
-    // ✅ DEBUG: Log created period structure
     console.log("📊 Created period structure:", JSON.stringify(data, null, 2));
 
     return data;
@@ -234,21 +232,11 @@ export const updatePeriod = async (
   }
 };
 
-// ✅ NUEVA FUNCIÓN: Toggle de estado de período
 export const togglePeriodStatus = async (id: number): Promise<Period> => {
   try {
     console.log("🔄 Toggling period status:", id);
-
-    // TODO: Cuando el backend esté listo, usar esta ruta
-    // const response = await fetch(`${API_BASE_URL}/periods/${id}/toggle`, {
-    //   method: 'PATCH',
-    //   headers: getAuthHeaders()
-    // });
-
-    // ✅ SIMULACIÓN TEMPORAL - ELIMINAR CUANDO EL BACKEND ESTÉ LISTO
     console.warn("⚠️ Simulando toggle de período - implementar en backend");
 
-    // Simular respuesta del backend
     const mockPeriod: Period = {
       id,
       name: "Período simulado",
@@ -256,7 +244,7 @@ export const togglePeriodStatus = async (id: number): Promise<Period> => {
       start_date: new Date().toISOString(),
       end_date: new Date().toISOString(),
       due_date: new Date().toISOString(),
-      is_active: true, // Simular que se activó
+      is_active: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -284,6 +272,7 @@ export const deletePeriod = async (id: number): Promise<void> => {
     throw error;
   }
 };
+
 // 🔥 PARTE 3: FUNCIONES DE PLANTILLAS
 
 // ==================== TEMPLATES ====================
@@ -304,6 +293,23 @@ export const getTemplates = async (): Promise<Template[]> => {
   }
 };
 
+export const getTemplateById = async (id: number): Promise<Template> => {
+  try {
+    console.log("🔍 Fetching template by ID:", id);
+    const response = await fetch(`${API_BASE_URL}/templates/${id}`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    const data = await handleResponse<Template>(response);
+    console.log("✅ Template loaded:", data);
+    return data;
+  } catch (error) {
+    console.error("❌ Error fetching template:", error);
+    throw error;
+  }
+};
+
 export const createTemplate = async (
   templateData: CreateTemplateDTO
 ): Promise<Template> => {
@@ -320,6 +326,27 @@ export const createTemplate = async (
     return data;
   } catch (error) {
     console.error("❌ Error creating template:", error);
+    throw error;
+  }
+};
+
+export const updateTemplate = async (
+  id: number,
+  templateData: UpdateTemplateDTO
+): Promise<Template> => {
+  try {
+    console.log("🔄 Updating template:", id, templateData);
+    const response = await fetch(`${API_BASE_URL}/templates/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(templateData),
+    });
+
+    const data = await handleResponse<Template>(response);
+    console.log("✅ Template updated:", data);
+    return data;
+  } catch (error) {
+    console.error("❌ Error updating template:", error);
     throw error;
   }
 };
@@ -362,6 +389,7 @@ export const cloneTemplate = async (
     throw error;
   }
 };
+
 // 🔥 PARTE 4: FUNCIONES DE EVALUACIONES Y EMPLEADOS
 
 // ==================== EVALUATIONS ====================
@@ -388,10 +416,9 @@ export const createEvaluationsFromTemplate = async (
   try {
     console.log("🔄 Creating evaluations from template...", evaluationsData);
 
-    // ⚠️ IMPORTANTE: El backend espera 'user_ids', no 'employee_ids'
     const backendPayload = {
       template_id: evaluationsData.template_id,
-      user_ids: evaluationsData.employee_ids, // ✅ Mapear employee_ids -> user_ids
+      user_ids: evaluationsData.employee_ids,
     };
 
     const response = await fetch(`${API_BASE_URL}/evaluations/from-template`, {
@@ -463,28 +490,15 @@ export const getMyEvaluations = async (): Promise<Evaluation[]> => {
   }
 };
 
-// ✅ FUNCIÓN ADICIONAL: Desactivar elementos (simulada)
 export const deactivateItem = async (
   type: "criteria" | "template",
   id: number
 ): Promise<void> => {
   try {
     console.log(`📴 Deactivating ${type}:`, id);
+    console.warn(`⚠️ Simulando desactivación de ${type} - implementar en backend`);
 
-    // TODO: Implementar endpoint en backend para desactivar
-    // const response = await fetch(`${API_BASE_URL}/${type}/${id}/deactivate`, {
-    //   method: 'PATCH',
-    //   headers: getAuthHeaders()
-    // });
-
-    // ✅ SIMULACIÓN TEMPORAL
-    console.warn(
-      `⚠️ Simulando desactivación de ${type} - implementar en backend`
-    );
-
-    // Simular delay de red
     await new Promise((resolve) => setTimeout(resolve, 500));
-
     console.log(`✅ ${type} deactivated successfully (simulated)`);
   } catch (error) {
     console.error(`❌ Error deactivating ${type}:`, error);
@@ -492,9 +506,7 @@ export const deactivateItem = async (
   }
 };
 
-// ==================== NUEVAS FUNCIONES PARA CALIFICACIÓN ====================
-
-// ==================== ERROR PERSONALIZADO ====================
+// ==================== SERVICIOS PARA CALIFICACIÓN ====================
 export class ErrorEvaluacion extends Error {
   public readonly status: number;
   
@@ -505,11 +517,9 @@ export class ErrorEvaluacion extends Error {
   }
 }
 
-// ==================== CLASE DEL SERVICIO ====================
 class ServicioEvaluaciones {
   private readonly baseUrl: string = API_BASE_URL;
 
-  // Headers de autenticación
   private obtenerHeadersAuth(): HeadersInit {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -521,7 +531,6 @@ class ServicioEvaluaciones {
     };
   }
 
-  // Helper para manejar respuestas
   private async manejarRespuesta<T>(response: Response): Promise<T> {
     if (!response.ok) {
       let mensajeError = `HTTP ${response.status}: ${response.statusText}`;
@@ -530,7 +539,7 @@ class ServicioEvaluaciones {
         const errorData = await response.json();
         mensajeError = errorData.message || errorData.error || mensajeError;
       } catch {
-        // Usar mensaje por defecto si no se puede parsear JSON
+        // Usar mensaje por defecto
       }
       
       throw new ErrorEvaluacion(mensajeError, response.status);
@@ -539,49 +548,31 @@ class ServicioEvaluaciones {
     const data = await response.json();
     console.log('📡 Respuesta del backend:', data);
     
-    // ✅ VALIDACIÓN MEJORADA PARA MANEJAR data: null
     if (data.success === false) {
       throw new ErrorEvaluacion(data.message || 'Error en la operación', 400);
     }
     
-    // Si data es null o undefined, retornar estructura por defecto
     if (data.data === null || data.data === undefined) {
       console.log('⚠️ Backend retornó data: null, usando estructura por defecto');
       return this.obtenerEstructuraPorDefecto() as T;
     }
     
-    // El backend puede retornar directamente data o dentro de un wrapper
     return data.data || (data as unknown as T);
   }
 
-  // ✅ NUEVA FUNCIÓN: Estructura por defecto cuando no hay datos
   private obtenerEstructuraPorDefecto(): MisEvaluacionesRespuestaDTO {
     return {
       as_employee: {
         evaluations: [],
-        summary: {
-          total: 0,
-          completed: 0,
-          pending: 0
-        }
+        summary: { total: 0, completed: 0, pending: 0 }
       },
       as_evaluator: {
         evaluations: [],
-        summary: {
-          total: 0,
-          completed: 0,
-          pending_to_evaluate: 0
-        }
+        summary: { total: 0, completed: 0, pending_to_evaluate: 0 }
       }
     };
   }
 
-  // ==================== MÉTODOS PÚBLICOS ====================
-
-  /**
-   * Obtiene las evaluaciones del usuario autenticado separadas por rol
-   * Endpoint: GET /api/v1/me/evaluations
-   */
   async obtenerMisEvaluaciones(filtros?: FiltrosEvaluacionParams): Promise<MisEvaluacionesRespuestaDTO> {
     try {
       console.log('🔍 Obteniendo mis evaluaciones...', filtros);
@@ -601,7 +592,6 @@ class ServicioEvaluaciones {
       const data = await this.manejarRespuesta<MisEvaluacionesRespuestaDTO>(response);
       console.log('✅ Mis evaluaciones procesadas:', data);
       
-      // ✅ VALIDACIÓN ADICIONAL: Asegurar que la estructura esté completa
       const estructuraCompleta: MisEvaluacionesRespuestaDTO = {
         as_employee: {
           evaluations: data.as_employee?.evaluations || [],
@@ -626,7 +616,6 @@ class ServicioEvaluaciones {
     } catch (error) {
       console.error('❌ Error obteniendo mis evaluaciones:', error);
       
-      // ✅ En caso de error, retornar estructura por defecto en lugar de fallar
       if (error instanceof ErrorEvaluacion && error.status >= 500) {
         console.log('⚠️ Error del servidor, retornando estructura vacía');
         return this.obtenerEstructuraPorDefecto();
@@ -636,10 +625,6 @@ class ServicioEvaluaciones {
     }
   }
 
-  /**
-   * Obtiene una evaluación específica para calificar con todos sus criterios
-   * Endpoint: GET /api/v1/evaluations/{id}/for-scoring
-   */
   async obtenerEvaluacionParaCalificar(evaluacionId: number): Promise<EvaluacionParaCalificarDTO> {
     try {
       console.log('🔍 Obteniendo evaluación para calificar:', evaluacionId);
@@ -659,15 +644,10 @@ class ServicioEvaluaciones {
     }
   }
 
-  /**
-   * Envía las puntuaciones de una evaluación y la marca como completada
-   * Endpoint: PUT /api/v1/evaluations/{id}/score
-   */
   async enviarPuntuaciones(evaluacionId: number, puntuaciones: PuntuacionCriterioDTO[]): Promise<void> {
     try {
       console.log('📤 Enviando puntuaciones para evaluación:', evaluacionId, puntuaciones);
       
-      // Validar que todas las puntuaciones estén en el rango correcto
       for (const puntuacion of puntuaciones) {
         if (puntuacion.score < 1 || puntuacion.score > 5) {
           throw new ErrorEvaluacion(`Puntuación fuera del rango (1-5): ${puntuacion.score}`, 400);
@@ -689,10 +669,6 @@ class ServicioEvaluaciones {
     }
   }
 
-  /**
-   * Lista todas las evaluaciones del sistema con filtros (solo admin/hr)
-   * Endpoint: GET /api/v1/evaluations
-   */
   async listarTodasLasEvaluaciones(filtros?: FiltrosEvaluacionParams): Promise<ResumenEvaluacionDTO[]> {
     try {
       console.log('🔍 Listando todas las evaluaciones...', filtros);
@@ -720,11 +696,6 @@ class ServicioEvaluaciones {
     }
   }
 
-  // ==================== HELPERS Y UTILIDADES ====================
-
-  /**
-   * Convierte el status del backend a texto legible en español
-   */
   obtenerTextoEstado(status: string): string {
     const mapaEstados: Record<string, string> = {
       'pending': 'Pendiente',
@@ -735,9 +706,6 @@ class ServicioEvaluaciones {
     return mapaEstados[status] || 'Desconocido';
   }
 
-  /**
-   * Obtiene las clases CSS para el color del estado
-   */
   obtenerColorEstado(status: string): string {
     const mapaColores: Record<string, string> = {
       'pending': 'text-yellow-600 bg-yellow-50 border-yellow-200',
@@ -748,9 +716,6 @@ class ServicioEvaluaciones {
     return mapaColores[status] || 'text-gray-600 bg-gray-50 border-gray-200';
   }
 
-  /**
-   * Obtiene información sobre el peso de un criterio para mostrar en tooltips
-   */
   obtenerInfoPeso(peso: number) {
     if (peso >= 30) {
       return { 
@@ -773,9 +738,6 @@ class ServicioEvaluaciones {
     };
   }
 
-  /**
-   * Obtiene el color CSS para una categoría de criterio
-   */
   obtenerColorCategoria(categoria: string): string {
     const mapaColores: Record<string, string> = {
       'productividad': 'bg-blue-100 text-blue-800',
@@ -785,9 +747,6 @@ class ServicioEvaluaciones {
     return mapaColores[categoria] || 'bg-gray-100 text-gray-800';
   }
 
-  /**
-   * Valida que todos los criterios estén puntuados correctamente
-   */
   validarPuntuaciones(
     puntuaciones: Record<number, number>, 
     criteriosRequeridos: number[]
@@ -799,9 +758,6 @@ class ServicioEvaluaciones {
     );
   }
 
-  /**
-   * Convierte las puntuaciones del formulario al formato esperado por el backend
-   */
   formatearPuntuacionesParaEnvio(
     puntuaciones: Record<number, number>, 
     mapaAsignacion: Record<number, number>
@@ -813,6 +769,5 @@ class ServicioEvaluaciones {
   }
 }
 
-// ==================== EXPORTAR INSTANCIA ÚNICA ====================
 export const servicioEvaluaciones = new ServicioEvaluaciones();
 export default servicioEvaluaciones;
