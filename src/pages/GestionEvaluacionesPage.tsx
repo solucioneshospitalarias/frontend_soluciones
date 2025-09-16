@@ -40,7 +40,7 @@ import CrearPlantillaModal from '../components/CrearPlantillaModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CrearEvaluacionModal from '../components/CrearEvaluacionModal';
 import EditarPeriodoModal from '../components/EditarPeriodoModal';
-import EditarCriterioModal from '../components/EditarCriterioModal'; // Added import
+import EditarCriterioModal from '../components/EditarCriterioModal';
 
 interface Stats {
   totalPeriods: number;
@@ -78,8 +78,8 @@ const GestionEvaluacionesPage: React.FC = () => {
   const [showCrearEvaluacionModal, setShowCrearEvaluacionModal] = useState(false);
   const [showEditarPeriodoModal, setShowEditarPeriodoModal] = useState(false);
   const [editingPeriodId, setEditingPeriodId] = useState<number | null>(null);
-  const [showEditarCriterioModal, setShowEditarCriterioModal] = useState(false); // Added state
-  const [editingCriteriaId, setEditingCriteriaId] = useState<number | null>(null); // Added state
+  const [showEditarCriterioModal, setShowEditarCriterioModal] = useState(false);
+  const [editingCriteriaId, setEditingCriteriaId] = useState<number | null>(null);
   const [confirmationState, setConfirmationState] = useState<ConfirmationState>({
     show: false,
     title: '',
@@ -137,7 +137,7 @@ const GestionEvaluacionesPage: React.FC = () => {
     setEditingPeriodId(null);
   };
 
-  const handleCriteriaUpdated = async () => { // Added handler
+  const handleCriteriaUpdated = async () => {
     await loadAllData();
     setShowEditarCriterioModal(false);
     setEditingCriteriaId(null);
@@ -405,6 +405,8 @@ const GestionEvaluacionesPage: React.FC = () => {
     setSelectedCategory('todos');
   };
 
+  // PARTE 2: Función renderTabContent y JSX de retorno
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'periodos':
@@ -619,8 +621,11 @@ const GestionEvaluacionesPage: React.FC = () => {
                 filteredTemplates.map(template => {
                   const isDeleting = deletingItems.has(template.id);
                   const isCloning = cloningItems.has(template.id);
-                  const criteriaCount = template.criteria?.length || 0;
-                  const criteriaWeights = template.criteria?.map(c => `${Math.round((c.weight || 0) * 100)}%`).join(', ') || 'N/A';
+                  // Manejar la estructura correcta: template.criteria es un array TemplateCriteria[]
+                  const criteriaCount = Array.isArray(template.criteria) ? template.criteria.length : 0;
+                  const criteriaWeights = Array.isArray(template.criteria) 
+                    ? template.criteria.map(c => `${Math.round((c.weight || 0) * 100)}%`).join(', ') 
+                    : 'N/A';
 
                   return (
                     <div
@@ -1003,7 +1008,7 @@ const GestionEvaluacionesPage: React.FC = () => {
         periodId={editingPeriodId}
         setConfirmationState={setConfirmationState}
       />
-      <EditarCriterioModal // Added modal
+      <EditarCriterioModal
         show={showEditarCriterioModal}
         onClose={() => {
           setShowEditarCriterioModal(false);
