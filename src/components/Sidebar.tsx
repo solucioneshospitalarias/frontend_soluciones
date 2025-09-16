@@ -28,7 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
         ]
       : []),
     ...(canAccessEvaluatorView(userRole)
-      ? [{ id: 'my-evaluations', label: 'Mis Evaluaciones', icon: Target, path: '/my-evaluations' }]
+      ? [{ id: 'my-evaluations', label: 'Mis Evaluaciones', icon: Target, path: '/mis-evaluaciones' }]
       : []),
     { id: 'reports', label: 'Reportes y Análisis', icon: FileText, path: '/reports' },
   ];

@@ -5,6 +5,7 @@ import LoginPage from './pages/auth/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import GestionEmpleadosPage from './pages/GestionEmpleadosPage';
 import GestionEvaluacionesPage from './pages/GestionEvaluacionesPage';
+import EvaluacionesPage from './pages/EvaluacionesPage'; // ← NUEVA IMPORTACIÓN
 import Sidebar from './components/Sidebar';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -30,6 +31,7 @@ const AppContent: React.FC = () => (
   <Router>
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      
       <Route
         path="/dashboard"
         element={
@@ -40,6 +42,7 @@ const AppContent: React.FC = () => (
           </ProtectedRoute>
         }
       />
+      
       <Route
         path="/employees"
         element={
@@ -50,6 +53,7 @@ const AppContent: React.FC = () => (
           </ProtectedRoute>
         }
       />
+      
       <Route
         path="/evaluaciones"
         element={
@@ -60,6 +64,19 @@ const AppContent: React.FC = () => (
           </ProtectedRoute>
         }
       />
+      
+      {/* ← NUEVA RUTA PARA EL SISTEMA DE EVALUACIONES */}
+      <Route
+        path="/mis-evaluaciones"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <EvaluacionesPage />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+      
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   </Router>
