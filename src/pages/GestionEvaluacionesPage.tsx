@@ -33,6 +33,7 @@ import {
   type Template,
   type Evaluation
 } from '../services/evaluationService';
+import { flattenTemplateCriteria, type TemplateCriteria } from '../types/evaluation';
 import CrearCriterioModal from '../components/CrearCriterioModal';
 import CrearPeriodoModal from '../components/CrearPeriodoModal';
 import CrearPlantillaModal from '../components/CrearPlantillaModal';
@@ -42,6 +43,7 @@ import CrearEvaluacionModal from '../components/CrearEvaluacionModal';
 import EditarPeriodoModal from '../components/EditarPeriodoModal';
 import EditarCriterioModal from '../components/EditarCriterioModal';
 import VerPlantillaModal from '../components/VerPlantillaModal';
+import ClonarPlantillaModal from '../components/ClonarPlantillaModal';
 
 interface Stats {
   totalPeriods: number;
@@ -84,6 +86,8 @@ const GestionEvaluacionesPage: React.FC = () => {
   const [showEditarPeriodoModal, setShowEditarPeriodoModal] = useState(false);
   const [showEditarCriterioModal, setShowEditarCriterioModal] = useState(false);
   const [showVerPlantillaModal, setShowVerPlantillaModal] = useState(false);
+  const [showClonarPlantillaModal, setShowClonarPlantillaModal] = useState(false);
+  const [cloningTemplate, setCloningTemplate] = useState<Template | null>(null);
 
   // ==================== ESTADOS DE EDICIÓN ====================
   const [editingPeriodId, setEditingPeriodId] = useState<number | null>(null);
@@ -340,37 +344,21 @@ const GestionEvaluacionesPage: React.FC = () => {
   };
 
   // ==================== FUNCIÓN DE CLONADO ====================
-  const handleClone = async (template: Template) => {
-    const newName = prompt(`Nombre para la copia de "${template.name}":`);
-    if (!newName || !newName.trim()) return;
+  const handleClone = (template: Template) => {
+    setCloningTemplate(template);
+    setShowClonarPlantillaModal(true);
+  };
 
-    setCloningItems(prev => new Set(prev).add(template.id));
-
-    try {
-      console.log('📋 Cloning template...');
-      const clonedTemplate = await cloneTemplate(template.id, newName.trim());
-      setTemplates(prev => [clonedTemplate, ...prev]);
-      showConfirmation({
-        title: '¡Plantilla Clonada!',
-        message: `La plantilla "${newName}" se ha creado exitosamente.`,
-        type: 'success',
-        onConfirm: hideConfirmation
-      });
-    } catch (err: unknown) {
-      console.error('❌ Error cloning template:', err);
-      showConfirmation({
-        title: 'Error',
-        message: `Error al clonar la plantilla: ${(err as Error).message}`,
-        type: 'danger',
-        onConfirm: hideConfirmation
-      });
-    } finally {
-      setCloningItems(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(template.id);
-        return newSet;
-      });
-    }
+  const handleCloned = (clonedTemplate: Template) => {
+    setCloningItems(prev => new Set(prev).add(clonedTemplate.id));
+    setTemplates(prev => [clonedTemplate, ...prev]);
+    setCloningItems(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(clonedTemplate.id);
+      return newSet;
+    });
+    setShowClonarPlantillaModal(false);
+    setCloningTemplate(null);
   };
 
   // ==================== FUNCIONES DE CREACIÓN ====================
@@ -443,6 +431,7 @@ const GestionEvaluacionesPage: React.FC = () => {
     setSearchTerm('');
     setSelectedCategory('todos');
   };
+
   // ==================== FUNCIÓN PARA RENDERIZAR CONTENIDO DE TABS ====================
   const renderTabContent = () => {
     switch (activeTab) {
@@ -658,10 +647,17 @@ const GestionEvaluacionesPage: React.FC = () => {
                 filteredTemplates.map(template => {
                   const isDeleting = deletingItems.has(template.id);
                   const isCloning = cloningItems.has(template.id);
-                  const criteriaCount = Array.isArray(template.criteria) ? template.criteria.length : 0;
-                  const criteriaWeights = Array.isArray(template.criteria) 
-                    ? template.criteria.map(c => `${Math.round((c.weight || 0) * 100)}%`).join(', ') 
-                    : 'N/A';
+                  // Calculate total criteria by summing lengths of category arrays or using summary
+                  const criteriaCount = template.summary?.total_criteria ||
+                    (template.criteria && !Array.isArray(template.criteria) ?
+                      (template.criteria.productivity?.length || 0) +
+                      (template.criteria.work_conduct?.length || 0) +
+                      (template.criteria.skills?.length || 0) : 0);
+                  // Calculate weights using flattenTemplateCriteria
+                  const criteriaWeights = template.criteria ?
+                    flattenTemplateCriteria(template.criteria)
+                      .map((c: TemplateCriteria) => `${Math.round((c.weight || 0) * 100)}%`)
+                      .join(', ') : 'N/A';
 
                   return (
                     <div
@@ -1115,6 +1111,16 @@ const GestionEvaluacionesPage: React.FC = () => {
           setViewingTemplateId(null);
         }}
         templateId={viewingTemplateId}
+      />
+      <ClonarPlantillaModal
+        show={showClonarPlantillaModal}
+        onClose={() => {
+          setShowClonarPlantillaModal(false);
+          setCloningTemplate(null);
+        }}
+        onCloned={handleCloned}
+        template={cloningTemplate}
+        setConfirmationState={setConfirmationState}
       />
       <ConfirmationModal
         show={confirmationState.show}

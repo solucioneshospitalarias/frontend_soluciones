@@ -1,10 +1,17 @@
+// src/types/evaluation.ts
+
 export interface Criteria {
   id: number;
   name: string;
   description: string;
-  weight: number;
   category: 'productividad' | 'conducta_laboral' | 'habilidades';
+  weight: number;
   is_active: boolean;
+  can_modify: boolean;
+  can_delete: boolean;
+  in_use: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Period {
@@ -15,27 +22,64 @@ export interface Period {
   end_date: string;
   due_date: string;
   is_active: boolean;
-  status?: string;
+  status?: 'draft' | 'active' | 'completed' | 'archived';
+  is_expired?: boolean;
+  can_modify?: boolean;
+  can_delete?: boolean;
   created_at: string;
   updated_at: string;
 }
 
+// Template criteria individual con estructura del backend
+export interface BackendTemplateCriteria {
+  id: number;
+  weight: number;
+  category: string;
+  criteria: {
+    id: number;
+    name: string;
+    description: string;
+    category: string;
+  };
+}
+
+// Estructura del backend para los criterios organizados por categoría
+export interface TemplateCriteriaByCategory {
+  productivity: BackendTemplateCriteria[];
+  work_conduct: BackendTemplateCriteria[];
+  skills: BackendTemplateCriteria[];
+}
+
+// Template con estructura actualizada para manejar ambos formatos
 export interface Template {
   id: number;
   name: string;
   description?: string;
   position?: string;
   is_active: boolean;
-  criteria?: TemplateCriteria[]; // Made optional to handle undefined/null
+  // Puede venir como array o como objeto organizado por categorías
+  criteria?: TemplateCriteria[] | TemplateCriteriaByCategory;
+  summary?: {
+    total_criteria: number;
+    categories_used: number;
+    weights_summary: {
+      productivity: number;
+      work_conduct: number;
+      skills: number;
+    };
+    is_valid_weights: boolean;
+  };
   created_at: string;
   updated_at: string;
 }
 
+// Para mantener compatibilidad con el código existente
 export interface TemplateCriteria {
-  id: number;
+  id?: number;
   criteria_id: number;
   weight: number;
-  criteria: Criteria;
+  criteria?: Criteria;
+  category?: string;
 }
 
 export interface Employee {
@@ -166,7 +210,6 @@ export interface OpcionPuntuacion {
 export interface CreateCriteriaDTO {
   name: string;
   description: string;
-  weight: number;
   category: 'productividad' | 'conducta_laboral' | 'habilidades';
 }
 
@@ -207,7 +250,7 @@ export interface UpdatePeriodDTO {
   start_date?: string;
   end_date?: string;
   due_date?: string;
-  is_active?: boolean;
+  // is_active se calcula automáticamente según las fechas, no se envía
 }
 
 export interface UpdateCriteriaDTO {
@@ -215,7 +258,6 @@ export interface UpdateCriteriaDTO {
   description?: string;
   weight?: number;
   category?: 'productividad' | 'conducta_laboral' | 'habilidades';
-  is_active?: boolean;
 }
 
 export interface UpdateTemplateDTO {
@@ -223,9 +265,10 @@ export interface UpdateTemplateDTO {
   description?: string;
   is_active?: boolean;
   criteria?: {
-    criteria_id: number;
-    weight: number;
-  }[];
+    productivity: { criteria_id: number; weight: number }[];
+    work_conduct: { criteria_id: number; weight: number }[];
+    skills: { criteria_id: number; weight: number }[];
+  };
 }
 
 export interface Evaluation {
@@ -254,4 +297,50 @@ export interface RespuestaAPI<T> {
   success: boolean;
   message?: string;
   data: T;
+}
+
+// Helper function para convertir criterios del backend al formato frontend
+export function flattenTemplateCriteria(criteria: TemplateCriteria[] | TemplateCriteriaByCategory | undefined): TemplateCriteria[] {
+  if (!criteria) return [];
+  
+  // Si ya es un array, devolverlo tal cual
+  if (Array.isArray(criteria)) return criteria;
+  
+  // Si es un objeto con categorías, aplanarlo
+  const flattened: TemplateCriteria[] = [];
+  
+  if ('productivity' in criteria) {
+    criteria.productivity.forEach(tc => {
+      flattened.push({
+        id: tc.id,
+        criteria_id: tc.criteria.id,
+        weight: tc.weight,
+        category: 'productividad'
+      });
+    });
+  }
+  
+  if ('work_conduct' in criteria) {
+    criteria.work_conduct.forEach(tc => {
+      flattened.push({
+        id: tc.id,
+        criteria_id: tc.criteria.id,
+        weight: tc.weight,
+        category: 'conducta_laboral'
+      });
+    });
+  }
+  
+  if ('skills' in criteria) {
+    criteria.skills.forEach(tc => {
+      flattened.push({
+        id: tc.id,
+        criteria_id: tc.criteria.id,
+        weight: tc.weight,
+        category: 'habilidades'
+      });
+    });
+  }
+  
+  return flattened;
 }

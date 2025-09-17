@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, X, Loader2, Plus, Percent } from 'lucide-react';
+import { Target, X, Loader2, Plus } from 'lucide-react';
 import { createCriteria } from '../services/evaluationService';
 import type { Criteria, CreateCriteriaDTO } from '../services/evaluationService';
 
@@ -12,15 +12,13 @@ interface CrearCriterioModalProps {
 interface CriteriaForm {
   name: string;
   description: string;
-  weight: string;
-  category: string;
+  category: 'productividad' | 'conducta_laboral' | 'habilidades' | '';
 }
 
 const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, onCreated }) => {
   const [form, setForm] = useState<CriteriaForm>({
     name: '',
     description: '',
-    weight: '',
     category: '',
   });
 
@@ -44,14 +42,8 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
   const validateForm = (): string | null => {
     if (!form.name.trim()) return 'El nombre es obligatorio.';
     if (!form.description.trim()) return 'La descripción es obligatoria.';
-    if (!form.weight.trim()) return 'El peso es obligatorio.';
     if (!form.category) return 'La categoría es obligatoria.';
     
-    const weightNum = parseFloat(form.weight);
-    if (isNaN(weightNum) || weightNum <= 0 || weightNum > 1) {
-      return 'El peso debe ser un número entre 0.01 y 1.0';
-    }
-
     // Validate category
     if (!validCategories.some(cat => cat.value === form.category)) {
       return 'Categoría no válida. Seleccione Productividad, Conducta Laboral o Habilidades.';
@@ -76,8 +68,7 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
       const criteriaData: CreateCriteriaDTO = {
         name: form.name.trim(),
         description: form.description.trim(),
-        weight: parseFloat(form.weight),
-        category: form.category
+        category: form.category as 'productividad' | 'conducta_laboral' | 'habilidades',
       };
 
       console.log('🔄 Creating criteria with data:', criteriaData);
@@ -110,7 +101,6 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
     setForm({
       name: '',
       description: '',
-      weight: '',
       category: '',
     });
     setError(null);
@@ -189,30 +179,6 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Peso *
-                </label>
-                <div className="relative">
-                  <Percent className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    name="weight"
-                    value={form.weight}
-                    onChange={handleChange}
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    max="1"
-                    placeholder="0.15"
-                    className="w-full pl-10 pr-4 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                    disabled={loading}
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Valor entre 0.01 y 1.0. Ej: 0.3 = 30%
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Categoría *
                 </label>
                 <select
@@ -237,7 +203,7 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
                 </div>
               )}
 
-              {form.name && form.description && form.weight && form.category && (
+              {form.name && form.description && form.category && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Vista previa:</h4>
                   <div className="flex justify-between items-center">
@@ -248,9 +214,6 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
                         {getCategoryDisplayName(form.category)}
                       </span>
                     </div>
-                    <span className="text-sm font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
-                      {form.weight ? `${(parseFloat(form.weight) * 100).toFixed(1)}%` : '0%'}
-                    </span>
                   </div>
                 </div>
               )}
