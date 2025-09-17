@@ -414,10 +414,15 @@ export const createEvaluationsFromTemplate = async (
   try {
     console.log("🔄 Creating evaluations from template...", evaluationsData);
 
+    // ✅ Corregido: incluir todos los campos requeridos
     const backendPayload = {
       template_id: evaluationsData.template_id,
-      user_ids: evaluationsData.employee_ids,
+      period_id: evaluationsData.period_id,     // ✅ Agregado
+      evaluator_id: evaluationsData.evaluator_id, // ✅ Agregado
+      employee_ids: evaluationsData.employee_ids,  // ✅ Usar employee_ids (o cambiar a user_ids si el backend lo requiere)
     };
+
+    console.log("📤 Backend payload:", backendPayload);
 
     const response = await fetch(`${API_BASE_URL}/evaluations/from-template`, {
       method: "POST",
