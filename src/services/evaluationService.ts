@@ -1,6 +1,4 @@
 import { API_BASE_URL } from "../constants/api";
-
-// Re-exportar tipos para compatibilidad
 export type {
   Criteria,
   Period,
@@ -19,7 +17,6 @@ export type {
   MisEvaluacionesRespuestaDTO,
   PuntuacionCriterioDTO,
   FiltrosEvaluacionParams,
-  RespuestaAPI,
 } from "../types/evaluation";
 
 import type {
@@ -60,7 +57,6 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
 
   const result = await response.json();
 
-  // El backend puede devolver { success: boolean, data: T } o directamente T
   if (result.success === false) {
     throw new Error(result.message || "Error en la operación");
   }
@@ -160,7 +156,15 @@ export const getPeriods = async (): Promise<Period[]> => {
       console.log("📊 Period fields:", Object.keys(data[0]));
     }
 
-    return Array.isArray(data) ? data : [];
+    // Filtrar períodos para mostrar solo los no vencidos (due_date >= fecha actual)
+    const now = new Date();
+    const filteredPeriods = data.filter(period => {
+      const dueDate = new Date(period.due_date);
+      return dueDate >= now; // Solo períodos no vencidos
+    });
+
+    console.log("✅ Filtered periods:", filteredPeriods);
+    return Array.isArray(filteredPeriods) ? filteredPeriods : [];
   } catch (error) {
     console.error("❌ Error fetching periods:", error);
     throw error;
@@ -198,7 +202,6 @@ export const createPeriod = async (
     const data = await handleResponse<Period>(response);
     console.log("✅ Period created:", data);
     console.log("📊 Created period structure:", JSON.stringify(data, null, 2));
-
     return data;
   } catch (error) {
     console.error("❌ Error creating period:", error);

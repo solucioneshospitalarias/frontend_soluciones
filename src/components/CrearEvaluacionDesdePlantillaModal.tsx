@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Users, Calendar, Loader2, AlertCircle, Save, Search, Filter, FileCheck, User, UserCheck } from 'lucide-react';
+import { X, Users, Calendar, Loader2, AlertCircle, Save, Search, Filter, FileCheck, User, UserCheck, CheckCircle, Clock } from 'lucide-react';
 import { getUsers } from '../services/userService';
 import { getPeriods, createEvaluationsFromTemplate } from '../services/evaluationService';
-import { flattenTemplateCriteria, type TemplateCriteria } from '../types/evaluation';
+import { flattenTemplateCriteria } from '../types/evaluation';
 import type { User as UserType } from '../types/user';
 import type { Period, Template, CreateEvaluationsFromTemplateDTO } from '../types/evaluation';
 import type { ReferenceData, ConfirmationState } from '../services/referenceService';
@@ -19,6 +19,37 @@ interface CrearEvaluacionDesdePlantillaModalProps {
   onCreated: (newEvaluations: { evaluatedEmployeeIds: number[]; count: number }) => void;
   template: Template | null;
   setConfirmationState: React.Dispatch<React.SetStateAction<ConfirmationState>>;
+}
+
+interface CriterionData {
+  id?: number;
+  criteria_id: number;
+  weight: number;
+  name: string;
+}
+
+interface GroupedCriteria {
+  productividad: CriterionData[];
+  conducta_laboral: CriterionData[];
+  habilidades: CriterionData[];
+}
+
+interface BackendTemplateCriteria {
+  id: number;
+  weight: number;
+  category: string;
+  criteria: {
+    id: number;
+    name: string;
+    description: string;
+    category: string;
+  };
+}
+
+interface TemplateCriteriaByCategory {
+  productivity?: BackendTemplateCriteria[];
+  work_conduct?: BackendTemplateCriteria[];
+  skills?: BackendTemplateCriteria[];
 }
 
 const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantillaModalProps> = ({
@@ -39,7 +70,6 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
   const [error, setError] = useState<string | null>(null);
   const [searchTermEvaluator, setSearchTermEvaluator] = useState('');
   const [searchTermEmployees, setSearchTermEmployees] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     department: '',
     position: '',
@@ -95,20 +125,111 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
     }
   };
 
-  // Get template criteria for display
-  const templateCriteria = useMemo(() => {
-    if (!template?.criteria) return [];
-    return flattenTemplateCriteria(template.criteria);
-  }, [template]);
+  // Get period status with visual feedback
+  const getPeriodStatus = (period: Period) => {
+    const now = new Date();
+    const startDate = new Date(period.start_date);
+    const dueDate = new Date(period.due_date);
 
-  const criteriaByCategory = useMemo(() => {
-    const grouped = {
-      productividad: templateCriteria.filter(c => c.category === 'productividad'),
-      conducta_laboral: templateCriteria.filter(c => c.category === 'conducta_laboral'),
-      habilidades: templateCriteria.filter(c => c.category === 'habilidades'),
+    if (now >= startDate && now <= dueDate) {
+      return {
+        icon: CheckCircle,
+        color: 'text-green-600',
+        bg: 'bg-green-50',
+        border: 'border-green-200',
+        label: 'Activo',
+        description: 'Disponible para evaluaciones'
+      };
+    } else if (now < startDate) {
+      return {
+        icon: Clock,
+        color: 'text-blue-600',
+        bg: 'bg-blue-50',
+        border: 'border-blue-200',
+        label: 'Próximo',
+        description: `Inicia el ${formatDate(period.start_date)}`
+      };
+    } else {
+      // Este caso no debería ocurrir debido al filtrado en getPeriods
+      return {
+        icon: Clock,
+        color: 'text-yellow-600',
+        bg: 'bg-yellow-50',
+        border: 'border-yellow-200',
+        label: 'No disponible',
+        description: 'Período no disponible'
+      };
+    }
+  };
+
+  // Process template criteria to show with names
+  const groupedCriteria = useMemo((): GroupedCriteria => {
+    if (!template?.criteria) {
+      return {
+        productividad: [],
+        conducta_laboral: [],
+        habilidades: []
+      };
+    }
+
+    const result: GroupedCriteria = {
+      productividad: [],
+      conducta_laboral: [],
+      habilidades: []
     };
-    return grouped;
-  }, [templateCriteria]);
+
+    if (typeof template.criteria === 'object' && !Array.isArray(template.criteria)) {
+      const criteriaObj = template.criteria as TemplateCriteriaByCategory;
+      
+      if (criteriaObj.productivity) {
+        criteriaObj.productivity.forEach((tc: BackendTemplateCriteria) => {
+          result.productividad.push({
+            id: tc.id,
+            criteria_id: tc.criteria.id,
+            weight: tc.weight,
+            name: tc.criteria.name
+          });
+        });
+      }
+
+      if (criteriaObj.work_conduct) {
+        criteriaObj.work_conduct.forEach((tc: BackendTemplateCriteria) => {
+          result.conducta_laboral.push({
+            id: tc.id,
+            criteria_id: tc.criteria.id,
+            weight: tc.weight,
+            name: tc.criteria.name
+          });
+        });
+      }
+
+      if (criteriaObj.skills) {
+        criteriaObj.skills.forEach((tc: BackendTemplateCriteria) => {
+          result.habilidades.push({
+            id: tc.id,
+            criteria_id: tc.criteria.id,
+            weight: tc.weight,
+            name: tc.criteria.name
+          });
+        });
+      }
+    } else if (Array.isArray(template.criteria)) {
+      const flattened = flattenTemplateCriteria(template.criteria);
+      flattened.forEach(tc => {
+        const category = tc.category as keyof GroupedCriteria;
+        if (result[category] && tc.criteria) {
+          result[category].push({
+            id: tc.id,
+            criteria_id: tc.criteria_id,
+            weight: tc.weight,
+            name: tc.criteria.name
+          });
+        }
+      });
+    }
+
+    return result;
+  }, [template]);
 
   // Filter employees for evaluator
   const filteredEvaluatorUsers = useMemo(() => {
@@ -128,7 +249,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
   // Filter employees for evaluation (excluding evaluator)
   const filteredEmployeeUsers = useMemo(() => {
     return users.filter(user => {
-      if (user.id === evaluatorId) return false; // Exclude evaluator
+      if (user.id === evaluatorId) return false;
       const fullName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
       const matchesSearch =
         fullName.toLowerCase().includes(searchTermEmployees.toLowerCase()) ||
@@ -148,13 +269,11 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
       department: '',
       position: '',
     });
-    setSearchTermEvaluator('');
-    setSearchTermEmployees('');
   };
 
   const handleEvaluatorSelect = (id: number) => {
     setEvaluatorId(id);
-    setSelectedEmployees(prev => prev.filter(empId => empId !== id)); // Remove evaluator from employees
+    setSelectedEmployees(prev => prev.filter(empId => empId !== id));
   };
 
   const handlePeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -192,7 +311,6 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
     setError(null);
 
     try {
-      // Usar los campos correctos según el backend
       const payload: CreateEvaluationsFromTemplateDTO = {
         template_id: template.id,
         period_id: periodId as number,
@@ -232,7 +350,6 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
     setSearchTermEvaluator('');
     setSearchTermEmployees('');
     setFilters({ department: '', position: '' });
-    setShowFilters(false);
     onClose();
   };
 
@@ -276,7 +393,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
             <form onSubmit={handleSubmit} className="p-6">
               <div className="grid grid-cols-12 gap-6">
                 {/* Left Column - Template Info & Period */}
-                <div className="col-span-4 space-y-6">
+                <div className="col-span-12 md:col-span-4 space-y-6">
                   {/* Template Summary */}
                   {template && (
                     <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-6 border border-purple-200">
@@ -296,17 +413,26 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                           </div>
                         )}
                         <div>
-                          <p className="text-sm font-medium text-gray-700">Criterios</p>
-                          <div className="space-y-2 mt-2">
-                            {Object.entries(criteriaByCategory).map(([category, criteria]) => 
+                          <p className="text-sm font-medium text-gray-700 mb-3">Criterios de Evaluación</p>
+                          <div className="space-y-4">
+                            {(Object.entries(groupedCriteria) as [keyof GroupedCriteria, CriterionData[]][]).map(([category, criteria]) => 
                               criteria.length > 0 && (
-                                <div key={category} className="flex items-center justify-between text-sm">
-                                  <span className="text-gray-600 capitalize">
-                                    {category.replace('_', ' ')}:
-                                  </span>
-                                  <span className="font-medium text-purple-600">
-                                    {criteria.length} criterio{criteria.length !== 1 ? 's' : ''}
-                                  </span>
+                                <div key={category} className="space-y-2">
+                                  <h4 className="text-sm font-medium text-purple-700 capitalize border-b border-purple-200 pb-1">
+                                    {category.replace('_', ' ')} ({criteria.length})
+                                  </h4>
+                                  <div className="space-y-1 pl-2">
+                                    {criteria.map((criterion: CriterionData, index: number) => (
+                                      <div key={`${criterion.criteria_id}-${index}`} className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-700 truncate flex-1 mr-2">
+                                          {criterion.name}
+                                        </span>
+                                        <span className="text-purple-600 font-medium text-xs bg-purple-100 px-2 py-1 rounded-full">
+                                          {criterion.weight}%
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               )
                             )}
@@ -329,129 +455,135 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                       disabled={loading}
                     >
                       <option value="">Seleccione un período</option>
-                      {periods.map(period => (
-                        <option key={period.id} value={period.id}>
-                          {period.name} ({formatDate(period.start_date)} - {formatDate(period.end_date)})
-                        </option>
-                      ))}
+                      {periods.map(period => {
+                        const status = getPeriodStatus(period);
+                        return (
+                          <option key={period.id} value={period.id}>
+                            {period.name} ({formatDate(period.start_date)} - {formatDate(period.due_date)}) - {status.label}
+                          </option>
+                        );
+                      })}
                     </select>
-                  </div>
-
-                  {/* Filters */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-medium text-gray-900">Filtros</h3>
-                      <button
-                        type="button"
-                        onClick={() => setShowFilters(!showFilters)}
-                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
-                          showFilters || activeFiltersCount > 0
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                      >
-                        <Filter className="w-4 h-4 inline mr-1" />
-                        {activeFiltersCount > 0 ? `${activeFiltersCount} activo${activeFiltersCount > 1 ? 's' : ''}` : 'Filtros'}
-                      </button>
-                    </div>
-
-                    {showFilters && (
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
-                          <select
-                            value={filters.department}
-                            onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
-                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            disabled={loading}
-                          >
-                            <option value="">Todos</option>
-                            {references.departments?.map(dept => (
-                              <option key={dept.id} value={dept.name}>{dept.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Cargo</label>
-                          <select
-                            value={filters.position}
-                            onChange={(e) => setFilters(prev => ({ ...prev, position: e.target.value }))}
-                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            disabled={loading}
-                          >
-                            <option value="">Todos</option>
-                            {references.positions?.map(pos => (
-                              <option key={pos.id} value={pos.name}>{pos.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                        {activeFiltersCount > 0 && (
-                          <button
-                            type="button"
-                            onClick={clearFilters}
-                            className="w-full px-3 py-2 text-gray-600 hover:text-gray-800 flex items-center justify-center gap-2 transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                            Limpiar filtros
-                          </button>
-                        )}
+                    
+                    {/* Period status indicators */}
+                    {periods.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <p className="text-xs font-medium text-gray-600 mb-2">Estados de períodos:</p>
+                        {periods.slice(0, 3).map(period => {
+                          const status = getPeriodStatus(period);
+                          const StatusIcon = status.icon;
+                          return (
+                            <div key={period.id} className={`flex items-center gap-2 p-2 rounded-lg ${status.bg} ${status.border} border text-xs`}>
+                              <StatusIcon className={`w-3 h-3 ${status.color}`} />
+                              <div className="flex-1 min-w-0">
+                                <span className="font-medium text-gray-900 truncate">{period.name}</span>
+                                <span className={`ml-2 ${status.color}`}>({status.label})</span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Center Column - Evaluator */}
-                <div className="col-span-4 space-y-4">
-                  <div className="bg-white border border-gray-200 rounded-xl p-6">
+                <div className="col-span-12 md:col-span-4 space-y-4">
+                  {/* Filters */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-medium text-gray-900 text-base">
+                        <Filter className="w-4 h-4 inline mr-2 text-blue-600" />
+                        Filtros
+                      </h3>
+                      {activeFiltersCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={clearFilters}
+                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                        >
+                          Limpiar ({activeFiltersCount})
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <select
+                          value={filters.department}
+                          onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
+                          className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
+                          disabled={loading}
+                        >
+                          <option value="">Todos los departamentos</option>
+                          {references.departments?.map(dept => (
+                            <option key={dept.id} value={dept.name}>{dept.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <select
+                          value={filters.position}
+                          onChange={(e) => setFilters(prev => ({ ...prev, position: e.target.value }))}
+                          className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
+                          disabled={loading}
+                        >
+                          <option value="">Todos los cargos</option>
+                          {references.positions?.map(pos => (
+                            <option key={pos.id} value={pos.name}>{pos.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Evaluator Selection */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                     <div className="flex items-center gap-2 mb-4">
                       <User className="w-5 h-5 text-blue-600" />
-                      <h3 className="font-semibold text-gray-900">Seleccionar Evaluador *</h3>
+                      <h3 className="font-semibold text-gray-900 text-base">Evaluador *</h3>
                     </div>
 
                     {selectedEvaluator && (
-                      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-blue-900">
-                              {selectedEvaluator.name || `${selectedEvaluator.first_name || ''} ${selectedEvaluator.last_name || ''}`.trim()}
-                            </p>
-                            <p className="text-xs text-blue-600">{selectedEvaluator.email}</p>
-                            <p className="text-xs text-blue-600">{selectedEvaluator.position || '—'}</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setEvaluatorId(null)}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                      <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-blue-900 text-base">
+                            {selectedEvaluator.name || `${selectedEvaluator.first_name || ''} ${selectedEvaluator.last_name || ''}`.trim()}
+                          </p>
+                          <p className="text-sm text-blue-600">{selectedEvaluator.position || '—'} | {selectedEvaluator.department || '—'}</p>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => setEvaluatorId(null)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
                     )}
 
                     <div className="relative mb-4">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                       <input
                         type="text"
                         placeholder="Buscar evaluador..."
                         value={searchTermEvaluator}
                         onChange={(e) => setSearchTermEvaluator(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
                         disabled={loading}
                       />
                     </div>
 
                     <div className="max-h-80 overflow-y-auto space-y-2">
                       {filteredEvaluatorUsers.length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">No se encontraron evaluadores</p>
+                        <p className="text-gray-500 text-center py-6 text-sm">No se encontraron evaluadores</p>
                       ) : (
                         filteredEvaluatorUsers.map(user => (
                           <div
                             key={user.id}
-                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                            className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
                               evaluatorId === user.id 
-                                ? 'bg-blue-50 border border-blue-200' 
-                                : 'hover:bg-gray-50 border border-transparent'
+                                ? 'bg-blue-50 border-blue-200' 
+                                : 'hover:bg-gray-50 border-transparent'
                             }`}
                             onClick={() => handleEvaluatorSelect(user.id)}
                           >
@@ -461,14 +593,13 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                               checked={evaluatorId === user.id}
                               onChange={() => handleEvaluatorSelect(user.id)}
                               disabled={loading}
-                              className="w-4 h-4 text-blue-500"
+                              className="w-4 h-4 text-blue-500 focus:ring-blue-500"
                             />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
+                              <p className="text-base font-medium text-gray-900 truncate">
                                 {user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim()}
                               </p>
-                              <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                              <p className="text-xs text-gray-500 truncate">
+                              <p className="text-sm text-gray-500 truncate">
                                 {user.position || '—'} | {user.department || '—'}
                               </p>
                             </div>
@@ -480,35 +611,36 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                 </div>
 
                 {/* Right Column - Employees */}
-                <div className="col-span-4 space-y-4">
-                  <div className="bg-white border border-gray-200 rounded-xl p-6">
+                <div className="col-span-12 md:col-span-4 space-y-4">
+                  {/* Employee Selection */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <UserCheck className="w-5 h-5 text-green-600" />
-                        <h3 className="font-semibold text-gray-900">Empleados a Evaluar *</h3>
+                        <h3 className="font-semibold text-gray-900 text-base">Empleados a Evaluar *</h3>
                       </div>
                       {selectedEmployees.length > 0 && (
                         <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                          {selectedEmployees.length} seleccionado{selectedEmployees.length !== 1 ? 's' : ''}
+                          {selectedEmployees.length} seleccionados
                         </span>
                       )}
                     </div>
 
                     <div className="relative mb-4">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                       <input
                         type="text"
                         placeholder="Buscar empleados..."
                         value={searchTermEmployees}
                         onChange={(e) => setSearchTermEmployees(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 text-sm"
                         disabled={loading}
                       />
                     </div>
 
                     <div className="max-h-80 overflow-y-auto space-y-2">
                       {filteredEmployeeUsers.length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">
+                        <p className="text-gray-500 text-center py-6 text-sm">
                           {evaluatorId 
                             ? 'No se encontraron empleados para evaluar' 
                             : 'Primero seleccione un evaluador'
@@ -518,10 +650,10 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                         filteredEmployeeUsers.map(user => (
                           <div
                             key={user.id}
-                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                            className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
                               selectedEmployees.includes(user.id)
-                                ? 'bg-green-50 border border-green-200'
-                                : 'hover:bg-gray-50 border border-transparent'
+                                ? 'bg-green-50 border-green-200'
+                                : 'hover:bg-gray-50 border-transparent'
                             }`}
                             onClick={() => toggleEmployee(user.id)}
                           >
@@ -530,14 +662,13 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                               checked={selectedEmployees.includes(user.id)}
                               onChange={() => toggleEmployee(user.id)}
                               disabled={loading}
-                              className="w-4 h-4 text-green-500"
+                              className="w-4 h-4 text-green-500 focus:ring-green-500"
                             />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
+                              <p className="text-base font-medium text-gray-900 truncate">
                                 {user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim()}
                               </p>
-                              <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                              <p className="text-xs text-gray-500 truncate">
+                              <p className="text-sm text-gray-500 truncate">
                                 {user.position || '—'} | {user.department || '—'}
                               </p>
                             </div>
@@ -551,7 +682,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
 
               {/* Error Message */}
               {error && (
-                <div className="mt-6 flex items-start gap-3 bg-red-50 border border-red-200 p-4 rounded-lg">
+                <div className="mt-6 flex items-start gap-3 bg-red-50 border border-red-200 p-4 rounded-xl">
                   <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                   <p className="text-red-600 text-sm">{error}</p>
                 </div>
@@ -562,14 +693,14 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-200 transition-colors font-medium disabled:opacity-50"
+                  className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-200 transition-colors font-medium disabled:opacity-50 text-base"
                   disabled={loading}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50 text-base"
                   disabled={loading || !template}
                 >
                   {loading ? (
