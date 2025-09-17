@@ -50,7 +50,6 @@ export interface TemplateCriteriaByCategory {
   skills: BackendTemplateCriteria[];
 }
 
-// Template con estructura actualizada para manejar ambos formatos
 export interface Template {
   id: number;
   name: string;
@@ -71,6 +70,19 @@ export interface Template {
   };
   created_at: string;
   updated_at: string;
+}
+
+export interface TemplateListItem extends Omit<Template, 'criteria' | 'summary'> {
+  criteria_count: number;
+  categories_used: number;
+}
+// Para mantener compatibilidad con el código existente
+export interface TemplateCriteria {
+  id?: number;
+  criteria_id: number;
+  weight: number;
+  criteria?: Criteria;
+  category?: string;
 }
 
 // Para mantener compatibilidad con el código existente

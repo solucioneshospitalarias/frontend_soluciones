@@ -27,13 +27,12 @@ import {
   deletePeriod,
   deleteTemplate,
   deleteEvaluation,
-  cloneTemplate,
   type Criteria,
   type Period,
   type Template,
   type Evaluation
 } from '../services/evaluationService';
-import { flattenTemplateCriteria, type TemplateCriteria } from '../types/evaluation';
+import { flattenTemplateCriteria, type TemplateCriteria, type TemplateListItem } from '../types/evaluation';
 import CrearCriterioModal from '../components/CrearCriterioModal';
 import CrearPeriodoModal from '../components/CrearPeriodoModal';
 import CrearPlantillaModal from '../components/CrearPlantillaModal';
@@ -44,7 +43,7 @@ import EditarPeriodoModal from '../components/EditarPeriodoModal';
 import EditarCriterioModal from '../components/EditarCriterioModal';
 import VerPlantillaModal from '../components/VerPlantillaModal';
 import ClonarPlantillaModal from '../components/ClonarPlantillaModal';
-import CrearEvaluacionDesdePlantillaModal from '../components/CrearEvaluacionDesdePlantillaModal'; // NEW IMPORT
+import CrearEvaluacionDesdePlantillaModal from '../components/CrearEvaluacionDesdePlantillaModal';
 
 interface Stats {
   totalPeriods: number;
@@ -77,7 +76,6 @@ const GestionEvaluacionesPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<'todos' | string>('todos');
   const [deletingItems, setDeletingItems] = useState<Set<number>>(new Set());
   const [cloningItems, setCloningItems] = useState<Set<number>>(new Set());
-  // NEW STATES
   const [showCrearEvaluacionDesdePlantillaModal, setShowCrearEvaluacionDesdePlantillaModal] = useState(false);
   const [selectedTemplateForEvaluation, setSelectedTemplateForEvaluation] = useState<Template | null>(null);
 
@@ -180,7 +178,6 @@ const GestionEvaluacionesPage: React.FC = () => {
     });
   };
 
-  // NEW HANDLER FOR EVALUATIONS FROM TEMPLATE
   const handleEvaluationFromTemplateCreated = (newEvaluations: { evaluatedEmployeeIds: number[]; count: number }) => {
     loadAllData();
     setShowCrearEvaluacionDesdePlantillaModal(false);
@@ -447,6 +444,32 @@ const GestionEvaluacionesPage: React.FC = () => {
     setSelectedCategory('todos');
   };
 
+  // ==================== COMPONENTE STAT CARD ====================
+  const StatCard: React.FC<{
+    title: string;
+    value: number;
+    icon: React.ReactNode;
+    color: string;
+    subtitle?: string;
+    isPercentage?: boolean;
+  }> = ({ title, value, icon, color, subtitle, isPercentage }) => (
+    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between mb-2">
+        <div className={`p-2 bg-gradient-to-r ${color} rounded-lg text-white`}>
+          {icon}
+        </div>
+      </div>
+      <div>
+        <p className="text-gray-600 text-xs font-medium">{title}</p>
+        <p className="text-xl font-bold text-gray-900">
+          {value}{isPercentage ? '%' : ''}
+        </p>
+        {subtitle && (
+          <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+        )}
+      </div>
+    </div>
+  );
   // ==================== FUNCIÓN PARA RENDERIZAR CONTENIDO DE TABS ====================
   const renderTabContent = () => {
     switch (activeTab) {
@@ -662,11 +685,16 @@ const GestionEvaluacionesPage: React.FC = () => {
                 filteredTemplates.map(template => {
                   const isDeleting = deletingItems.has(template.id);
                   const isCloning = cloningItems.has(template.id);
-                  const criteriaCount = template.summary?.total_criteria ||
-                    (template.criteria && !Array.isArray(template.criteria) ?
-                      (template.criteria.productivity?.length || 0) +
-                      (template.criteria.work_conduct?.length || 0) +
-                      (template.criteria.skills?.length || 0) : 0);
+                  
+                  // AQUÍ ESTÁ LA CORRECCIÓN - usando type guard para verificar si tiene criteria_count
+                  const criteriaCount = 'criteria_count' in template 
+                    ? (template as TemplateListItem).criteria_count 
+                    : template.summary?.total_criteria ||
+                      (template.criteria && !Array.isArray(template.criteria) ?
+                        (template.criteria.productivity?.length || 0) +
+                        (template.criteria.work_conduct?.length || 0) +
+                        (template.criteria.skills?.length || 0) : 0);
+                        
                   const criteriaWeights = template.criteria ?
                     flattenTemplateCriteria(template.criteria)
                       .map((c: TemplateCriteria) => `${Math.round((c.weight || 0) * 100)}%`)
@@ -761,33 +789,6 @@ const GestionEvaluacionesPage: React.FC = () => {
         return null;
     }
   };
-
-  // ==================== COMPONENTE STAT CARD ====================
-  const StatCard: React.FC<{
-    title: string;
-    value: number;
-    icon: React.ReactNode;
-    color: string;
-    subtitle?: string;
-    isPercentage?: boolean;
-  }> = ({ title, value, icon, color, subtitle, isPercentage }) => (
-    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between mb-2">
-        <div className={`p-2 bg-gradient-to-r ${color} rounded-lg text-white`}>
-          {icon}
-        </div>
-      </div>
-      <div>
-        <p className="text-gray-600 text-xs font-medium">{title}</p>
-        <p className="text-xl font-bold text-gray-900">
-          {value}{isPercentage ? '%' : ''}
-        </p>
-        {subtitle && (
-          <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
-        )}
-      </div>
-    </div>
-  );
 
   // ==================== ESTADOS DE CARGA Y ERROR ====================
   if (loading) {

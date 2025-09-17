@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileCheck, X, Loader2, Save, Trash2, Percent, Lock, Unlock, RotateCcw, ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { getCriteria, getTemplateById, updateTemplate } from '../services/evaluationService';
-import type { Criteria, UpdateTemplateDTO, Template } from '../types/evaluation';
+import type { Criteria, UpdateTemplateDTO, Template, BackendTemplateCriteria, TemplateCriteriaByCategory } from '../types/evaluation';
 
 interface EditarPlantillaModalProps {
   show: boolean;
@@ -56,16 +56,18 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
   }, [show, templateId]);
 
   // Helper function para convertir criterios del backend al formato del formulario
-  const convertBackendCriteriaToForm = (templateCriteria: any): SelectedCriteria[] => {
+  const convertBackendCriteriaToForm = (templateCriteria: Template['criteria']): SelectedCriteria[] => {
     const result: SelectedCriteria[] = [];
 
     // Si viene como objeto organizado por categorías (estructura del backend)
     if (templateCriteria && typeof templateCriteria === 'object' && !Array.isArray(templateCriteria)) {
+      const criteriaByCategory = templateCriteria as TemplateCriteriaByCategory;
+      
       // Procesar productivity
-      if (templateCriteria.productivity && Array.isArray(templateCriteria.productivity)) {
-        templateCriteria.productivity.forEach((tc: any) => {
+      if (criteriaByCategory.productivity && Array.isArray(criteriaByCategory.productivity)) {
+        criteriaByCategory.productivity.forEach((tc: BackendTemplateCriteria) => {
           result.push({
-            criteriaId: tc.criteria?.id || tc.criteria_id,
+            criteriaId: tc.criteria?.id || tc.id,
             weight: tc.weight,
             category: 'productividad',
             isLocked: false
@@ -74,10 +76,10 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
       }
 
       // Procesar work_conduct
-      if (templateCriteria.work_conduct && Array.isArray(templateCriteria.work_conduct)) {
-        templateCriteria.work_conduct.forEach((tc: any) => {
+      if (criteriaByCategory.work_conduct && Array.isArray(criteriaByCategory.work_conduct)) {
+        criteriaByCategory.work_conduct.forEach((tc: BackendTemplateCriteria) => {
           result.push({
-            criteriaId: tc.criteria?.id || tc.criteria_id,
+            criteriaId: tc.criteria?.id || tc.id,
             weight: tc.weight,
             category: 'conducta_laboral',
             isLocked: false
@@ -86,10 +88,10 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
       }
 
       // Procesar skills
-      if (templateCriteria.skills && Array.isArray(templateCriteria.skills)) {
-        templateCriteria.skills.forEach((tc: any) => {
+      if (criteriaByCategory.skills && Array.isArray(criteriaByCategory.skills)) {
+        criteriaByCategory.skills.forEach((tc: BackendTemplateCriteria) => {
           result.push({
-            criteriaId: tc.criteria?.id || tc.criteria_id,
+            criteriaId: tc.criteria?.id || tc.id,
             weight: tc.weight,
             category: 'habilidades',
             isLocked: false
@@ -99,7 +101,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
     }
     // Si viene como array (formato antiguo)
     else if (Array.isArray(templateCriteria)) {
-      templateCriteria.forEach((tc: any) => {
+      templateCriteria.forEach((tc) => {
         const criteriaData = availableCriteria.find(c => c.id === tc.criteria_id);
         if (criteriaData) {
           result.push({
@@ -476,7 +478,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                 <div className="mb-4">
                   <select
                     value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value as any)}
+                    onChange={(e) => setFilterCategory(e.target.value as 'todos' | 'productividad' | 'conducta_laboral' | 'habilidades')}
                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                   >
                     <option value="todos">Todos los criterios</option>

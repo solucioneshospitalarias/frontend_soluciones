@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Users, Calendar, Loader2, AlertCircle, Save, Search, Filter } from 'lucide-react';
+import { X, Users, Calendar, Loader2, AlertCircle, Save, Search, Filter, FileCheck, User, UserCheck } from 'lucide-react';
 import { getUsers } from '../services/userService';
 import { getPeriods, createEvaluationsFromTemplate } from '../services/evaluationService';
-import type { User } from '../types/user';
+import { flattenTemplateCriteria, type TemplateCriteria } from '../types/evaluation';
+import type { User as UserType } from '../types/user';
 import type { Period, Template, CreateEvaluationsFromTemplateDTO } from '../types/evaluation';
 import type { ReferenceData, ConfirmationState } from '../services/referenceService';
 import { referenceService } from '../services/referenceService';
@@ -27,17 +28,17 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
   template,
   setConfirmationState,
 }) => {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserType[]>([]);
   const [references, setReferences] = useState<ReferenceData>({});
   const [periods, setPeriods] = useState<Period[]>([]);
   const [evaluatorId, setEvaluatorId] = useState<number | null>(null);
   const [periodId, setPeriodId] = useState<number | ''>('');
-  const [selectedEvaluados, setSelectedEvaluados] = useState<number[]>([]);
+  const [selectedEmployees, setSelectedEmployees] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTermEvaluator, setSearchTermEvaluator] = useState('');
-  const [searchTermEvaluados, setSearchTermEvaluados] = useState('');
+  const [searchTermEmployees, setSearchTermEmployees] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     department: '',
@@ -94,7 +95,22 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
     }
   };
 
-  // Filter employees for evaluator and evaluados
+  // Get template criteria for display
+  const templateCriteria = useMemo(() => {
+    if (!template?.criteria) return [];
+    return flattenTemplateCriteria(template.criteria);
+  }, [template]);
+
+  const criteriaByCategory = useMemo(() => {
+    const grouped = {
+      productividad: templateCriteria.filter(c => c.category === 'productividad'),
+      conducta_laboral: templateCriteria.filter(c => c.category === 'conducta_laboral'),
+      habilidades: templateCriteria.filter(c => c.category === 'habilidades'),
+    };
+    return grouped;
+  }, [templateCriteria]);
+
+  // Filter employees for evaluator
   const filteredEvaluatorUsers = useMemo(() => {
     return users.filter(user => {
       const fullName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
@@ -109,20 +125,21 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
     });
   }, [users, searchTermEvaluator, filters]);
 
-  const filteredEvaluadosUsers = useMemo(() => {
+  // Filter employees for evaluation (excluding evaluator)
+  const filteredEmployeeUsers = useMemo(() => {
     return users.filter(user => {
       if (user.id === evaluatorId) return false; // Exclude evaluator
       const fullName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
       const matchesSearch =
-        fullName.toLowerCase().includes(searchTermEvaluados.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTermEvaluados.toLowerCase()) ||
-        (user.position || '').toLowerCase().includes(searchTermEvaluados.toLowerCase()) ||
-        (user.department || '').toLowerCase().includes(searchTermEvaluados.toLowerCase());
+        fullName.toLowerCase().includes(searchTermEmployees.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTermEmployees.toLowerCase()) ||
+        (user.position || '').toLowerCase().includes(searchTermEmployees.toLowerCase()) ||
+        (user.department || '').toLowerCase().includes(searchTermEmployees.toLowerCase());
       const matchesDepartment = !filters.department || user.department === filters.department;
       const matchesPosition = !filters.position || user.position === filters.position;
       return matchesSearch && matchesDepartment && matchesPosition;
     });
-  }, [users, searchTermEvaluados, filters, evaluatorId]);
+  }, [users, searchTermEmployees, filters, evaluatorId]);
 
   const activeFiltersCount = Object.values(filters).filter(value => value).length;
 
@@ -132,20 +149,20 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
       position: '',
     });
     setSearchTermEvaluator('');
-    setSearchTermEvaluados('');
+    setSearchTermEmployees('');
   };
 
   const handleEvaluatorSelect = (id: number) => {
     setEvaluatorId(id);
-    setSelectedEvaluados(prev => prev.filter(empId => empId !== id)); // Remove evaluator from evaluados
+    setSelectedEmployees(prev => prev.filter(empId => empId !== id)); // Remove evaluator from employees
   };
 
   const handlePeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setPeriodId(parseInt(e.target.value) || '');
   };
 
-  const toggleEvaluado = (id: number) => {
-    setSelectedEvaluados((prev: number[]) => {
+  const toggleEmployee = (id: number) => {
+    setSelectedEmployees((prev: number[]) => {
       if (prev.includes(id)) {
         return prev.filter(empId => empId !== id);
       }
@@ -156,7 +173,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
   const validateForm = (): string | null => {
     if (!evaluatorId) return 'Seleccione un evaluador';
     if (!periodId) return 'Seleccione un período';
-    if (selectedEvaluados.length === 0) return 'Seleccione al menos un evaluado';
+    if (selectedEmployees.length === 0) return 'Seleccione al menos un empleado a evaluar';
     return null;
   };
 
@@ -175,10 +192,14 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
     setError(null);
 
     try {
+      // Usar los campos correctos según el backend
       const payload: CreateEvaluationsFromTemplateDTO = {
         template_id: template.id,
-        user_ids: selectedEvaluados,
+        period_id: periodId as number,
+        evaluator_id: evaluatorId!,
+        employee_ids: selectedEmployees,
       };
+      
       console.log('🔄 Creating evaluations from template:', payload);
       const data = await createEvaluationsFromTemplate(payload);
       console.log('✅ Evaluations created:', data);
@@ -192,19 +213,11 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
         onConfirm: () => setConfirmationState((prev: ConfirmationState) => ({ ...prev, show: false })),
         loading: false,
       });
-      onClose();
+      handleClose();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       console.error('❌ Error creating evaluations:', errorMessage);
       setError(errorMessage);
-      setConfirmationState({
-        show: true,
-        title: 'Error',
-        message: `Error al crear evaluaciones: ${errorMessage}`,
-        type: 'danger',
-        onConfirm: () => setConfirmationState((prev: ConfirmationState) => ({ ...prev, show: false })),
-        loading: false,
-      });
     } finally {
       setLoading(false);
     }
@@ -214,26 +227,34 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
     if (loading) return;
     setEvaluatorId(null);
     setPeriodId('');
-    setSelectedEvaluados([]);
+    setSelectedEmployees([]);
     setError(null);
     setSearchTermEvaluator('');
-    setSearchTermEvaluados('');
+    setSearchTermEmployees('');
     setFilters({ department: '', position: '' });
     setShowFilters(false);
     onClose();
   };
 
+  const selectedEvaluator = users.find(u => u.id === evaluatorId);
+
   if (!show) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-8 w-full max-w-4xl shadow-2xl">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white rounded-2xl w-full max-w-7xl max-h-[95vh] overflow-hidden shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl text-white">
               <Users className="w-6 h-6" />
             </div>
-            <h2 className="text-2xl font-semibold text-gray-900">Crear Evaluación desde Plantilla</h2>
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900">Crear Evaluaciones desde Plantilla</h2>
+              {template && (
+                <p className="text-sm text-gray-600">Plantilla: <span className="font-medium">{template.name}</span></p>
+              )}
+            </div>
           </div>
           <button
             onClick={handleClose}
@@ -244,221 +265,324 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
           </button>
         </div>
 
-        {loadingData ? (
-          <div className="text-center py-12">
-            <Loader2 className="w-10 h-10 animate-spin text-blue-500 mx-auto mb-3" />
-            <p className="text-gray-600">Cargando datos...</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Evaluator Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Evaluador *</label>
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Buscar evaluador por nombre, email, cargo o departamento..."
-                  value={searchTermEvaluator}
-                  onChange={(e) => setSearchTermEvaluator(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  disabled={loading}
-                />
-              </div>
-              <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-xl p-4">
-                {filteredEvaluatorUsers.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No se encontraron empleados</p>
-                ) : (
-                  filteredEvaluatorUsers.map(user => (
-                    <div
-                      key={user.id}
-                      className={`flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer ${evaluatorId === user.id ? 'bg-blue-50 border border-blue-200' : ''}`}
-                      onClick={() => handleEvaluatorSelect(user.id)}
-                    >
-                      <input
-                        type="radio"
-                        name="evaluator"
-                        checked={evaluatorId === user.id}
-                        onChange={() => handleEvaluatorSelect(user.id)}
-                        disabled={loading}
-                        className="w-4 h-4 text-blue-500 border-gray-300 focus:ring-blue-500"
-                      />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">
-                          {user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim()}
-                        </p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
-                        <p className="text-xs text-gray-500">{user.position || '—'} | {user.department || '—'}</p>
+        {/* Content */}
+        <div className="overflow-y-auto max-h-[calc(95vh-120px)]">
+          {loadingData ? (
+            <div className="text-center py-12">
+              <Loader2 className="w-10 h-10 animate-spin text-blue-500 mx-auto mb-3" />
+              <p className="text-gray-600">Cargando datos...</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="grid grid-cols-12 gap-6">
+                {/* Left Column - Template Info & Period */}
+                <div className="col-span-4 space-y-6">
+                  {/* Template Summary */}
+                  {template && (
+                    <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-6 border border-purple-200">
+                      <div className="flex items-center gap-2 mb-4">
+                        <FileCheck className="w-5 h-5 text-purple-600" />
+                        <h3 className="font-semibold text-gray-900">Información de la Plantilla</h3>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Nombre</p>
+                          <p className="text-gray-900">{template.name}</p>
+                        </div>
+                        {template.description && (
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Descripción</p>
+                            <p className="text-gray-600 text-sm">{template.description}</p>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Criterios</p>
+                          <div className="space-y-2 mt-2">
+                            {Object.entries(criteriaByCategory).map(([category, criteria]) => 
+                              criteria.length > 0 && (
+                                <div key={category} className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-600 capitalize">
+                                    {category.replace('_', ' ')}:
+                                  </span>
+                                  <span className="font-medium text-purple-600">
+                                    {criteria.length} criterio{criteria.length !== 1 ? 's' : ''}
+                                  </span>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Period Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Período *</label>
-              <select
-                value={periodId}
-                onChange={handlePeriodChange}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                disabled={loading}
-              >
-                <option value="">Seleccione un período</option>
-                {periods.map(per => (
-                  <option key={per.id} value={per.id}>
-                    {per.name} ({formatDate(per.start_date)} - {formatDate(per.end_date)})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Evaluados Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Empleados a Evaluar *</label>
-              <div className="flex gap-4 mb-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Buscar evaluados por nombre, email, cargo o departamento..."
-                    value={searchTermEvaluados}
-                    onChange={(e) => setSearchTermEvaluados(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    disabled={loading}
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`px-4 py-3 rounded-xl font-medium flex items-center gap-2 transition-all ${
-                    showFilters || activeFiltersCount > 0
-                      ? 'bg-blue-500 text-white shadow-lg'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                  disabled={loading}
-                >
-                  <Filter className="w-5 h-5" />
-                  Filtros
-                  {activeFiltersCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {activeFiltersCount}
-                    </span>
                   )}
-                </button>
-              </div>
 
-              {/* Filters Panel */}
-              {showFilters && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Departamento</label>
-                      <select
-                        value={filters.department}
-                        onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
-                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        disabled={loading}
-                      >
-                        <option value="">Todos los departamentos</option>
-                        {references.departments?.map(dept => (
-                          <option key={dept.id} value={dept.name}>{dept.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Cargo</label>
-                      <select
-                        value={filters.position}
-                        onChange={(e) => setFilters(prev => ({ ...prev, position: e.target.value }))}
-                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        disabled={loading}
-                      >
-                        <option value="">Todos los cargos</option>
-                        {references.positions?.map(pos => (
-                          <option key={pos.id} value={pos.name}>{pos.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* Period Selection */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      <Calendar className="w-4 h-4 inline mr-2" />
+                      Período de Evaluación *
+                    </label>
+                    <select
+                      value={periodId}
+                      onChange={handlePeriodChange}
+                      className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      disabled={loading}
+                    >
+                      <option value="">Seleccione un período</option>
+                      {periods.map(period => (
+                        <option key={period.id} value={period.id}>
+                          {period.name} ({formatDate(period.start_date)} - {formatDate(period.end_date)})
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  {activeFiltersCount > 0 && (
-                    <div className="mt-4 flex justify-end">
+
+                  {/* Filters */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-medium text-gray-900">Filtros</h3>
                       <button
                         type="button"
-                        onClick={clearFilters}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-800 flex items-center gap-2 transition-colors"
-                        disabled={loading}
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                          showFilters || activeFiltersCount > 0
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
                       >
-                        <X className="w-4 h-4" />
-                        Limpiar filtros
+                        <Filter className="w-4 h-4 inline mr-1" />
+                        {activeFiltersCount > 0 ? `${activeFiltersCount} activo${activeFiltersCount > 1 ? 's' : ''}` : 'Filtros'}
                       </button>
                     </div>
-                  )}
+
+                    {showFilters && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
+                          <select
+                            value={filters.department}
+                            onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
+                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            disabled={loading}
+                          >
+                            <option value="">Todos</option>
+                            {references.departments?.map(dept => (
+                              <option key={dept.id} value={dept.name}>{dept.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Cargo</label>
+                          <select
+                            value={filters.position}
+                            onChange={(e) => setFilters(prev => ({ ...prev, position: e.target.value }))}
+                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            disabled={loading}
+                          >
+                            <option value="">Todos</option>
+                            {references.positions?.map(pos => (
+                              <option key={pos.id} value={pos.name}>{pos.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        {activeFiltersCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={clearFilters}
+                            className="w-full px-3 py-2 text-gray-600 hover:text-gray-800 flex items-center justify-center gap-2 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                            Limpiar filtros
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Center Column - Evaluator */}
+                <div className="col-span-4 space-y-4">
+                  <div className="bg-white border border-gray-200 rounded-xl p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <User className="w-5 h-5 text-blue-600" />
+                      <h3 className="font-semibold text-gray-900">Seleccionar Evaluador *</h3>
+                    </div>
+
+                    {selectedEvaluator && (
+                      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-blue-900">
+                              {selectedEvaluator.name || `${selectedEvaluator.first_name || ''} ${selectedEvaluator.last_name || ''}`.trim()}
+                            </p>
+                            <p className="text-xs text-blue-600">{selectedEvaluator.email}</p>
+                            <p className="text-xs text-blue-600">{selectedEvaluator.position || '—'}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setEvaluatorId(null)}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="relative mb-4">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <input
+                        type="text"
+                        placeholder="Buscar evaluador..."
+                        value={searchTermEvaluator}
+                        onChange={(e) => setSearchTermEvaluator(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div className="max-h-80 overflow-y-auto space-y-2">
+                      {filteredEvaluatorUsers.length === 0 ? (
+                        <p className="text-gray-500 text-center py-8">No se encontraron evaluadores</p>
+                      ) : (
+                        filteredEvaluatorUsers.map(user => (
+                          <div
+                            key={user.id}
+                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                              evaluatorId === user.id 
+                                ? 'bg-blue-50 border border-blue-200' 
+                                : 'hover:bg-gray-50 border border-transparent'
+                            }`}
+                            onClick={() => handleEvaluatorSelect(user.id)}
+                          >
+                            <input
+                              type="radio"
+                              name="evaluator"
+                              checked={evaluatorId === user.id}
+                              onChange={() => handleEvaluatorSelect(user.id)}
+                              disabled={loading}
+                              className="w-4 h-4 text-blue-500"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim()}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                              <p className="text-xs text-gray-500 truncate">
+                                {user.position || '—'} | {user.department || '—'}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Employees */}
+                <div className="col-span-4 space-y-4">
+                  <div className="bg-white border border-gray-200 rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="w-5 h-5 text-green-600" />
+                        <h3 className="font-semibold text-gray-900">Empleados a Evaluar *</h3>
+                      </div>
+                      {selectedEmployees.length > 0 && (
+                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                          {selectedEmployees.length} seleccionado{selectedEmployees.length !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="relative mb-4">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <input
+                        type="text"
+                        placeholder="Buscar empleados..."
+                        value={searchTermEmployees}
+                        onChange={(e) => setSearchTermEmployees(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div className="max-h-80 overflow-y-auto space-y-2">
+                      {filteredEmployeeUsers.length === 0 ? (
+                        <p className="text-gray-500 text-center py-8">
+                          {evaluatorId 
+                            ? 'No se encontraron empleados para evaluar' 
+                            : 'Primero seleccione un evaluador'
+                          }
+                        </p>
+                      ) : (
+                        filteredEmployeeUsers.map(user => (
+                          <div
+                            key={user.id}
+                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                              selectedEmployees.includes(user.id)
+                                ? 'bg-green-50 border border-green-200'
+                                : 'hover:bg-gray-50 border border-transparent'
+                            }`}
+                            onClick={() => toggleEmployee(user.id)}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedEmployees.includes(user.id)}
+                              onChange={() => toggleEmployee(user.id)}
+                              disabled={loading}
+                              className="w-4 h-4 text-green-500"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim()}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                              <p className="text-xs text-gray-500 truncate">
+                                {user.position || '—'} | {user.department || '—'}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="mt-6 flex items-start gap-3 bg-red-50 border border-red-200 p-4 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-red-600 text-sm">{error}</p>
                 </div>
               )}
 
-              <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-xl p-4">
-                {filteredEvaluadosUsers.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No se encontraron empleados</p>
-                ) : (
-                  filteredEvaluadosUsers.map(user => (
-                    <div key={user.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg">
-                      <input
-                        type="checkbox"
-                        id={`emp-${user.id}`}
-                        checked={selectedEvaluados.includes(user.id)}
-                        onChange={() => toggleEvaluado(user.id)}
-                        disabled={loading}
-                        className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <label htmlFor={`emp-${user.id}`} className="flex-1 cursor-pointer">
-                        <p className="text-sm font-medium text-gray-900">
-                          {user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim()}
-                        </p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
-                        <p className="text-xs text-gray-500">{user.position || '—'} | {user.department || '—'}</p>
-                      </label>
-                    </div>
-                  ))
-                )}
+              {/* Action Buttons */}
+              <div className="flex gap-4 pt-6 mt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-200 transition-colors font-medium disabled:opacity-50"
+                  disabled={loading}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                  disabled={loading || !template}
+                >
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Save className="w-5 h-5" />
+                  )}
+                  Crear {selectedEmployees.length} Evaluacion{selectedEmployees.length !== 1 ? 'es' : ''}
+                </button>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Seleccionados: {selectedEvaluados.length}</p>
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="flex items-start gap-3 bg-red-50 border border-red-200 p-4 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="text-red-600 text-sm">{error}</p>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-4 pt-6 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-200 transition-colors font-medium disabled:opacity-50"
-                disabled={loading}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-                disabled={loading || !template}
-              >
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Save className="w-5 h-5" />
-                )}
-                Crear Evaluaciones
-              </button>
-            </div>
-          </form>
-        )}
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );
