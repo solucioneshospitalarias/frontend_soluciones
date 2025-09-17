@@ -1,29 +1,33 @@
-// src/utils/permissions.ts
-export const ROLES = {
-  ADMIN: 'admin',
-  HR_MANAGER: 'hr_manager',
-  EVALUATOR: 'evaluator',
-  EMPLOYEE: 'employee',
+export const canManageEmployees = (role: string): boolean => {
+  return ['admin', 'hr_manager'].includes(role);
 };
 
-export const hasPermission = (userRole: string, requiredRole: string | string[]) => {
-  if (Array.isArray(requiredRole)) {
-    return requiredRole.includes(userRole.toLowerCase());
+export const canManageEvaluations = (role: string): boolean => {
+  return ['admin', 'hr_manager'].includes(role);
+};
+
+export const canAccessEvaluatorView = (role: string): boolean => {
+  return ['supervisor', 'evaluator', 'employee'].includes(role);
+};
+
+// ✅ NUEVA FUNCIÓN: Determina quién puede acceder al dashboard
+export const canAccessDashboard = (role: string): boolean => {
+  return ['admin', 'hr_manager'].includes(role);
+};
+
+// ✅ NUEVA FUNCIÓN: Determina quién puede acceder a reportes y análisis
+export const canAccessReports = (role: string): boolean => {
+  return ['admin', 'hr_manager'].includes(role);
+};
+
+// ✅ NUEVA FUNCIÓN: Obtiene la ruta por defecto según el rol
+export const getDefaultRouteByRole = (role: string): string => {
+  if (canAccessDashboard(role)) {
+    return '/dashboard';
+  } else if (canAccessEvaluatorView(role)) {
+    return '/mis-evaluaciones';
+  } else {
+    // Fallback por seguridad
+    return '/mis-evaluaciones';
   }
-  return userRole.toLowerCase() === requiredRole.toLowerCase();
 };
-
-export const canAccessAdminDashboard = (userRole: string) =>
-  hasPermission(userRole, [ROLES.ADMIN, ROLES.HR_MANAGER]);
-
-export const canAccessEvaluatorView = (userRole: string) =>
-  hasPermission(userRole, [ROLES.EVALUATOR, ROLES.ADMIN, ROLES.HR_MANAGER]);
-
-export const canAccessEmployeeView = (userRole: string) =>
-  hasPermission(userRole, [ROLES.EMPLOYEE, ROLES.EVALUATOR, ROLES.ADMIN, ROLES.HR_MANAGER]);
-
-export const canManageEmployees = (userRole: string) =>
-  hasPermission(userRole, [ROLES.ADMIN, ROLES.HR_MANAGER]);
-
-export const canManageEvaluations = (userRole: string) =>
-  hasPermission(userRole, [ROLES.ADMIN, ROLES.HR_MANAGER]);

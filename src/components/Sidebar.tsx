@@ -1,8 +1,24 @@
 import React from 'react';
-import { BarChart3, Users, Calendar, Target, FileText, LogOut, Menu, Activity, User } from 'lucide-react';
+import {
+  BarChart3,
+  Users,
+  Calendar,
+  Target,
+  FileText,
+  LogOut,
+  Menu,
+  Activity,
+  User,
+} from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
-import { canManageEmployees, canManageEvaluations, canAccessEvaluatorView } from '../utils/permissions';
+import {
+  canManageEmployees,
+  canManageEvaluations,
+  canAccessEvaluatorView,
+  canAccessDashboard,
+  canAccessReports,
+} from '../utils/permissions';
 import soluciones from '../assets/soluciones-ico.png';
 
 interface SidebarProps {
@@ -17,7 +33,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
   const userRole = user?.role?.name?.toLowerCase() || '';
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/dashboard' },
+    ...(canAccessDashboard(userRole)
+      ? [{ id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/dashboard' }]
+      : []),
     ...(canManageEmployees(userRole)
       ? [{ id: 'employees', label: 'Gestión de empleados', icon: Users, path: '/employees' }]
       : []),
@@ -30,7 +48,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
     ...(canAccessEvaluatorView(userRole)
       ? [{ id: 'my-evaluations', label: 'Mis Evaluaciones', icon: Target, path: '/mis-evaluaciones' }]
       : []),
-    { id: 'reports', label: 'Reportes y Análisis', icon: FileText, path: '/reports' },
+    ...(canAccessReports(userRole)
+      ? [{ id: 'reports', label: 'Reportes y Análisis', icon: FileText, path: '/reports' }]
+      : []),
   ];
 
   const getRoleName = () => {
