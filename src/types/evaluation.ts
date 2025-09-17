@@ -175,6 +175,7 @@ export interface ResumenEvaluacionDTO {
   period_name: string;
   status: string;
   completed_at?: string;
+  due_date: string;
 }
 
 export interface MisEvaluacionesRespuestaDTO {
