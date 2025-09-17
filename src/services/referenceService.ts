@@ -236,3 +236,22 @@ export const referenceService = new ReferenceService();
 
 // Exportar también getReferenceData para compatibilidad
 export const getReferenceData = () => referenceService.getFormReferences();
+
+export interface ConfirmationState {
+  show: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  type: 'danger' | 'warning' | 'info' | 'success';
+  loading: boolean;
+}
+
+// src/types/references.ts
+export interface ConfirmationState {
+  show: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  type: 'danger' | 'warning' | 'info' | 'success';
+  loading: boolean;
+}

@@ -44,6 +44,7 @@ import EditarPeriodoModal from '../components/EditarPeriodoModal';
 import EditarCriterioModal from '../components/EditarCriterioModal';
 import VerPlantillaModal from '../components/VerPlantillaModal';
 import ClonarPlantillaModal from '../components/ClonarPlantillaModal';
+import CrearEvaluacionDesdePlantillaModal from '../components/CrearEvaluacionDesdePlantillaModal'; // NEW IMPORT
 
 interface Stats {
   totalPeriods: number;
@@ -76,6 +77,9 @@ const GestionEvaluacionesPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<'todos' | string>('todos');
   const [deletingItems, setDeletingItems] = useState<Set<number>>(new Set());
   const [cloningItems, setCloningItems] = useState<Set<number>>(new Set());
+  // NEW STATES
+  const [showCrearEvaluacionDesdePlantillaModal, setShowCrearEvaluacionDesdePlantillaModal] = useState(false);
+  const [selectedTemplateForEvaluation, setSelectedTemplateForEvaluation] = useState<Template | null>(null);
 
   // ==================== ESTADOS DE MODALES ====================
   const [showCrearCriterioModal, setShowCrearCriterioModal] = useState(false);
@@ -88,8 +92,6 @@ const GestionEvaluacionesPage: React.FC = () => {
   const [showVerPlantillaModal, setShowVerPlantillaModal] = useState(false);
   const [showClonarPlantillaModal, setShowClonarPlantillaModal] = useState(false);
   const [cloningTemplate, setCloningTemplate] = useState<Template | null>(null);
-
-  // ==================== ESTADOS DE EDICIÓN ====================
   const [editingPeriodId, setEditingPeriodId] = useState<number | null>(null);
   const [editingCriteriaId, setEditingCriteriaId] = useState<number | null>(null);
   const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
@@ -163,8 +165,8 @@ const GestionEvaluacionesPage: React.FC = () => {
   };
 
   const handleTemplateUpdated = (updatedTemplate: Template) => {
-    setTemplates(prev => 
-      prev.map(template => 
+    setTemplates(prev =>
+      prev.map(template =>
         template.id === updatedTemplate.id ? updatedTemplate : template
       )
     );
@@ -173,6 +175,19 @@ const GestionEvaluacionesPage: React.FC = () => {
     showConfirmation({
       title: '¡Plantilla Actualizada!',
       message: `La plantilla "${updatedTemplate.name}" se ha actualizado exitosamente.`,
+      type: 'success',
+      onConfirm: hideConfirmation
+    });
+  };
+
+  // NEW HANDLER FOR EVALUATIONS FROM TEMPLATE
+  const handleEvaluationFromTemplateCreated = (newEvaluations: { evaluatedEmployeeIds: number[]; count: number }) => {
+    loadAllData();
+    setShowCrearEvaluacionDesdePlantillaModal(false);
+    setSelectedTemplateForEvaluation(null);
+    showConfirmation({
+      title: '¡Evaluaciones Creadas!',
+      message: `Se han creado ${newEvaluations.count} evaluaciones exitosamente.`,
       type: 'success',
       onConfirm: hideConfirmation
     });
@@ -647,13 +662,11 @@ const GestionEvaluacionesPage: React.FC = () => {
                 filteredTemplates.map(template => {
                   const isDeleting = deletingItems.has(template.id);
                   const isCloning = cloningItems.has(template.id);
-                  // Calculate total criteria by summing lengths of category arrays or using summary
                   const criteriaCount = template.summary?.total_criteria ||
                     (template.criteria && !Array.isArray(template.criteria) ?
                       (template.criteria.productivity?.length || 0) +
                       (template.criteria.work_conduct?.length || 0) +
                       (template.criteria.skills?.length || 0) : 0);
-                  // Calculate weights using flattenTemplateCriteria
                   const criteriaWeights = template.criteria ?
                     flattenTemplateCriteria(template.criteria)
                       .map((c: TemplateCriteria) => `${Math.round((c.weight || 0) * 100)}%`)
@@ -713,7 +726,10 @@ const GestionEvaluacionesPage: React.FC = () => {
                           )}
                         </button>
                         <button
-                          onClick={() => console.log('Generate evaluation:', template)}
+                          onClick={() => {
+                            setSelectedTemplateForEvaluation(template);
+                            setShowCrearEvaluacionDesdePlantillaModal(true);
+                          }}
                           className="p-2 hover:bg-green-50 rounded-lg"
                           title="Generar evaluación"
                           disabled={isDeleting || isCloning}
@@ -986,8 +1002,8 @@ const GestionEvaluacionesPage: React.FC = () => {
                           <h3 className="font-semibold text-gray-900 text-lg">{evaluation.employee_name}</h3>
                           <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(evaluation.status)}`}>
                             {evaluation.status === 'pending' ? 'Pendiente' :
-                             evaluation.status === 'completed' ? 'Completada' :
-                             evaluation.status === 'overdue' ? 'Atrasada' : evaluation.status}
+                              evaluation.status === 'completed' ? 'Completada' :
+                                evaluation.status === 'overdue' ? 'Atrasada' : evaluation.status}
                           </span>
                         </div>
                         <div className="space-y-2 mb-4 text-sm text-gray-600">
@@ -1120,6 +1136,16 @@ const GestionEvaluacionesPage: React.FC = () => {
         }}
         onCloned={handleCloned}
         template={cloningTemplate}
+        setConfirmationState={setConfirmationState}
+      />
+      <CrearEvaluacionDesdePlantillaModal
+        show={showCrearEvaluacionDesdePlantillaModal}
+        onClose={() => {
+          setShowCrearEvaluacionDesdePlantillaModal(false);
+          setSelectedTemplateForEvaluation(null);
+        }}
+        onCreated={handleEvaluationFromTemplateCreated}
+        template={selectedTemplateForEvaluation}
         setConfirmationState={setConfirmationState}
       />
       <ConfirmationModal
