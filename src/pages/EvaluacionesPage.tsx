@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import { 
-  User, Calendar, Building, Info, Eye, EyeOff, CheckCircle, 
+  User, Calendar, Building, Info, CheckCircle, 
   Clock, FileText, Search, Filter, AlertCircle, ArrowLeft 
 } from 'lucide-react';
 import { useEvaluaciones, useFiltrosEvaluaciones } from '../hooks/useEvaluaciones';
 import servicioEvaluaciones from '../services/evaluationService';
-import type { ModoEvaluacion } from '../types/evaluation';
 
 const EvaluacionesPage: React.FC = () => {
   // Estados locales
-  const [modo, setModo] = useState<ModoEvaluacion>('evaluador');
   const [vistaActual, setVistaActual] = useState<'lista' | 'calificar'>('lista');
   const [puntuaciones, setPuntuaciones] = useState<Record<number, number>>({});
   const [mostrarInfoPeso, setMostrarInfoPeso] = useState<number | null>(null);
@@ -303,8 +301,8 @@ const EvaluacionesPage: React.FC = () => {
 
   // ==================== VISTA PRINCIPAL - LISTA ====================
 
-  // Obtener evaluaciones según el modo
-  const evaluaciones = obtenerEvaluacionesPorModo(modo);
+  // Obtener evaluaciones en modo evaluador
+  const evaluaciones = obtenerEvaluacionesPorModo('evaluador');
 
   // Filtrar evaluaciones localmente
   const evaluacionesFiltradas = evaluaciones.filter(evaluacion => {
@@ -316,87 +314,31 @@ const EvaluacionesPage: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      {/* Header con modo toggle */}
+      {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Sistema de Evaluaciones</h1>
-          
-          <div className="flex bg-gray-100 p-1 rounded-lg">
-            <button
-              onClick={() => setModo('evaluador')}
-              className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
-                modo === 'evaluador'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Eye className="w-4 h-4" />
-                Modo Evaluador
-              </div>
-            </button>
-            <button
-              onClick={() => setModo('evaluado')}
-              className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
-                modo === 'evaluado'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <EyeOff className="w-4 h-4" />
-                Mis Evaluaciones
-              </div>
-            </button>
-          </div>
-        </div>
+        <h1 className="text-3xl font-bold text-gray-900">Evaluaciones para Calificar</h1>
 
         {/* Estadísticas */}
         {misEvaluaciones && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {modo === 'evaluador' ? (
-              <>
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {misEvaluaciones.as_evaluator.summary.total}
-                  </div>
-                  <div className="text-sm text-blue-800">Total asignadas</div>
-                </div>
-                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                  <div className="text-2xl font-bold text-yellow-600">
-                    {misEvaluaciones.as_evaluator.summary.pending_to_evaluate}
-                  </div>
-                  <div className="text-sm text-yellow-800">Pendientes por calificar</div>
-                </div>
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                  <div className="text-2xl font-bold text-green-600">
-                    {misEvaluaciones.as_evaluator.summary.completed}
-                  </div>
-                  <div className="text-sm text-green-800">Completadas</div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {misEvaluaciones.as_employee.summary.total}
-                  </div>
-                  <div className="text-sm text-blue-800">Total recibidas</div>
-                </div>
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                  <div className="text-2xl font-bold text-green-600">
-                    {misEvaluaciones.as_employee.summary.completed}
-                  </div>
-                  <div className="text-sm text-green-800">Completadas</div>
-                </div>
-                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                  <div className="text-2xl font-bold text-yellow-600">
-                    {misEvaluaciones.as_employee.summary.pending}
-                  </div>
-                  <div className="text-sm text-yellow-800">Pendientes</div>
-                </div>
-              </>
-            )}
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="text-2xl font-bold text-blue-600">
+                {misEvaluaciones.as_evaluator.summary.total}
+              </div>
+              <div className="text-sm text-blue-800">Total asignadas</div>
+            </div>
+            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <div className="text-2xl font-bold text-yellow-600">
+                {misEvaluaciones.as_evaluator.summary.pending_to_evaluate}
+              </div>
+              <div className="text-sm text-yellow-800">Pendientes por calificar</div>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <div className="text-2xl font-bold text-green-600">
+                {misEvaluaciones.as_evaluator.summary.completed}
+              </div>
+              <div className="text-sm text-green-800">Completadas</div>
+            </div>
           </div>
         )}
 
@@ -429,13 +371,10 @@ const EvaluacionesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Descripción del modo */}
+      {/* Descripción */}
       <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <p className="text-blue-800">
-          {modo === 'evaluador' 
-            ? '🎯 Evaluaciones que debes realizar como evaluador asignado'
-            : '📋 Evaluaciones que te han hecho a ti como empleado'
-          }
+          🎯 Evaluaciones que debes realizar como evaluador asignado
         </p>
       </div>
 
@@ -453,9 +392,7 @@ const EvaluacionesPage: React.FC = () => {
       {!cargando && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">
-              {modo === 'evaluador' ? 'Evaluaciones para Calificar' : 'Mis Evaluaciones Recibidas'}
-            </h2>
+            <h2 className="text-xl font-semibold text-gray-900">Evaluaciones para Calificar</h2>
           </div>
           
           <div className="divide-y divide-gray-200">
@@ -477,7 +414,7 @@ const EvaluacionesPage: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-4 mb-2">
                         <h3 className="text-lg font-semibold text-gray-900">
-                          {modo === 'evaluador' ? evaluacion.employee_name : evaluacion.evaluator_name}
+                          {evaluacion.employee_name}
                         </h3>
                         <BadgeEstado estado={evaluacion.status} />
                       </div>
@@ -491,7 +428,7 @@ const EvaluacionesPage: React.FC = () => {
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      {modo === 'evaluador' && evaluacion.status === 'pending' && (
+                      {evaluacion.status === 'pending' && (
                         <button
                           onClick={() => manejarIniciarEvaluacion(evaluacion.id)}
                           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
