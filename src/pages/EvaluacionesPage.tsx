@@ -8,8 +8,8 @@ import {
   Clock,
   Loader2,
   Calendar,
-  Play,
   Eye,
+  Play
 } from 'lucide-react';
 import servicioEvaluaciones, { ErrorEvaluacion } from '../services/evaluationService';
 import type {
@@ -17,8 +17,7 @@ import type {
   ResumenEvaluacionDTO,
 } from '../types/evaluation';
 import RealizarEvaluacionModal from '../components/RealizarEvaluacionModal';
-
-// Resto de interfaces y componentes...
+import VerReporteEvaluacionModal from '../components/VerReporteEvaluacionModal'; 
 
 const EvaluacionesPage: React.FC = () => {
   // Estados
@@ -28,8 +27,9 @@ const EvaluacionesPage: React.FC = () => {
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
   
-  // Estados para el modal
+  // Estados para los modales
   const [modalRealizarOpen, setModalRealizarOpen] = useState(false);
+  const [modalReporteOpen, setModalReporteOpen] = useState(false);
   const [evaluacionSeleccionada, setEvaluacionSeleccionada] = useState<number | null>(null);
 
   // Cargar evaluaciones al montar el componente
@@ -71,15 +71,21 @@ const EvaluacionesPage: React.FC = () => {
     setModalRealizarOpen(true);
   };
 
+  const handleVerReporte = (evaluacionId: number): void => {
+    console.log('Ver reporte de evaluación:', evaluacionId);
+    setEvaluacionSeleccionada(evaluacionId);
+    setModalReporteOpen(true);
+  };
+
   const handleEvaluacionCompletada = (): void => {
     cargarMisEvaluaciones();
     setModalRealizarOpen(false);
     setEvaluacionSeleccionada(null);
   };
 
-  const handleVerReporte = (evaluacionId: number): void => {
-    console.log('Ver reporte de evaluación:', evaluacionId);
-    // TODO: Implementar modal de ver reporte
+  const handleReporteCerrado = (): void => {
+    setModalReporteOpen(false);
+    setEvaluacionSeleccionada(null);
   };
 
   const limpiarError = (): void => {
@@ -101,6 +107,7 @@ const EvaluacionesPage: React.FC = () => {
         case 'completed':
         case 'completada':
         case 'completado':
+        case 'realizada':
           return {
             color: 'bg-green-100 text-green-800 border-green-200',
             texto: 'Completada',
@@ -351,7 +358,7 @@ const EvaluacionesPage: React.FC = () => {
                             <Play className="w-4 h-4" />
                             {(evaluacion.status === 'overdue' || evaluacion.status === 'vencida' || evaluacion.status === 'atrasada') ? 'CALIFICAR (ATRASADA)' : 'CALIFICAR AHORA'}
                           </button>
-                        ) : (evaluacion.status === 'completed' || evaluacion.status === 'completada' || evaluacion.status === 'completado') ? (
+                        ) : (evaluacion.status === 'completed' || evaluacion.status === 'completada' || evaluacion.status === 'completado' || evaluacion.status === 'realizada') ? (
                           <button 
                             onClick={() => handleVerReporte(evaluacion.id)}
                             className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
@@ -387,6 +394,13 @@ const EvaluacionesPage: React.FC = () => {
           setEvaluacionSeleccionada(null);
         }}
         onComplete={handleEvaluacionCompletada}
+      />
+
+      {/* Modal para ver reporte */}
+      <VerReporteEvaluacionModal
+        show={modalReporteOpen}
+        evaluationId={evaluacionSeleccionada}
+        onClose={handleReporteCerrado}
       />
     </div>
   );

@@ -26,9 +26,9 @@ interface BackendTemplate {
   description: string;
   is_active: boolean;
   criteria: {
-    productivity: BackendTemplateCriteria[];
-    work_conduct: BackendTemplateCriteria[];
-    skills: BackendTemplateCriteria[];
+    productivity?: BackendTemplateCriteria[] | null;
+    work_conduct?: BackendTemplateCriteria[] | null;
+    skills?: BackendTemplateCriteria[] | null;
   };
   summary: {
     total_criteria: number;
@@ -122,6 +122,32 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
       );
     }
     return null;
+  };
+
+  // Helper para obtener longitud segura de una categoría
+  const getCategoryLength = (category: BackendTemplateCriteria[] | null | undefined): number => {
+    return category?.length ?? 0;
+  };
+
+  // Helper para mapear una categoría de forma segura
+  const mapCategory = (category: BackendTemplateCriteria[] | null | undefined, categoryKey: keyof BackendTemplate['criteria']): React.ReactNode => {
+    const items = category ?? [];
+    return items.map((criterion) => (
+      <div key={criterion.id} className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+        <div className="space-y-2">
+          <p className="text-gray-900 font-medium">{criterion.criteria.name}</p>
+          <p className="text-sm text-gray-600">{criterion.criteria.description}</p>
+          <span className={`inline-block text-xs font-bold ${getCategoryColor(categoryKey as string).replace('bg-', 'bg-').replace('text-', 'text-')}`}>
+            {criterion.weight.toFixed(2)}%
+          </span>
+        </div>
+      </div>
+    ));
+  };
+
+  // Helper para obtener el peso de una categoría de forma segura
+  const getCategoryWeight = (categoryKey: keyof BackendTemplate['summary']['weights_summary']): number => {
+    return template?.summary.weights_summary[categoryKey] ?? 0;
   };
 
   if (!show) return null;
@@ -219,7 +245,7 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
 
                 <div className="space-y-8">
                   {/* Productividad */}
-                  {template.criteria.productivity.length > 0 && (
+                  {getCategoryLength(template.criteria.productivity) > 0 && (
                     <div>
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
@@ -227,32 +253,22 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
                             {getCategoryDisplayName('productivity')}
                           </h5>
                           <span className={`px-3 py-1 text-sm font-medium rounded-full ${getCategoryColor('productivity')}`}>
-                            {template.criteria.productivity.length} criterio{template.criteria.productivity.length !== 1 ? 's' : ''}
+                            {getCategoryLength(template.criteria.productivity)} criterio{getCategoryLength(template.criteria.productivity) !== 1 ? 's' : ''}
                           </span>
                         </div>
                         <span className="text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
-                          {template.summary.weights_summary.productivity.toFixed(2)}%
+                          {getCategoryWeight('productivity').toFixed(2)}%
                         </span>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {template.criteria.productivity.map((criterion) => (
-                          <div key={criterion.id} className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                            <div className="space-y-2">
-                              <p className="text-gray-900 font-medium">{criterion.criteria.name}</p>
-                              <p className="text-sm text-gray-600">{criterion.criteria.description}</p>
-                              <span className="inline-block text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                                {criterion.weight.toFixed(2)}%
-                              </span>
-                            </div>
-                          </div>
-                        ))}
+                        {mapCategory(template.criteria.productivity, 'productivity')}
                       </div>
                     </div>
                   )}
 
                   {/* Conducta Laboral */}
-                  {template.criteria.work_conduct.length > 0 && (
+                  {getCategoryLength(template.criteria.work_conduct) > 0 && (
                     <div>
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
@@ -260,32 +276,22 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
                             {getCategoryDisplayName('work_conduct')}
                           </h5>
                           <span className={`px-3 py-1 text-sm font-medium rounded-full ${getCategoryColor('work_conduct')}`}>
-                            {template.criteria.work_conduct.length} criterio{template.criteria.work_conduct.length !== 1 ? 's' : ''}
+                            {getCategoryLength(template.criteria.work_conduct)} criterio{getCategoryLength(template.criteria.work_conduct) !== 1 ? 's' : ''}
                           </span>
                         </div>
                         <span className="text-sm font-bold text-green-600 bg-green-50 px-3 py-1 rounded-lg">
-                          {template.summary.weights_summary.work_conduct.toFixed(2)}%
+                          {getCategoryWeight('work_conduct').toFixed(2)}%
                         </span>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {template.criteria.work_conduct.map((criterion) => (
-                          <div key={criterion.id} className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                            <div className="space-y-2">
-                              <p className="text-gray-900 font-medium">{criterion.criteria.name}</p>
-                              <p className="text-sm text-gray-600">{criterion.criteria.description}</p>
-                              <span className="inline-block text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">
-                                {criterion.weight.toFixed(2)}%
-                              </span>
-                            </div>
-                          </div>
-                        ))}
+                        {mapCategory(template.criteria.work_conduct, 'work_conduct')}
                       </div>
                     </div>
                   )}
 
                   {/* Habilidades */}
-                  {template.criteria.skills.length > 0 && (
+                  {getCategoryLength(template.criteria.skills) > 0 && (
                     <div>
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
@@ -293,26 +299,16 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
                             {getCategoryDisplayName('skills')}
                           </h5>
                           <span className={`px-3 py-1 text-sm font-medium rounded-full ${getCategoryColor('skills')}`}>
-                            {template.criteria.skills.length} criterio{template.criteria.skills.length !== 1 ? 's' : ''}
+                            {getCategoryLength(template.criteria.skills)} criterio{getCategoryLength(template.criteria.skills) !== 1 ? 's' : ''}
                           </span>
                         </div>
                         <span className="text-sm font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-lg">
-                          {template.summary.weights_summary.skills.toFixed(2)}%
+                          {getCategoryWeight('skills').toFixed(2)}%
                         </span>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {template.criteria.skills.map((criterion) => (
-                          <div key={criterion.id} className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                            <div className="space-y-2">
-                              <p className="text-gray-900 font-medium">{criterion.criteria.name}</p>
-                              <p className="text-sm text-gray-600">{criterion.criteria.description}</p>
-                              <span className="inline-block text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded">
-                                {criterion.weight.toFixed(2)}%
-                              </span>
-                            </div>
-                          </div>
-                        ))}
+                        {mapCategory(template.criteria.skills, 'skills')}
                       </div>
                     </div>
                   )}

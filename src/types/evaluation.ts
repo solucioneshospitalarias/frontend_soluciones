@@ -149,6 +149,8 @@ export interface RespuestaPuntuacionDTO {
   score?: number;
   weight: number;
   weighted_score?: number;
+  comments?: string;
+  evidence?: string; 
   criteria: CriterioEvaluacionDTO;
 }
 
