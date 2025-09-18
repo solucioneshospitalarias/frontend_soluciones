@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileCheck, X, Loader2, Save, Trash2, Percent, Lock, Unlock, RotateCcw, ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { getCriteria, getTemplateById, updateTemplate } from '../services/evaluationService';
+import { formatForInput, normalizeWeights, getInputStep, sanitizeInputValue, formatPercentage } from '../utils/numberFormatting';
 import type { Criteria, UpdateTemplateDTO, Template, BackendTemplateCriteria, TemplateCriteriaByCategory } from '../types/evaluation';
 
 interface EditarPlantillaModalProps {
@@ -189,11 +190,12 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
     }));
   };
 
-  const updateCriteriaWeight = (criteriaId: number, weight: number) => {
+  const handleWeightChange = (criteriaId: number, newWeight: string, _category: 'productividad' | 'conducta_laboral' | 'habilidades') => {
+    const sanitizedWeight = sanitizeInputValue(newWeight, 0, 2);
     setForm(prev => ({
       ...prev,
       selectedCriteria: prev.selectedCriteria.map(sc =>
-        sc.criteriaId === criteriaId ? { ...sc, weight } : sc
+        sc.criteriaId === criteriaId ? { ...sc, weight: sanitizedWeight } : sc
       ),
     }));
   };
@@ -213,24 +215,31 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
       .reduce((sum, sc) => sum + sc.weight, 0);
   };
 
-  const normalizeWeights = (category: 'productividad' | 'conducta_laboral' | 'habilidades') => {
+  const getWeightColor = (total: number): string => {
+    if (total === 0) return 'text-gray-500';
+    if (Math.abs(total - 100) < 0.01) return 'text-green-600 font-bold';
+    return 'text-red-600 font-bold';
+  };
+
+  const normalizeWeightsByCategory = (category: 'productividad' | 'conducta_laboral' | 'habilidades') => {
     const categoryItems = form.selectedCriteria.filter(sc => sc.category === category);
     const unlockedItems = categoryItems.filter(sc => !sc.isLocked);
 
     if (unlockedItems.length === 0) return;
 
-    const lockedTotal = categoryItems
-      .filter(sc => sc.isLocked)
-      .reduce((sum, sc) => sum + sc.weight, 0);
+    const lockedIndices = categoryItems
+      .map((item, index) => item.isLocked ? index : -1)
+      .filter(index => index >= 0);
 
-    const availableWeight = 100 - lockedTotal;
-    const weightPerItem = availableWeight / unlockedItems.length;
+    const weights = categoryItems.map(item => item.weight);
+    const normalizedWeights = normalizeWeights(weights, lockedIndices);
 
     setForm(prev => ({
       ...prev,
       selectedCriteria: prev.selectedCriteria.map(sc => {
-        if (sc.category === category && !sc.isLocked) {
-          return { ...sc, weight: Math.round(weightPerItem * 100) / 100 };
+        const index = categoryItems.findIndex(item => item.criteriaId === sc.criteriaId);
+        if (index >= 0 && sc.category === category) {
+          return { ...sc, weight: normalizedWeights[index] };
         }
         return sc;
       }),
@@ -262,7 +271,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
       const totalWeight = getTotalWeightByCategory(category);
       if (totalWeight > 0 && Math.abs(totalWeight - 100) > 0.01) {
         validationErrors.push(
-          `Los pesos de ${category} deben sumar exactamente 100% (actual: ${totalWeight.toFixed(2)}%)`,
+          `Los pesos de ${category} deben sumar exactamente 100% (actual: ${formatPercentage(totalWeight, false, 2)}%)`,
         );
       }
     });
@@ -296,12 +305,15 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
       const criteriaByCategory = {
         productivity: form.selectedCriteria
           .filter(sc => sc.category === 'productividad')
+          .filter(sc => sc.weight > 0)
           .map(sc => ({ criteria_id: sc.criteriaId, weight: sc.weight })),
         work_conduct: form.selectedCriteria
           .filter(sc => sc.category === 'conducta_laboral')
+          .filter(sc => sc.weight > 0)
           .map(sc => ({ criteria_id: sc.criteriaId, weight: sc.weight })),
         skills: form.selectedCriteria
           .filter(sc => sc.category === 'habilidades')
+          .filter(sc => sc.weight > 0)
           .map(sc => ({ criteria_id: sc.criteriaId, weight: sc.weight })),
       };
 
@@ -549,14 +561,12 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                             </span>
                           </button>
                           <div className="flex items-center gap-2">
-                            <span className={`text-sm font-medium ${
-                              Math.abs(totalWeight - 100) < 0.01 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              Total: {totalWeight.toFixed(2)}%
+                            <span className={getWeightColor(totalWeight)}>
+                              {formatPercentage(totalWeight, true, 2)}
                             </span>
                             <button
                               type="button"
-                              onClick={() => normalizeWeights(category)}
+                              onClick={() => normalizeWeightsByCategory(category)}
                               className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200"
                             >
                               Normalizar
@@ -591,13 +601,13 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                                     <div className="flex items-center gap-1">
                                       <input
                                         type="number"
-                                        value={sc.weight}
-                                        onChange={(e) => updateCriteriaWeight(sc.criteriaId, parseFloat(e.target.value) || 0)}
+                                        value={formatForInput(sc.weight, 2)}
+                                        onChange={(e) => handleWeightChange(sc.criteriaId, e.target.value, category)}
                                         disabled={sc.isLocked}
                                         className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 disabled:text-gray-500"
                                         min="0"
                                         max="100"
-                                        step="0.01"
+                                        step={getInputStep(2)}
                                       />
                                       <Percent className="w-4 h-4 text-gray-400" />
                                     </div>

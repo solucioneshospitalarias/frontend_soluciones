@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle, Loader2 } from 'lucide-react';
 import servicioEvaluaciones, { ErrorEvaluacion } from '../services/evaluationService';
+import { formatNumber, formatPercentage } from '../utils/numberFormatting';
 import type { EvaluacionParaCalificarDTO } from '../types/evaluation';
 
 interface VerReporteEvaluacionModalProps {
@@ -95,31 +96,100 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Puntajes</h3>
               <div className="space-y-4">
                 {evaluation.scores.map((scoreItem) => (
-                  <div key={scoreItem.id} className="border-b border-gray-200 pb-4">
-                    <p className="font-medium text-gray-900">{scoreItem.criteria.name}</p>
-                    <p className="text-sm text-gray-600">{scoreItem.criteria.description}</p>
-                    <div className="mt-2 text-sm text-gray-600">
-                      <p><strong>Puntuación:</strong> {scoreItem.score} / 5</p>
-                      <p><strong>Peso:</strong> {scoreItem.weight}%</p>
-                      <p><strong>Puntuación Ponderada:</strong> {scoreItem.weighted_score}</p>
-                      {scoreItem.comments && <p><strong>Comentarios:</strong> {scoreItem.comments}</p>}
-                      {scoreItem.evidence && <p><strong>Evidencia:</strong> {scoreItem.evidence}</p>}
+                  <div key={scoreItem.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-800">{scoreItem.criteria.name}</h4>
+                        <p className="text-sm text-gray-500 mt-1">{scoreItem.criteria.description}</p>
+                      </div>
+                      <div className="ml-4 text-right">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500">Peso:</span>
+                          <span className="font-semibold text-gray-700">
+                            {formatPercentage(scoreItem.weight, true, 2)}
+                          </span>
+                        </div>
+                      </div>
                     </div>
+                    
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Puntuación</p>
+                          <div className="flex items-center">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <span
+                                key={star}
+                                className={`text-xl ${star <= (scoreItem.score ?? 0) ? 'text-yellow-400' : 'text-gray-300'}`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                            <span className="ml-2 font-bold text-gray-700">{scoreItem.score ?? 0}/5</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="text-right">
+                        <p className="text-sm text-gray-500">Puntaje Ponderado</p>
+                        <p className="text-lg font-bold text-blue-600">
+                          {formatNumber(scoreItem.weighted_score ?? 0, 2)}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {formatPercentage(scoreItem.weight, true, 2)} del total
+                        </p>
+                      </div>
+                    </div>
+
+                    {scoreItem.comments && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Comentarios:</span> {scoreItem.comments}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {scoreItem.evidence && (
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Evidencia:</span> {scoreItem.evidence}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Resumen */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Resumen</h3>
-              <div className="text-sm text-gray-600">
-                <p><strong>Puntaje Total:</strong> {evaluation.total_score}</p>
-                <p><strong>Puntaje Ponderado:</strong> {evaluation.weighted_score}</p>
-                {evaluation.general_comments && (
-                  <p><strong>Comentarios Generales:</strong> {evaluation.general_comments}</p>
-                )}
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Resumen de Puntuación</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Puntaje Total</p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    {formatNumber(evaluation.weighted_score || 0, 2)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Promedio</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {formatNumber(
+                      evaluation.scores ? 
+                      evaluation.scores.reduce((sum, s) => sum + (s.score ?? 0), 0) / evaluation.scores.length : 
+                      0, 
+                      2
+                    )}
+                  </p>
+                </div>
               </div>
+              {evaluation.general_comments && (
+                <div className="mt-4">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Comentarios Generales:</span> {evaluation.general_comments}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}

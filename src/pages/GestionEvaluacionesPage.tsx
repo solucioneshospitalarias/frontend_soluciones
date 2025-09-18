@@ -32,7 +32,7 @@ import {
   type Template,
   type Evaluation
 } from '../services/evaluationService';
-import { flattenTemplateCriteria, type TemplateCriteria, type TemplateListItem } from '../types/evaluation';
+import { type TemplateCriteria } from '../types/evaluation';
 import CrearCriterioModal from '../components/CrearCriterioModal';
 import CrearPeriodoModal from '../components/CrearPeriodoModal';
 import CrearPlantillaModal from '../components/CrearPlantillaModal';
@@ -61,6 +61,24 @@ interface ConfirmationState {
   onConfirm: () => void;
   type: 'danger' | 'warning' | 'info' | 'success';
   loading: boolean;
+}
+
+// Interfaces para tipado estricto
+interface TemplateCriteriaByCategory {
+  productivity?: BackendTemplateCriteria[];
+  work_conduct?: BackendTemplateCriteria[];
+  skills?: BackendTemplateCriteria[];
+}
+
+interface BackendTemplateCriteria {
+  id: number;
+  weight: number;
+  category: string;
+  criteria: {
+    id: number;
+    name: string;
+    description: string;
+  };
 }
 
 const GestionEvaluacionesPage: React.FC = () => {
@@ -104,6 +122,70 @@ const GestionEvaluacionesPage: React.FC = () => {
     type: 'danger',
     loading: false
   });
+
+  // ==================== FUNCIÓN AUXILIAR PARA CALCULAR PESOS ====================
+  const calculateTemplateStats = (template: Template) => {
+    let criteriaCount = 0;
+    let criteriaWeights = 'N/A';
+    
+    // 1. Calcular cantidad de criterios
+    if ('criteria_count' in template && typeof template.criteria_count === 'number') {
+      criteriaCount = template.criteria_count;
+    } 
+    else if (template.summary?.total_criteria) {
+      criteriaCount = template.summary.total_criteria;
+    }
+    else if (template.criteria && typeof template.criteria === 'object') {
+      if (Array.isArray(template.criteria)) {
+        criteriaCount = template.criteria.length;
+      } else {
+        // Es TemplateCriteriaByCategory
+        const criteriaObj = template.criteria as TemplateCriteriaByCategory;
+        criteriaCount = (criteriaObj.productivity?.length || 0) +
+                      (criteriaObj.work_conduct?.length || 0) +
+                      (criteriaObj.skills?.length || 0);
+      }
+    }
+    
+    // 2. Calcular pesos correctamente
+    if (template.criteria && typeof template.criteria === 'object') {
+      try {
+        let weights: number[] = [];
+        
+        if (Array.isArray(template.criteria)) {
+          // Si es array, obtener pesos directamente
+          weights = template.criteria.map((c: TemplateCriteria) => c.weight || 0);
+        } else {
+          // Si es por categorías, aplanar y obtener pesos
+          const criteriaObj = template.criteria as TemplateCriteriaByCategory;
+          
+          // Recopilar todos los pesos de todas las categorías
+          const allCriteria: BackendTemplateCriteria[] = [
+            ...(criteriaObj.productivity || []),
+            ...(criteriaObj.work_conduct || []),
+            ...(criteriaObj.skills || [])
+          ];
+          
+          weights = allCriteria.map(c => c.weight || 0);
+        }
+        
+        if (weights.length > 0) {
+          criteriaWeights = weights
+            .map(weight => {
+              // El backend envía los pesos como números enteros (50 = 50%)
+              // No como decimales (0.5 = 50%)
+              return `${Math.round(weight)}%`;
+            })
+            .join(', ');
+        }
+      } catch (error) {
+        console.error('Error calculating template weights:', error, template);
+        criteriaWeights = 'Error';
+      }
+    }
+    
+    return { criteriaCount, criteriaWeights };
+  };
 
   // ==================== EFECTOS ====================
   useEffect(() => {
@@ -686,19 +768,8 @@ const GestionEvaluacionesPage: React.FC = () => {
                   const isDeleting = deletingItems.has(template.id);
                   const isCloning = cloningItems.has(template.id);
                   
-                  // AQUÍ ESTÁ LA CORRECCIÓN - usando type guard para verificar si tiene criteria_count
-                  const criteriaCount = 'criteria_count' in template 
-                    ? (template as TemplateListItem).criteria_count 
-                    : template.summary?.total_criteria ||
-                      (template.criteria && !Array.isArray(template.criteria) ?
-                        (template.criteria.productivity?.length || 0) +
-                        (template.criteria.work_conduct?.length || 0) +
-                        (template.criteria.skills?.length || 0) : 0);
-                        
-                  const criteriaWeights = template.criteria ?
-                    flattenTemplateCriteria(template.criteria)
-                      .map((c: TemplateCriteria) => `${Math.round((c.weight || 0) * 100)}%`)
-                      .join(', ') : 'N/A';
+                  // ✅ USAR LA FUNCIÓN AUXILIAR PARA CALCULAR STATS
+                  const { criteriaCount, criteriaWeights } = calculateTemplateStats(template);
 
                   return (
                     <div
@@ -715,7 +786,7 @@ const GestionEvaluacionesPage: React.FC = () => {
                         <p className="text-gray-600">{template.description}</p>
                         <div className="flex justify-between">
                           <span>Criterios: {criteriaCount}</span>
-                          <span>Pesos: {criteriaWeights}</span>
+                          <span className="text-xs">Pesos: {criteriaWeights}</span>
                         </div>
                       </div>
                       <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">

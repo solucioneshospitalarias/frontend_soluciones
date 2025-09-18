@@ -12,6 +12,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import servicioEvaluaciones, { ErrorEvaluacion } from '../services/evaluationService';
+import { roundTo } from '../utils/numberFormatting';
 import type { EvaluacionParaCalificarDTO } from '../types/evaluation';
 
 interface RealizarEvaluacionModalProps {
@@ -48,14 +49,8 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
 
     try {
       const data = await servicioEvaluaciones.obtenerEvaluacionParaCalificar(evaluationId);
-      console.log('📋 Evaluation data:', JSON.stringify(data, null, 2));
-      console.log('👤 Evaluator ID:', data.evaluator.id);
-      console.log('👤 Employee ID:', data.employee.id);
-      console.log('📊 Evaluation status:', data.status);
-      console.log('📅 Period ID:', data.period.id, 'Is Active:', data.period.is_active);
-      console.log('📋 Scores:', data.scores);
       setEvaluation(data);
-
+      
       const initialScores: Record<number, number> = {};
       data.scores.forEach((scoreItem) => {
         initialScores[scoreItem.id] = scoreItem.score || 0;
@@ -84,7 +79,7 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
 
   const handleSubmit = async (): Promise<void> => {
     if (!evaluation || !isComplete()) return;
-
+    
     setSubmitting(true);
     setError(null);
 
@@ -98,16 +93,13 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
       onComplete();
       handleClose();
     } catch (err) {
-      const mensaje = err instanceof ErrorEvaluacion
-        ? err.status === 403
-          ? `No tienes autorización para calificar esta evaluación (ID: ${evaluation.id}). Evaluador asignado: ID ${evaluation.evaluator.id}, Estado: ${evaluation.status}, Período activo: ${evaluation.period.is_active}. Contacta al administrador si esto es un error.`
-          : err.message
-        : 'Error desconocido al enviar la evaluación';
+      const mensaje = err instanceof ErrorEvaluacion ? err.message : 'Error desconocido';
       setError(mensaje);
     } finally {
       setSubmitting(false);
     }
   };
+
   const handleClose = (): void => {
     setEvaluation(null);
     setScores({});
@@ -143,7 +135,7 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
 
   const getScoreColor = (score: number, isSelected: boolean) => {
     if (!isSelected) return 'border-gray-300 bg-white hover:border-gray-400';
-
+    
     const colors = {
       1: 'border-red-400 bg-red-50 shadow-red-100',
       2: 'border-orange-400 bg-orange-50 shadow-orange-100',
@@ -154,26 +146,14 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
     return colors[score as keyof typeof colors] || '';
   };
 
-  const getWeightLevel = (weight: number): string => {
-    if (weight < 20) return 'Bajo';
-    if (weight <= 30) return 'Medio';
-    return 'Alto';
-  };
-
-  const getWeightColor = (weight: number): string => {
-    if (weight < 20) return 'bg-green-100 text-green-800';
-    if (weight <= 30) return 'bg-yellow-100 text-yellow-800';
-    return 'bg-red-100 text-red-800';
-  };
-
   if (!show) return null;
 
   const completedScores = evaluation ? evaluation.scores.filter((item) => scores[item.id] > 0).length : 0;
-  const progressPercentage = evaluation ? (completedScores / evaluation.scores.length) * 100 : 0;
+  const progressPercentage = evaluation ? roundTo((completedScores / evaluation.scores.length) * 100, 2) : 0;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl w-full max-w-5xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col">
+      <div className="bg-white rounded-3xl w-full max-w-5xl max-h-[95vh] overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 text-white p-8">
           <div className="flex items-center justify-between">
@@ -256,17 +236,15 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
                           <h3 className="text-xl font-bold text-gray-900">{scoreItem.criteria.name}</h3>
                           <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getCategoryColor(scoreItem.criteria.category)}`}>
                             {scoreItem.criteria.category === 'productividad' ? 'Productividad' :
-                              scoreItem.criteria.category === 'conducta_laboral' ? 'Conducta Laboral' :
-                                scoreItem.criteria.category === 'habilidades' ? 'Habilidades' :
-                                  'Sin Categoría'}
+                             scoreItem.criteria.category === 'conducta_laboral' ? 'Conducta Laboral' :
+                             scoreItem.criteria.category === 'habilidades' ? 'Habilidades' :
+                             'Sin Categoría'}
                           </span>
                         </div>
                         <p className="text-gray-600 leading-relaxed mb-3">{scoreItem.criteria.description}</p>
                         <div className="flex items-center gap-2">
-                          <Target className="w-4 h-4 text-indigo-600" />
-                          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getWeightColor(scoreItem.weight)}`}>
-                            Ponderación: {getWeightLevel(scoreItem.weight)}
-                          </span>
+                          <Award className="w-4 h-4 text-indigo-600" />
+                          <span className="text-sm font-semibold text-indigo-600">Peso: {scoreItem.weight}%</span>
                         </div>
                       </div>
                     </div>
@@ -345,7 +323,7 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
                   </div>
                 )}
               </div>
-
+              
               <div className="flex gap-4">
                 <button
                   onClick={handleClose}

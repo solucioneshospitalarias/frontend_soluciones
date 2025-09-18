@@ -10,7 +10,13 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { dashboardService, ApiError } from '../services/dashboardService';
-import type { HRDashboardDTO, MyEvaluationsResponseDTO, EmployeePerformanceDTO, EvaluatorOverdueDTO } from '../services/dashboardService';
+import { useAuth } from '../context/authContext';
+import type { 
+  HRDashboardDTO, 
+  MyEvaluationsResponseDTO, 
+  EmployeePerformanceDTO, 
+  EvaluatorOverdueDTO 
+} from '../services/dashboardService';
 
 // =============== TYPES ===============
 interface ChartTooltipProps {
@@ -86,8 +92,7 @@ const DashboardPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'admin' | 'personal'>('admin');
 
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
+  const { user } = useAuth();
   const userRole = user?.role?.name?.toLowerCase() || '';
   const isAdmin = userRole === 'admin' || userRole === 'hr_manager';
 
@@ -96,7 +101,7 @@ const DashboardPage: React.FC = () => {
     console.log('User Role:', userRole); // Debug
     console.log('isAdmin:', isAdmin); // Debug
     loadData();
-  }, []);
+  }, [user]);
 
   const loadData = async (): Promise<void> => {
     setLoading(true);
@@ -234,7 +239,7 @@ const DashboardPage: React.FC = () => {
               subtitle={`${dashboardData.completion_percentage.toFixed(1)}% completadas`}
               icon={<BarChart3 className="w-6 h-6" />}
               color="from-blue-500 to-blue-600"
-              trend={0} // Set to 0 since no data
+              trend={0}
             />
             <StatCard
               title="Completadas"

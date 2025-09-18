@@ -14,18 +14,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user'); // ✅ Verificar si hay usuario guardado
+    
     if (!token) {
       setIsLoading(false);
       return;
     }
 
+    // ✅ Si hay usuario en localStorage, usarlo primero
+    if (userStr) {
+      try {
+        const parsedUser = JSON.parse(userStr);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Error parsing user from localStorage:', error);
+      }
+    }
+
+    // ✅ Verificar el token con el servidor
     authService
       .getMe(token)
       .then((res) => {
         setUser(res);
+        localStorage.setItem('user', JSON.stringify(res)); // ✅ Guardar usuario actualizado
       })
       .catch(() => {
         localStorage.removeItem('token');
+        localStorage.removeItem('user'); // ✅ Limpiar usuario también
         setUser(null);
       })
       .finally(() => setIsLoading(false));
@@ -34,11 +49,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     const { token, user } = await authService.login(email, password);
     localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user)); // ✅ Guardar usuario en localStorage
     setUser(user);
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user'); // ✅ Limpiar usuario también
     setUser(null);
   };
 
