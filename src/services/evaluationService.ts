@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "../constants/api";
+
 export type {
   Criteria,
   Period,
@@ -158,7 +159,7 @@ export const getPeriods = async (): Promise<Period[]> => {
 
     // Filtrar períodos para mostrar solo los no vencidos (due_date >= fecha actual)
     const now = new Date();
-    const filteredPeriods = data.filter(period => {
+    const filteredPeriods = data.filter((period) => {
       const dueDate = new Date(period.due_date);
       return dueDate >= now; // Solo períodos no vencidos
     });
@@ -346,7 +347,7 @@ export const updateTemplate = async (
     console.log("✅ Template updated:", data);
     return data;
   } catch (error) {
-    console.error("❌ Error updating template:", error);
+    console.error("❌ Error fetching template:", error);
     throw error;
   }
 };
@@ -414,12 +415,11 @@ export const createEvaluationsFromTemplate = async (
   try {
     console.log("🔄 Creating evaluations from template...", evaluationsData);
 
-    // ✅ Corregido: incluir todos los campos requeridos
     const backendPayload = {
       template_id: evaluationsData.template_id,
-      period_id: evaluationsData.period_id,     // ✅ Agregado
-      evaluator_id: evaluationsData.evaluator_id, // ✅ Agregado
-      employee_ids: evaluationsData.employee_ids,  // ✅ Usar employee_ids (o cambiar a user_ids si el backend lo requiere)
+      period_id: evaluationsData.period_id,
+      evaluator_id: evaluationsData.evaluator_id,
+      employee_ids: evaluationsData.employee_ids,
     };
 
     console.log("📤 Backend payload:", backendPayload);
@@ -516,7 +516,7 @@ export class ErrorEvaluacion extends Error {
   constructor(mensaje: string, status: number) {
     super(mensaje);
     this.status = status;
-    this.name = 'ErrorEvaluacion';
+    this.name = "ErrorEvaluacion";
   }
 }
 
@@ -524,13 +524,13 @@ class ServicioEvaluaciones {
   private readonly baseUrl: string = API_BASE_URL;
 
   private obtenerHeadersAuth(): HeadersInit {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
-      throw new ErrorEvaluacion('Token de autenticación no encontrado', 401);
+      throw new ErrorEvaluacion("Token de autenticación no encontrado", 401);
     }
     return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
     };
   }
 
@@ -549,14 +549,14 @@ class ServicioEvaluaciones {
     }
 
     const data = await response.json();
-    console.log('📡 Respuesta del backend:', data);
+    console.log("📡 Respuesta del backend:", data);
 
     if (data.success === false) {
-      throw new ErrorEvaluacion(data.message || 'Error en la operación', 400);
+      throw new ErrorEvaluacion(data.message || "Error en la operación", 400);
     }
 
     if (data.data === null || data.data === undefined) {
-      console.log('⚠️ Backend retornó data: null, usando estructura por defecto');
+      console.log("⚠️ Backend retornó data: null, usando estructura por defecto");
       return this.obtenerEstructuraPorDefecto() as T;
     }
 
@@ -567,33 +567,37 @@ class ServicioEvaluaciones {
     return {
       as_employee: {
         evaluations: [],
-        summary: { total: 0, completed: 0, pending: 0 }
+        summary: { total: 0, completed: 0, pending: 0 },
       },
       as_evaluator: {
         evaluations: [],
-        summary: { total: 0, completed: 0, pending_to_evaluate: 0 }
-      }
+        summary: { total: 0, completed: 0, pending_to_evaluate: 0 },
+      },
     };
   }
 
-  async obtenerMisEvaluaciones(filtros?: FiltrosEvaluacionParams): Promise<MisEvaluacionesRespuestaDTO> {
+  async obtenerMisEvaluaciones(
+    filtros?: FiltrosEvaluacionParams
+  ): Promise<MisEvaluacionesRespuestaDTO> {
     try {
-      console.log('🔍 Obteniendo mis evaluaciones...', filtros);
+      console.log("🔍 Obteniendo mis evaluaciones...", filtros);
 
       const queryParams = new URLSearchParams();
-      if (filtros?.period_id) queryParams.append('period_id', filtros.period_id.toString());
-      if (filtros?.status) queryParams.append('status', filtros.status);
+      if (filtros?.period_id) queryParams.append("period_id", filtros.period_id.toString());
+      if (filtros?.status) queryParams.append("status", filtros.status);
 
-      const url = `${this.baseUrl}/me/evaluations${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-      console.log('📡 URL:', url);
+      const url = `${this.baseUrl}/me/evaluations${
+        queryParams.toString() ? "?" + queryParams.toString() : ""
+      }`;
+      console.log("📡 URL:", url);
 
       const response = await fetch(url, {
-        method: 'GET',
-        headers: this.obtenerHeadersAuth()
+        method: "GET",
+        headers: this.obtenerHeadersAuth(),
       });
 
       const data = await this.manejarRespuesta<MisEvaluacionesRespuestaDTO>(response);
-      console.log('✅ Mis evaluaciones procesadas:', data);
+      console.log("✅ Mis evaluaciones procesadas:", data);
 
       const estructuraCompleta: MisEvaluacionesRespuestaDTO = {
         as_employee: {
@@ -601,26 +605,25 @@ class ServicioEvaluaciones {
           summary: {
             total: data.as_employee?.summary?.total || 0,
             completed: data.as_employee?.summary?.completed || 0,
-            pending: data.as_employee?.summary?.pending || 0
-          }
+            pending: data.as_employee?.summary?.pending || 0,
+          },
         },
         as_evaluator: {
           evaluations: data.as_evaluator?.evaluations || [],
           summary: {
             total: data.as_evaluator?.summary?.total || 0,
             completed: data.as_evaluator?.summary?.completed || 0,
-            pending_to_evaluate: data.as_evaluator?.summary?.pending_to_evaluate || 0
-          }
-        }
+            pending_to_evaluate: data.as_evaluator?.summary?.pending_to_evaluate || 0,
+          },
+        },
       };
 
       return estructuraCompleta;
-
     } catch (error) {
-      console.error('❌ Error obteniendo mis evaluaciones:', error);
+      console.error("❌ Error obteniendo mis evaluaciones:", error);
 
       if (error instanceof ErrorEvaluacion && error.status >= 500) {
-        console.log('⚠️ Error del servidor, retornando estructura vacía');
+        console.log("⚠️ Error del servidor, retornando estructura vacía");
         return this.obtenerEstructuraPorDefecto();
       }
 
@@ -628,28 +631,32 @@ class ServicioEvaluaciones {
     }
   }
 
-  async obtenerEvaluacionParaCalificar(evaluacionId: number): Promise<EvaluacionParaCalificarDTO> {
+  async obtenerEvaluacionParaCalificar(
+    evaluacionId: number
+  ): Promise<EvaluacionParaCalificarDTO> {
     try {
-      console.log('🔍 Obteniendo evaluación para calificar:', evaluacionId);
+      console.log("🔍 Obteniendo evaluación para calificar:", evaluacionId);
 
       const response = await fetch(`${this.baseUrl}/evaluations/${evaluacionId}/for-scoring`, {
-        method: 'GET',
-        headers: this.obtenerHeadersAuth()
+        method: "GET",
+        headers: this.obtenerHeadersAuth(),
       });
 
       const data = await this.manejarRespuesta<EvaluacionParaCalificarDTO>(response);
-      console.log('✅ Evaluación para calificar obtenida:', data);
+      console.log("✅ Evaluación para calificar obtenida:", data);
       return data;
-
     } catch (error) {
-      console.error('❌ Error obteniendo evaluación para calificar:', error);
+      console.error("❌ Error obteniendo evaluación para calificar:", error);
       throw error;
     }
   }
 
-  async enviarPuntuaciones(evaluacionId: number, puntuaciones: PuntuacionCriterioDTO[]): Promise<void> {
+  async enviarPuntuaciones(
+    evaluacionId: number,
+    puntuaciones: PuntuacionCriterioDTO[]
+  ): Promise<void> {
     try {
-      console.log('📤 Enviando puntuaciones para evaluación:', evaluacionId, puntuaciones);
+      console.log("📤 Enviando puntuaciones para evaluación:", evaluacionId, puntuaciones);
 
       for (const puntuacion of puntuaciones) {
         if (puntuacion.score < 1 || puntuacion.score > 5) {
@@ -658,106 +665,109 @@ class ServicioEvaluaciones {
       }
 
       const response = await fetch(`${this.baseUrl}/evaluations/${evaluacionId}/score`, {
-        method: 'PUT',
+        method: "PUT",
         headers: this.obtenerHeadersAuth(),
-        body: JSON.stringify(puntuaciones)
+        body: JSON.stringify(puntuaciones),
       });
 
       await this.manejarRespuesta<void>(response);
-      console.log('✅ Puntuaciones enviadas correctamente');
-
+      console.log("✅ Puntuaciones enviadas correctamente");
     } catch (error) {
-      console.error('❌ Error enviando puntuaciones:', error);
+      console.error("❌ Error enviando puntuaciones:", error);
       throw error;
     }
   }
 
-  async listarTodasLasEvaluaciones(filtros?: FiltrosEvaluacionParams): Promise<ResumenEvaluacionDTO[]> {
+  async listarTodasLasEvaluaciones(
+    filtros?: FiltrosEvaluacionParams
+  ): Promise<ResumenEvaluacionDTO[]> {
     try {
-      console.log('🔍 Listando todas las evaluaciones...', filtros);
+      console.log("🔍 Listando todas las evaluaciones...", filtros);
 
       const queryParams = new URLSearchParams();
-      if (filtros?.evaluator_id) queryParams.append('evaluator_id', filtros.evaluator_id.toString());
-      if (filtros?.employee_id) queryParams.append('employee_id', filtros.employee_id.toString());
-      if (filtros?.period_id) queryParams.append('period_id', filtros.period_id.toString());
-      if (filtros?.status) queryParams.append('status', filtros.status);
+      if (filtros?.evaluator_id) queryParams.append("evaluator_id", filtros.evaluator_id.toString());
+      if (filtros?.employee_id) queryParams.append("employee_id", filtros.employee_id.toString());
+      if (filtros?.period_id) queryParams.append("period_id", filtros.period_id.toString());
+      if (filtros?.status) queryParams.append("status", filtros.status);
 
-      const url = `${this.baseUrl}/evaluations${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+      const url = `${this.baseUrl}/evaluations${
+        queryParams.toString() ? "?" + queryParams.toString() : ""
+      }`;
 
       const response = await fetch(url, {
-        method: 'GET',
-        headers: this.obtenerHeadersAuth()
+        method: "GET",
+        headers: this.obtenerHeadersAuth(),
       });
 
       const data = await this.manejarRespuesta<ResumenEvaluacionDTO[]>(response);
-      console.log('✅ Todas las evaluaciones obtenidas:', data);
+      console.log("✅ Todas las evaluaciones obtenidas:", data);
       return Array.isArray(data) ? data : [];
-
     } catch (error) {
-      console.error('❌ Error listando todas las evaluaciones:', error);
+      console.error("❌ Error listando todas las evaluaciones:", error);
       throw error;
     }
   }
 
   obtenerTextoEstado(status: string): string {
     const mapaEstados: Record<string, string> = {
-      'pending': 'Pendiente',
-      'in_progress': 'En Progreso',
-      'completed': 'Completada',
-      'overdue': 'Vencida'
+      pending: "Pendiente",
+      in_progress: "En Progreso",
+      completed: "Completada",
+      overdue: "Vencida",
     };
-    return mapaEstados[status] || 'Desconocido';
+    return mapaEstados[status] || "Desconocido";
   }
 
   obtenerColorEstado(status: string): string {
     const mapaColores: Record<string, string> = {
-      'pending': 'text-yellow-600 bg-yellow-50 border-yellow-200',
-      'in_progress': 'text-blue-600 bg-blue-50 border-blue-200',
-      'completed': 'text-green-600 bg-green-50 border-green-200',
-      'overdue': 'text-red-600 bg-red-50 border-red-200'
+      pending: "text-yellow-600 bg-yellow-50 border-yellow-200",
+      in_progress: "text-blue-600 bg-blue-50 border-blue-200",
+      completed: "text-green-600 bg-green-50 border-green-200",
+      overdue: "text-red-600 bg-red-50 border-red-200",
     };
-    return mapaColores[status] || 'text-gray-600 bg-gray-50 border-gray-200';
+    return mapaColores[status] || "text-gray-600 bg-gray-50 border-gray-200";
   }
 
   obtenerInfoPeso(peso: number) {
     if (peso >= 30) {
       return {
-        nivel: 'alto' as const,
-        color: 'bg-red-500',
-        texto: 'Peso alto en la evaluación'
+        nivel: "alto" as const,
+        color: "bg-red-500",
+        texto: "Peso alto en la evaluación",
       };
     }
     if (peso >= 20) {
       return {
-        nivel: 'medio' as const,
-        color: 'bg-yellow-500',
-        texto: 'Peso medio en la evaluación'
+        nivel: "medio" as const,
+        color: "bg-yellow-500",
+        texto: "Peso medio en la evaluación",
       };
     }
     return {
-      nivel: 'bajo' as const,
-      color: 'bg-green-500',
-      texto: 'Peso bajo en la evaluación'
+      nivel: "bajo" as const,
+      color: "bg-green-500",
+      texto: "Peso bajo en la evaluación",
     };
   }
 
   obtenerColorCategoria(categoria: string): string {
     const mapaColores: Record<string, string> = {
-      'productividad': 'bg-blue-100 text-blue-800',
-      'conducta_laboral': 'bg-green-100 text-green-800',
-      'habilidades': 'bg-purple-100 text-purple-800'
+      productividad: "bg-blue-100 text-blue-800",
+      conducta_laboral: "bg-green-100 text-green-800",
+      habilidades: "bg-purple-100 text-purple-800",
     };
-    return mapaColores[categoria] || 'bg-gray-100 text-gray-800';
+    return mapaColores[categoria] || "bg-gray-100 text-gray-800";
   }
 
   validarPuntuaciones(
     puntuaciones: Record<number, number>,
     criteriosRequeridos: number[]
   ): boolean {
-    return criteriosRequeridos.every(criterioId =>
-      puntuaciones[criterioId] !== undefined &&
-      puntuaciones[criterioId] >= 1 &&
-      puntuaciones[criterioId] <= 5
+    return criteriosRequeridos.every(
+      (criterioId) =>
+        puntuaciones[criterioId] !== undefined &&
+        puntuaciones[criterioId] >= 1 &&
+        puntuaciones[criterioId] <= 5
     );
   }
 
@@ -767,10 +777,91 @@ class ServicioEvaluaciones {
   ): PuntuacionCriterioDTO[] {
     return Object.entries(puntuaciones).map(([criterioId, puntuacion]) => ({
       assigned_criteria_id: mapaAsignacion[parseInt(criterioId)],
-      score: puntuacion
+      score: puntuacion,
     }));
   }
 }
+
+// ==================== EXPORTACIÓN ====================
+const downloadFile = (blob: Blob, filename: string): void => {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};
+
+export const exportarReporteEvaluacion = async (evaluationId: number): Promise<void> => {
+  try {
+    console.log("🔄 Exportando reporte individual:", evaluationId);
+    const response = await fetch(`${API_BASE_URL}/export/evaluations/${evaluationId}/report`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const contentDisposition = response.headers.get("content-disposition");
+    let filename = `evaluacion_${evaluationId}.xlsx`;
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+      if (filenameMatch) {
+        filename = filenameMatch[1];
+      }
+    }
+
+    const blob = await response.blob();
+    downloadFile(blob, filename);
+    console.log("✅ Reporte exportado exitosamente");
+  } catch (error) {
+    console.error("❌ Error exportando reporte:", error);
+    throw error;
+  }
+};
+
+export const exportarEvaluacionesPeriodo = async (periodId: number): Promise<void> => {
+  try {
+    console.log("🔄 Exportando evaluaciones del período:", periodId);
+    const response = await fetch(
+      `${API_BASE_URL}/export/evaluations/export/period/${periodId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const contentDisposition = response.headers.get("content-disposition");
+    let filename = `evaluaciones_periodo_${periodId}.xlsx`;
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+      if (filenameMatch) {
+        filename = filenameMatch[1];
+      }
+    }
+
+    const blob = await response.blob();
+    downloadFile(blob, filename);
+    console.log("✅ Evaluaciones del período exportadas exitosamente");
+  } catch (error) {
+    console.error("❌ Error exportando evaluaciones del período:", error);
+    throw error;
+  }
+};
 
 export const servicioEvaluaciones = new ServicioEvaluaciones();
 export default servicioEvaluaciones;

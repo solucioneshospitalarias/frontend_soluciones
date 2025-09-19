@@ -2,37 +2,39 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, BarChart3, Clock, CheckCircle, AlertCircle,
   Calendar, Target, Activity, UserCheck, FileCheck,
-  Bell, ArrowRight, Award, Loader2, RefreshCw, Eye,
-  AlertTriangle, ChevronUp, ChevronDown
+  ArrowRight, Award, Loader2, RefreshCw, Eye,
+  AlertTriangle, ChevronUp, ChevronDown, Search, Play,
+  SortAsc, SortDesc
 } from 'lucide-react';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell
 } from 'recharts';
-import { dashboardService, ApiError } from '../services/dashboardService';
+import servicioEvaluaciones, { ErrorEvaluacion } from '../services/evaluationService';
 import { useAuth } from '../context/authContext';
+import VerReporteEvaluacionModal from '../components/VerReporteEvaluacionModal';
 import type { 
-  HRDashboardDTO, 
-  MyEvaluationsResponseDTO, 
-  EmployeePerformanceDTO, 
-  EvaluatorOverdueDTO 
-} from '../services/dashboardService';
+  MisEvaluacionesRespuestaDTO,
+  ResumenEvaluacionDTO,
+} from '../types/evaluation';
 
-// =============== TYPES ===============
-interface ChartTooltipProps {
-  active?: boolean;
-  payload?: Array<{
-    payload: {
-      fullName: string;
-      evaluaciones: number;
-      completadas: number;
-      promedio: number;
-      tasa: number;
-    };
-  }>;
+// =============== INTERFACES ===============
+interface FilterState {
+  status: 'all' | 'pendiente' | 'realizada' | 'atrasada';
+  search: string;
 }
 
-// =============== COMPONENTS ===============
-const StatCard: React.FC<{
+interface SortState {
+  column: keyof ResumenEvaluacionDTO | 'daysOverdue';
+  direction: 'asc' | 'desc';
+}
+
+interface ChartData {
+  name: string;
+  value: number;
+}
+
+interface StatCardProps {
   title: string;
   value: number | string;
   subtitle?: string;
@@ -40,7 +42,12 @@ const StatCard: React.FC<{
   color: string;
   trend?: number;
   onClick?: () => void;
-}> = ({ title, value, subtitle, icon, color, trend, onClick }) => (
+}
+
+// =============== COMPONENTS ===============
+const StatCard: React.FC<StatCardProps> = ({ 
+  title, value, subtitle, icon, color, trend, onClick 
+}) => (
   <div 
     className={`bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all ${
       onClick ? 'cursor-pointer' : ''
@@ -48,7 +55,7 @@ const StatCard: React.FC<{
     onClick={onClick}
   >
     <div className="flex items-center justify-between mb-4">
-      <div className={`p-3 bg-gradient-to-r ${color} rounded-xl text-white`}>
+      <div className={`p-3 rounded-xl text-white ${color}`}>
         {icon}
       </div>
       {trend !== undefined && (
@@ -68,37 +75,32 @@ const StatCard: React.FC<{
   </div>
 );
 
-const CustomTooltip: React.FC<ChartTooltipProps> = ({ active, payload }) => {
-  if (!active || !payload || payload.length === 0) return null;
-  
-  const data = payload[0].payload;
-  return (
-    <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-      <p className="font-semibold text-sm">{data.fullName}</p>
-      <p className="text-xs text-gray-600 mt-1">Total: {data.evaluaciones}</p>
-      <p className="text-xs text-gray-600">Completadas: {data.completadas}</p>
-      <p className="text-xs text-gray-600">Promedio: {(data.promedio || 0).toFixed(2)}</p>
-      <p className="text-xs text-gray-600">Tasa: {(data.tasa || 0).toFixed(1)}%</p>
-    </div>
-  );
-};
-
+// =============== MAIN COMPONENT ===============
 const DashboardPage: React.FC = () => {
-  const [dashboardData, setDashboardData] = useState<HRDashboardDTO | null>(null);
-  const [myEvaluations, setMyEvaluations] = useState<MyEvaluationsResponseDTO | null>(null);
+  // Estados principales
+  const [myEvaluations, setMyEvaluations] = useState<MisEvaluacionesRespuestaDTO | null>(null);
+  const [allEvaluations, setAllEvaluations] = useState<ResumenEvaluacionDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'admin' | 'personal'>('admin');
+  const [filter, setFilter] = useState<FilterState>({
+    status: 'all',
+    search: '',
+  });
+  const [sort, setSort] = useState<SortState>({
+    column: 'id',
+    direction: 'asc',
+  });
+  const [modalReporteOpen, setModalReporteOpen] = useState(false);
+  const [selectedEvaluationId, setSelectedEvaluationId] = useState<number | null>(null);
 
   const { user } = useAuth();
   const userRole = user?.role?.name?.toLowerCase() || '';
   const isAdmin = userRole === 'admin' || userRole === 'hr_manager';
 
+  // Cargar datos
   useEffect(() => {
-    console.log('User:', user); // Debug
-    console.log('User Role:', userRole); // Debug
-    console.log('isAdmin:', isAdmin); // Debug
     loadData();
   }, [user]);
 
@@ -106,46 +108,47 @@ const DashboardPage: React.FC = () => {
     setLoading(true);
     setError(null);
     
-    let hrDashboardError: string | null = null;
-    let myEvalsError: string | null = null;
-
     try {
+      console.log('Cargando mis evaluaciones...');
+      const myEvalsData = await servicioEvaluaciones.obtenerMisEvaluaciones();
+      console.log('Mis evaluaciones:', myEvalsData);
+      setMyEvaluations(myEvalsData);
+
       if (isAdmin) {
-        console.log('Fetching HR Dashboard...'); // Debug
-        try {
-          const data = await dashboardService.getHRDashboard();
-          console.log('HR Dashboard Data:', data); // Debug
-          setDashboardData(data);
-        } catch (err) {
-          console.log('Error fetching HR Dashboard:', err); // Debug
-          if (err instanceof ApiError && err.status === 403) {
-            hrDashboardError = 'No tienes permisos para ver el dashboard administrativo';
-          } else {
-            hrDashboardError = err instanceof ApiError ? err.message : 'Error al cargar el dashboard administrativo';
-          }
-        }
-      }
-      
-      console.log('Fetching My Evaluations...'); // Debug
-      try {
-        const myEvalsData = await dashboardService.getMyEvaluations();
-        console.log('My Evaluations Data:', myEvalsData); // Debug
-        setMyEvaluations(myEvalsData || { as_employee: { count: 0, evaluations: [] }, as_evaluator: { count: 0, evaluations: [] }, summary: { total_evaluations: 0, pending_to_evaluate: 0, completed_evaluating: 0, my_evaluations_total: 0 } });
-      } catch (err) {
-        console.log('Error fetching My Evaluations:', err); // Debug
-        myEvalsError = err instanceof ApiError ? err.message : 'Error al cargar tus evaluaciones';
-        setMyEvaluations({ as_employee: { count: 0, evaluations: [] }, as_evaluator: { count: 0, evaluations: [] }, summary: { total_evaluations: 0, pending_to_evaluate: 0, completed_evaluating: 0, my_evaluations_total: 0 } });
+        console.log('Cargando todas las evaluaciones...');
+        const evalsData = await servicioEvaluaciones.listarTodasLasEvaluaciones();
+        console.log('Todas las evaluaciones:', evalsData);
+        // Normalizar estados
+        const normalizedEvals = evalsData.map(e => ({
+          ...e,
+          status: normalizeStatus(e.status)
+        }));
+        setAllEvaluations(normalizedEvals);
       }
     } catch (err) {
-      console.error('Unexpected error loading dashboard:', err);
-      setError('Error inesperado al cargar el dashboard');
+      console.error('Error cargando datos:', err);
+      const mensaje = err instanceof ErrorEvaluacion ? err.message : 'Error al cargar los datos del dashboard';
+      setError(mensaje);
     } finally {
       setLoading(false);
-      if (hrDashboardError || myEvalsError) {
-        setError([hrDashboardError, myEvalsError].filter(e => e).join('; '));
-      }
-      console.log('Final Dashboard Data:', dashboardData); // Debug
-      console.log('Final My Evaluations:', myEvaluations); // Debug
+    }
+  };
+
+  const normalizeStatus = (status: string): string => {
+    const normalized = status.toLowerCase().trim();
+    switch (normalized) {
+      case 'pendiente':
+      case 'pending':
+        return 'pendiente';
+      case 'realizada':
+      case 'completed':
+        return 'realizada';
+      case 'atrasada':
+      case 'overdue':
+        return 'atrasada';
+      default:
+        console.warn(`Estado desconocido: ${status}`);
+        return 'pendiente'; // Valor por defecto
     }
   };
 
@@ -155,26 +158,95 @@ const DashboardPage: React.FC = () => {
     setRefreshing(false);
   };
 
+  // Funciones de utilidad
+  const getDaysOverdue = (dueDate: string): number => {
+    const now = new Date();
+    const due = new Date(dueDate);
+    const diff = Math.floor((now.getTime() - due.getTime()) / (1000 * 3600 * 24));
+    return diff > 0 ? diff : 0;
+  };
+
+  const getFilteredEvaluations = (): ResumenEvaluacionDTO[] => {
+    let filtered = allEvaluations;
+
+    if (filter.status !== 'all') {
+      filtered = filtered.filter(e => e.status === filter.status);
+    }
+
+    if (filter.search) {
+      const searchLower = filter.search.toLowerCase();
+      filtered = filtered.filter(e => e.employee_name.toLowerCase().includes(searchLower));
+    }
+
+    return filtered;
+  };
+
+  const getSortedEvaluations = (evals: ResumenEvaluacionDTO[]): ResumenEvaluacionDTO[] => {
+    return [...evals].sort((a, b) => {
+      if (sort.column === 'daysOverdue') {
+        const aDays = a.status === 'atrasada' ? getDaysOverdue(a.due_date) : 0;
+        const bDays = b.status === 'atrasada' ? getDaysOverdue(b.due_date) : 0;
+        return sort.direction === 'asc' ? aDays - bDays : bDays - aDays;
+      }
+      const aVal = String(a[sort.column as keyof ResumenEvaluacionDTO]);
+      const bVal = String(b[sort.column as keyof ResumenEvaluacionDTO]);
+      if (aVal < bVal) return sort.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sort.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const getStatusDistribution = (): ChartData[] => {
+    const counts = allEvaluations.reduce((acc, e) => {
+      console.log('Estado encontrado:', e.status); // Depuración
+      acc[e.status] = (acc[e.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    console.log('Conteo de estados:', counts); // Depuración
+
+    return Object.entries(counts).map(([status, count]) => ({
+      name: servicioEvaluaciones.obtenerTextoEstado(status),
+      value: count
+    }));
+  };
+
+  const handleSort = (column: keyof ResumenEvaluacionDTO | 'daysOverdue'): void => {
+    setSort({
+      column,
+      direction: sort.column === column && sort.direction === 'asc' ? 'desc' : 'asc',
+    });
+  };
+
+  const handleEvaluationClick = (evaluation: ResumenEvaluacionDTO): void => {
+    console.log('Abriendo reporte para evaluación ID:', evaluation.id);
+    setSelectedEvaluationId(evaluation.id);
+    setModalReporteOpen(true);
+  };
+
+  const closeModal = (): void => {
+    setModalReporteOpen(false);
+    setSelectedEvaluationId(null);
+  };
+
   const navigateToEvaluations = (): void => {
     window.location.href = '/evaluaciones';
   };
 
-  const navigateToEmployees = (): void => {
-    window.location.href = '/employees';
-  };
+  // Datos calculados
+  const filteredEvals = getFilteredEvaluations();
+  const sortedEvals = getSortedEvaluations(filteredEvals);
+  const statusDistribution = getStatusDistribution();
+  const COLORS = ['#FF8042', '#00C49F', '#FFBB28', '#0088FE'];
 
-  // Prepare chart data with null check
-  const departmentChartData = (dashboardData?.by_department || []).map(dept => ({
-    name: dept.department_name.length > 15 
-      ? dept.department_name.substring(0, 15) + '...' 
-      : dept.department_name,
-    fullName: dept.department_name,
-    evaluaciones: dept.total_evaluations || 0,
-    completadas: dept.completed_evaluations || 0,
-    promedio: dept.average_score || 0,
-    tasa: dept.completion_rate || 0
-  }));
+  const adminStats = isAdmin ? {
+    total: allEvaluations.length,
+    completed: allEvaluations.filter(e => e.status === 'realizada').length,
+    pending: allEvaluations.filter(e => e.status === 'pendiente').length,
+    overdue: allEvaluations.filter(e => e.status === 'atrasada').length
+  } : null;
 
+  // Renderizado condicional de carga y error
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -210,7 +282,7 @@ const DashboardPage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl text-white">
+            <div className="p-3 bg-blue-600 rounded-xl text-white">
               <BarChart3 className="w-8 h-8" />
             </div>
             <div>
@@ -241,175 +313,214 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Admin Stats */}
-        {isAdmin && viewMode === 'admin' && dashboardData && (
+        {/* Stats Cards */}
+        {isAdmin && viewMode === 'admin' && adminStats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <StatCard
               title="Total Evaluaciones"
-              value={dashboardData.total_evaluations || 0}
-              subtitle={`${(dashboardData.completion_rate || 0).toFixed(1)}% completadas`}
+              value={adminStats.total}
+              subtitle="En el sistema"
               icon={<BarChart3 className="w-6 h-6" />}
-              color="from-blue-500 to-blue-600"
-              trend={0}
+              color="bg-blue-600"
             />
             <StatCard
               title="Completadas"
-              value={dashboardData.completed_evaluations || 0}
+              value={adminStats.completed}
               subtitle="Evaluaciones finalizadas"
               icon={<CheckCircle className="w-6 h-6" />}
-              color="from-green-500 to-green-600"
-              trend={0}
+              color="bg-green-600"
             />
             <StatCard
               title="Pendientes"
-              value={dashboardData.pending_evaluations || 0}
+              value={adminStats.pending}
               subtitle="Por completar"
               icon={<Clock className="w-6 h-6" />}
-              color="from-yellow-500 to-yellow-600"
-              trend={0}
+              color="bg-yellow-600"
             />
             <StatCard
               title="Vencidas"
-              value={dashboardData.overdue_evaluations || 0}
+              value={adminStats.overdue}
               subtitle="Fuera de plazo"
               icon={<AlertTriangle className="w-6 h-6" />}
-              color="from-red-500 to-red-600"
-              trend={0}
+              color="bg-red-600"
             />
           </div>
         )}
 
-        {/* Personal Stats */}
         {(!isAdmin || viewMode === 'personal') && myEvaluations && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <StatCard
               title="Mis Evaluaciones"
-              value={myEvaluations.summary?.my_evaluations_total ?? 0}
+              value={myEvaluations.as_employee.summary.total}
               subtitle="Como empleado"
               icon={<UserCheck className="w-6 h-6" />}
-              color="from-purple-500 to-purple-600"
+              color="bg-purple-600"
             />
             <StatCard
               title="Por Evaluar"
-              value={myEvaluations.summary?.pending_to_evaluate ?? 0}
+              value={myEvaluations.as_evaluator.summary.pending_to_evaluate}
               subtitle="Pendientes de calificar"
               icon={<Target className="w-6 h-6" />}
-              color="from-orange-500 to-orange-600"
+              color="bg-orange-600"
+              onClick={navigateToEvaluations}
             />
             <StatCard
               title="Completadas"
-              value={myEvaluations.summary?.completed_evaluating ?? 0}
+              value={myEvaluations.as_evaluator.summary.completed}
               subtitle="Evaluaciones realizadas"
               icon={<Award className="w-6 h-6" />}
-              color="from-green-500 to-green-600"
+              color="bg-green-600"
             />
             <StatCard
               title="Total Asignadas"
-              value={myEvaluations.summary?.total_evaluations ?? 0}
+              value={myEvaluations.as_evaluator.summary.total + myEvaluations.as_employee.summary.total}
               subtitle="En el sistema"
               icon={<Activity className="w-6 h-6" />}
-              color="from-blue-500 to-blue-600"
+              color="bg-blue-600"
             />
           </div>
         )}
       </div>
 
-      {/* Main Content - Admin View */}
-      {isAdmin && viewMode === 'admin' && dashboardData ? (
+      {/* Main Content */}
+      {isAdmin && viewMode === 'admin' ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {/* Department Performance */}
+            {/* Status Distribution */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                Rendimiento por Departamento
-              </h2>
-              {departmentChartData.length > 0 ? (
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Distribución por Estado</h2>
+              {statusDistribution.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={departmentChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip content={<CustomTooltip />} />
+                  <PieChart>
+                    <Pie
+                      dataKey="value"
+                      data={statusDistribution}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      fill="#8884d8"
+                      label
+                    >
+                      {statusDistribution.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
                     <Legend />
-                    <Bar dataKey="evaluaciones" fill="#3B82F6" name="Total" radius={[8, 8, 0, 0]} />
-                    <Bar dataKey="completadas" fill="#10B981" name="Completadas" radius={[8, 8, 0, 0]} />
-                  </BarChart>
+                  </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="text-gray-500 text-center py-4">No hay datos de departamentos disponibles</p>
+                <p className="text-gray-500 text-center py-4">No hay datos disponibles</p>
               )}
             </div>
 
-            {/* Top Performers */}
+            {/* Evaluations Table */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Mejores Evaluados</h2>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {(dashboardData.top_performers || []).length > 0 ? (
-                  dashboardData.top_performers.map((performer: EmployeePerformanceDTO) => (
-                    <div key={performer.employee_name} className="p-4 bg-gray-50 rounded-xl">
-                      <p className="font-medium text-gray-900">{performer.employee_name}</p>
-                      <p className="text-sm text-gray-600 mt-1">Departamento: {performer.department || 'N/A'}</p>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-sm font-semibold">Puntaje: {(performer.average_score || 0).toFixed(2)}</span>
-                        <span className="text-xs text-gray-500">Última: {performer.last_evaluation || 'N/A'}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-center py-4">No hay datos de mejores evaluados</p>
-                )}
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Lista de Evaluaciones</h2>
+              
+              {/* Filters */}
+              <div className="flex items-center gap-4 mb-4">
+                <div className="flex-1 relative">
+                  <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por nombre de empleado..."
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500"
+                    value={filter.search}
+                    onChange={(e) => setFilter({ ...filter, search: e.target.value })}
+                  />
+                </div>
+                <select
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500"
+                  value={filter.status}
+                  onChange={(e) => setFilter({ 
+                    ...filter, 
+                    status: e.target.value as 'all' | 'pendiente' | 'realizada' | 'atrasada' 
+                  })}
+                >
+                  <option value="all">Todos los estados</option>
+                  <option value="pendiente">Pendiente</option>
+                  <option value="realizada">Realizada</option>
+                  <option value="atrasada">Atrasada</option>
+                </select>
               </div>
-            </div>
 
-            {/* Bottom Performers */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Menores Evaluados</h2>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {(dashboardData.bottom_performers || []).length > 0 ? (
-                  dashboardData.bottom_performers.map((performer: EmployeePerformanceDTO) => (
-                    <div key={performer.employee_name} className="p-4 bg-gray-50 rounded-xl">
-                      <p className="font-medium text-gray-900">{performer.employee_name}</p>
-                      <p className="text-sm text-gray-600 mt-1">Departamento: {performer.department || 'N/A'}</p>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-sm font-semibold">Puntaje: {(performer.average_score || 0).toFixed(2)}</span>
-                        <span className="text-xs text-gray-500">Última: {performer.last_evaluation || 'N/A'}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-center py-4">No hay datos de menores evaluados</p>
-                )}
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="p-2 cursor-pointer" onClick={() => handleSort('id')}>
+                        ID
+                        {sort.column === 'id' && (
+                          sort.direction === 'asc' ? <SortAsc className="inline w-4 h-4 ml-1" /> : <SortDesc className="inline w-4 h-4 ml-1" />
+                        )}
+                      </th>
+                      <th className="p-2 cursor-pointer" onClick={() => handleSort('employee_name')}>
+                        Empleado
+                        {sort.column === 'employee_name' && (
+                          sort.direction === 'asc' ? <SortAsc className="inline w-4 h-4 ml-1" /> : <SortDesc className="inline w-4 h-4 ml-1" />
+                        )}
+                      </th>
+                      <th className="p-2 cursor-pointer" onClick={() => handleSort('evaluator_name')}>
+                        Evaluador
+                        {sort.column === 'evaluator_name' && (
+                          sort.direction === 'asc' ? <SortAsc className="inline w-4 h-4 ml-1" /> : <SortDesc className="inline w-4 h-4 ml-1" />
+                        )}
+                      </th>
+                      <th className="p-2 cursor-pointer" onClick={() => handleSort('period_name')}>
+                        Período
+                        {sort.column === 'period_name' && (
+                          sort.direction === 'asc' ? <SortAsc className="inline w-4 h-4 ml-1" /> : <SortDesc className="inline w-4 h-4 ml-1" />
+                        )}
+                      </th>
+                      <th className="p-2 cursor-pointer" onClick={() => handleSort('status')}>
+                        Estado
+                        {sort.column === 'status' && (
+                          sort.direction === 'asc' ? <SortAsc className="inline w-4 h-4 ml-1" /> : <SortDesc className="inline w-4 h-4 ml-1" />
+                        )}
+                      </th>
+                      <th className="p-2 cursor-pointer" onClick={() => handleSort('daysOverdue')}>
+                        Días de retraso
+                        {sort.column === 'daysOverdue' && (
+                          sort.direction === 'asc' ? <SortAsc className="inline w-4 h-4 ml-1" /> : <SortDesc className="inline w-4 h-4 ml-1" />
+                        )}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedEvals.map(e => (
+                      <tr 
+                        key={e.id} 
+                        className="border-b hover:bg-gray-50 cursor-pointer" 
+                        onClick={() => handleEvaluationClick(e)}
+                      >
+                        <td className="p-2">{e.id}</td>
+                        <td className="p-2">{e.employee_name}</td>
+                        <td className="p-2">{e.evaluator_name}</td>
+                        <td className="p-2">{e.period_name}</td>
+                        <td className="p-2">
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                            e.status === 'realizada' ? 'bg-green-100 text-green-700' :
+                            e.status === 'pendiente' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {servicioEvaluaciones.obtenerTextoEstado(e.status)}
+                          </span>
+                        </td>
+                        <td className="p-2">
+                          {e.status === 'atrasada' ? getDaysOverdue(e.due_date) : 0}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
 
-          {/* Right Column */}
+          {/* Right Column - Quick Actions */}
           <div className="space-y-6">
-            {/* Overdue Evaluators */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">Evaluadores con Atrasos</h2>
-                <Bell className="w-5 h-5 text-gray-400" />
-              </div>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {(dashboardData.overdue_evaluators || []).length > 0 ? (
-                  dashboardData.overdue_evaluators.map((evaluator: EvaluatorOverdueDTO) => (
-                    <div key={evaluator.evaluator_name} className="p-3 bg-gray-50 rounded-xl">
-                      <p className="font-medium text-gray-900 text-sm">{evaluator.evaluator_name}</p>
-                      <p className="text-xs text-gray-600 mt-1">Departamento: {evaluator.department || 'N/A'}</p>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-sm font-semibold">Atrasadas: {evaluator.overdue_count || 0}</span>
-                        <span className="text-xs text-gray-500">Más antigua: {evaluator.oldest_overdue || 'N/A'}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-center py-4">No hay evaluadores con atrasos</p>
-                )}
-              </div>
-            </div>
-
-            {/* Quick Actions */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Acciones Rápidas</h2>
               <div className="space-y-3">
@@ -419,12 +530,12 @@ const DashboardPage: React.FC = () => {
                 >
                   <div className="flex items-center gap-3">
                     <FileCheck className="w-5 h-5 text-blue-600" />
-                    <span className="text-sm font-medium">Nueva Evaluación</span>
+                    <span className="text-sm font-medium">Gestionar Evaluaciones</span>
                   </div>
                   <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
                 </button>
                 <button
-                  onClick={navigateToEmployees}
+                  onClick={() => window.location.href = '/employees'}
                   className="w-full p-3 bg-green-50 hover:bg-green-100 rounded-lg flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-3">
@@ -457,14 +568,14 @@ const DashboardPage: React.FC = () => {
               {myEvaluations?.as_employee?.evaluations?.length ? (
                 myEvaluations.as_employee.evaluations.map((evaluation) => (
                   <div key={evaluation.id} className="p-4 bg-gray-50 rounded-xl">
-                    <p className="font-medium text-gray-900">{evaluation.period_name || 'N/A'}</p>
-                    <p className="text-sm text-gray-600 mt-1">Evaluador: {evaluation.evaluator_name || 'N/A'}</p>
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full mt-2 ${
+                    <p className="font-medium text-gray-900">{evaluation.period_name}</p>
+                    <p className="text-sm text-gray-600">Evaluador: {evaluation.evaluator_name}</p>
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                       evaluation.status === 'realizada' ? 'bg-green-100 text-green-700' :
                       evaluation.status === 'pendiente' ? 'bg-yellow-100 text-yellow-700' :
                       'bg-red-100 text-red-700'
                     }`}>
-                      {evaluation.status || 'N/A'}
+                      {servicioEvaluaciones.obtenerTextoEstado(evaluation.status)}
                     </span>
                   </div>
                 ))
@@ -474,21 +585,22 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          /* Pending to Evaluate */
+          {/* Pending to Evaluate */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Por Evaluar</h2>
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {myEvaluations?.as_evaluator?.evaluations?.filter(e => e.status === 'pendiente')?.length ? (
+              {myEvaluations?.as_evaluator?.evaluations?.filter(e => e.status === 'pendiente').length ? (
                 myEvaluations.as_evaluator.evaluations
                   .filter(e => e.status === 'pendiente')
                   .map((evaluation) => (
                     <div key={evaluation.id} className="p-4 bg-gray-50 rounded-xl">
-                      <p className="font-medium text-gray-900">{evaluation.employee_name || 'N/A'}</p>
-                      <p className="text-sm text-gray-600 mt-1">{evaluation.period_name || 'N/A'}</p>
+                      <p className="font-medium text-gray-900">{evaluation.employee_name}</p>
+                      <p className="text-sm text-gray-600">{evaluation.period_name}</p>
                       <button 
-                        onClick={navigateToEvaluations}
-                        className="mt-2 px-3 py-1 bg-orange-500 text-white text-xs font-medium rounded-lg hover:bg-orange-600"
+                        onClick={() => window.location.href = '/evaluaciones'}
+                        className="mt-2 px-3 py-1 bg-orange-500 text-white text-xs font-medium rounded-lg hover:bg-orange-600 flex items-center gap-1"
                       >
+                        <Play className="w-3 h-3" />
                         Evaluar
                       </button>
                     </div>
@@ -500,6 +612,13 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal */}
+      <VerReporteEvaluacionModal
+        show={modalReporteOpen}
+        evaluationId={selectedEvaluationId}
+        onClose={closeModal}
+      />
     </div>
   );
 };
