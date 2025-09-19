@@ -144,13 +144,19 @@ export interface CriterioEvaluacionDTO {
 }
 
 export interface RespuestaPuntuacionDTO {
-  id: number; // assigned_criteria_id
+  id: number;
   criteria_id: number;
   score?: number;
   weight: number;
   weighted_score?: number;
+  
+  score_percentage?: number;
+  contribution_points?: number;
+  max_possible_points?: number;
+  is_passing?: boolean;
+  
   comments?: string;
-  evidence?: string; 
+  evidence?: string;
   criteria: CriterioEvaluacionDTO;
 }
 
@@ -159,6 +165,11 @@ export interface EvaluacionParaCalificarDTO {
   status: string;
   total_score: number;
   weighted_score: number;
+  
+  performance_percentage?: number;
+  performance_level?: string;
+  max_possible_score?: number;
+  
   general_comments?: string;
   completed_at?: string;
   created_at: string;
