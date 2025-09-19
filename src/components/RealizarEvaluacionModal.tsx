@@ -9,7 +9,6 @@ import {
   User,
   Calendar,
   Award,
-  TrendingUp,
 } from 'lucide-react';
 import servicioEvaluaciones, { ErrorEvaluacion } from '../services/evaluationService';
 import { roundTo } from '../utils/numberFormatting';
@@ -109,23 +108,23 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
   };
 
   const getCategoryColor = (category: string | undefined): string => {
-    if (!category) return 'bg-gray-100 text-gray-800 border-gray-200';
+    if (!category) return 'bg-gray-100 text-gray-700 border-gray-300';
     switch (category) {
       case 'productividad':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'conducta_laboral':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-50 text-green-700 border-green-200';
       case 'habilidades':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
+        return 'bg-purple-50 text-purple-700 border-purple-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-100 text-gray-700 border-gray-300';
     }
   };
 
   const getScoreLabel = (score: number) => {
     const labels = {
       1: 'Necesita Mejora',
-      2: 'Por Debajo del Promedio',
+      2: 'Por Debajo',
       3: 'Promedio',
       4: 'Bueno',
       5: 'Excelente',
@@ -134,14 +133,14 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
   };
 
   const getScoreColor = (score: number, isSelected: boolean) => {
-    if (!isSelected) return 'border-gray-300 bg-white hover:border-gray-400';
+    if (!isSelected) return 'border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50';
     
     const colors = {
-      1: 'border-red-400 bg-red-50 shadow-red-100',
-      2: 'border-orange-400 bg-orange-50 shadow-orange-100',
-      3: 'border-yellow-400 bg-yellow-50 shadow-yellow-100',
-      4: 'border-blue-400 bg-blue-50 shadow-blue-100',
-      5: 'border-green-400 bg-green-50 shadow-green-100',
+      1: 'border-red-500 bg-red-50',
+      2: 'border-orange-500 bg-orange-50',
+      3: 'border-yellow-500 bg-yellow-50',
+      4: 'border-blue-500 bg-blue-50',
+      5: 'border-green-500 bg-green-50',
     };
     return colors[score as keyof typeof colors] || '';
   };
@@ -152,19 +151,20 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
   const progressPercentage = evaluation ? roundTo((completedScores / evaluation.scores.length) * 100, 2) : 0;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl w-full max-w-5xl h-[95vh] flex flex-col shadow-2xl">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-6xl h-[95vh] flex flex-col shadow-2xl">
+        
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 text-white p-8 flex-shrink-0">
+        <div className="bg-slate-700 text-white p-6 border-b border-slate-600 rounded-t-2xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                <Play className="w-6 h-6" />
+              <div className="w-10 h-10 bg-slate-600 rounded-lg flex items-center justify-center">
+                <Play className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold">Realizar Evaluación</h2>
+                <h2 className="text-xl font-semibold">Realizar Evaluación</h2>
                 {evaluation && (
-                  <div className="flex items-center gap-4 mt-2 text-white/90">
+                  <div className="flex items-center gap-4 mt-1 text-slate-200 text-sm">
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4" />
                       <span>{evaluation.employee.first_name} {evaluation.employee.last_name}</span>
@@ -179,21 +179,21 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
             </div>
             <button
               onClick={handleClose}
-              className="w-10 h-10 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors backdrop-blur-sm"
+              className="w-8 h-8 rounded-lg bg-slate-600 hover:bg-slate-500 flex items-center justify-center transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Progress Bar */}
-          <div className="mt-6">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-white/90 font-medium">Progreso de Evaluación</span>
-              <span className="text-white font-semibold">{completedScores} / {evaluation?.scores.length || 0}</span>
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-slate-200 text-sm">Progreso</span>
+              <span className="text-white font-medium text-sm">{completedScores} / {evaluation?.scores.length || 0}</span>
             </div>
-            <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
+            <div className="w-full bg-slate-600 rounded-full h-2">
               <div
-                className="bg-gradient-to-r from-green-400 to-emerald-400 h-full rounded-full transition-all duration-500 ease-out"
+                className="bg-green-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
@@ -201,87 +201,77 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
           {loading && (
             <div className="flex items-center justify-center py-20">
               <div className="text-center">
-                <Loader2 className="w-10 h-10 animate-spin mx-auto mb-4 text-indigo-600" />
-                <p className="text-gray-600 text-lg">Cargando evaluación...</p>
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-slate-600" />
+                <p className="text-gray-600">Cargando evaluación...</p>
               </div>
             </div>
           )}
 
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-400 rounded-lg p-6 flex items-center gap-4 mb-8">
-              <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 mb-6">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
               <div>
-                <p className="text-red-800 font-semibold">Error al cargar la evaluación</p>
-                <p className="text-red-600">{error}</p>
+                <p className="text-red-800 font-medium">Error al cargar la evaluación</p>
+                <p className="text-red-600 text-sm">{error}</p>
               </div>
             </div>
           )}
 
           {evaluation && !loading && (
-            <div className="space-y-8">
+            <div className="space-y-6">
               {evaluation.scores.map((scoreItem, index) => (
-                <div key={scoreItem.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div key={scoreItem.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
+                  
                   {/* Criterio Header */}
-                  <div className="p-6 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-                    <div className="flex items-start justify-between mb-4">
+                  <div className="p-5 border-b border-gray-100">
+                    <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                            <span className="text-indigo-600 font-bold text-sm">{index + 1}</span>
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-6 h-6 bg-slate-100 rounded text-slate-600 flex items-center justify-center text-sm font-medium">
+                            {index + 1}
                           </div>
-                          <h3 className="text-xl font-bold text-gray-900">{scoreItem.criteria.name}</h3>
-                          <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getCategoryColor(scoreItem.criteria.category)}`}>
+                          <h3 className="text-lg font-semibold text-gray-900">{scoreItem.criteria.name}</h3>
+                          <span className={`px-2 py-1 text-xs font-medium rounded border ${getCategoryColor(scoreItem.criteria.category)}`}>
                             {scoreItem.criteria.category === 'productividad' ? 'Productividad' :
                              scoreItem.criteria.category === 'conducta_laboral' ? 'Conducta Laboral' :
                              scoreItem.criteria.category === 'habilidades' ? 'Habilidades' :
                              'Sin Categoría'}
                           </span>
                         </div>
-                        <p className="text-gray-600 leading-relaxed mb-3">{scoreItem.criteria.description}</p>
+                        <p className="text-gray-600 text-sm leading-relaxed mb-2">{scoreItem.criteria.description}</p>
                         <div className="flex items-center gap-2">
-                          <Award className="w-4 h-4 text-indigo-600" />
-                          <span className="text-sm font-semibold text-indigo-600">Peso: {scoreItem.weight}%</span>
+                          <Award className="w-4 h-4 text-slate-600" />
+                          <span className="text-sm text-slate-600">Peso: {scoreItem.weight}%</span>
                         </div>
                       </div>
+                      {scores[scoreItem.id] > 0 && (
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-slate-700">{scores[scoreItem.id]}/5</div>
+                          <div className="text-xs text-slate-500">{getScoreLabel(scores[scoreItem.id])}</div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* Rating Section */}
-                  <div className="p-6">
-                    <div className="mb-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-lg font-semibold text-gray-900">Calificación</span>
-                        {scores[scoreItem.id] > 0 && (
-                          <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-xl">
-                            <TrendingUp className="w-4 h-4 text-indigo-600" />
-                            <span className="text-indigo-600 font-bold">{scores[scoreItem.id]}/5</span>
-                            <span className="text-indigo-600 text-sm">- {getScoreLabel(scores[scoreItem.id])}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-5 gap-4">
+                  <div className="p-5">
+                    <div className="mb-4">
+                      <span className="text-sm font-medium text-gray-900 mb-3 block">Calificación</span>
+                      <div className="grid grid-cols-5 gap-3">
                         {[1, 2, 3, 4, 5].map((rating) => (
                           <button
                             key={rating}
                             onClick={() => handleScoreChange(scoreItem.id, rating)}
-                            className={`relative group p-4 border-2 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${getScoreColor(rating, scores[scoreItem.id] === rating)}`}
+                            className={`p-3 border rounded-lg transition-all duration-200 ${getScoreColor(rating, scores[scoreItem.id] === rating)}`}
                           >
                             <div className="text-center">
-                              <div className={`w-8 h-8 mx-auto mb-2 rounded-full flex items-center justify-center font-bold text-lg transition-colors ${scores[scoreItem.id] === rating ? 'bg-white shadow-md text-gray-800' : 'bg-gray-100 text-gray-600 group-hover:bg-white group-hover:shadow-md'}`}>
-                                {rating}
-                              </div>
-                              <div className={`text-xs font-medium transition-colors ${scores[scoreItem.id] === rating ? 'text-gray-800' : 'text-gray-500'}`}>
-                                {getScoreLabel(rating)}
-                              </div>
+                              <div className="text-lg font-bold text-gray-800 mb-1">{rating}</div>
+                              <div className="text-xs text-gray-600">{getScoreLabel(rating)}</div>
                             </div>
-                            {scores[scoreItem.id] === rating && (
-                              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
-                            )}
                           </button>
                         ))}
                       </div>
@@ -289,15 +279,15 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
 
                     {/* Comments Section */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-3">
-                        Comentarios y Observaciones (Opcional)
+                      <label className="block text-sm font-medium text-gray-900 mb-2">
+                        Comentarios (Opcional)
                       </label>
                       <textarea
                         value={comments[scoreItem.id] || ''}
                         onChange={(e) => handleCommentChange(scoreItem.id, e.target.value)}
-                        placeholder={`Escribe observaciones específicas sobre ${scoreItem.criteria.name.toLowerCase()}...`}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none transition-colors"
-                        rows={3}
+                        placeholder="Observaciones específicas..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 resize-none text-sm"
+                        rows={2}
                       />
                     </div>
                   </div>
@@ -309,43 +299,43 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
 
         {/* Footer */}
         {evaluation && !loading && (
-          <div className="border-t border-gray-200 p-8 bg-white flex-shrink-0">
+          <div className="border-t border-gray-200 p-6 bg-white">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 {isComplete() ? (
-                  <div className="flex items-center gap-3 text-green-600">
-                    <CheckCircle className="w-6 h-6" />
-                    <span className="font-semibold text-lg">Evaluación completa y lista para enviar</span>
+                  <div className="flex items-center gap-2 text-green-600">
+                    <CheckCircle className="w-5 h-5" />
+                    <span className="font-medium">Evaluación completa</span>
                   </div>
                 ) : (
                   <div className="text-gray-600">
-                    <span className="font-medium">Faltan {evaluation.scores.length - completedScores} criterios por calificar</span>
+                    <span>Faltan {evaluation.scores.length - completedScores} criterios</span>
                   </div>
                 )}
               </div>
               
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 <button
                   onClick={handleClose}
                   disabled={submitting}
-                  className="px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={!isComplete() || submitting}
-                  className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-3 shadow-lg hover:shadow-xl"
+                  className="px-6 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                 >
                   {submitting ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Enviando Evaluación...
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Enviando...
                     </>
                   ) : (
                     <>
-                      <Target className="w-5 h-5" />
-                      Completar Evaluación
+                      <Target className="w-4 h-4" />
+                      Completar
                     </>
                   )}
                 </button>
