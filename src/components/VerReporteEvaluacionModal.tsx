@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle, Loader2, Download } from 'lucide-react';
-import servicioEvaluaciones, { ErrorEvaluacion } from '../services/evaluationService';
+import servicioEvaluaciones, { ErrorEvaluacion, exportarReporteEvaluacion } from '../services/evaluationService';
 import { 
   formatNumber, 
   formatPercentage, 
@@ -57,17 +57,24 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
   };
 
   const handleExportReport = async () => {
-    if (!evaluationId) return;
+    if (!evaluationId) {
+      setError('No se proporcionó un ID de evaluación');
+      return;
+    }
     
     setExportingReport(true);
+    setError(null);
     try {
       console.log('🔄 Exportando reporte de evaluación ID:', evaluationId);
-      setTimeout(() => {
-        alert('Funcionalidad de exportar próximamente disponible');
-        setExportingReport(false);
-      }, 1000);
+      await exportarReporteEvaluacion(evaluationId);
+      console.log('✅ Reporte exportado correctamente');
     } catch (err) {
-      console.error('Error exportando reporte:', err);
+      const mensaje = err instanceof ErrorEvaluacion 
+        ? err.message 
+        : 'Error al exportar el reporte de evaluación';
+      setError(mensaje);
+      console.error('❌ Error exportando reporte:', err);
+    } finally {
       setExportingReport(false);
     }
   };
