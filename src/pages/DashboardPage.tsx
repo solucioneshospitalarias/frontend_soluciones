@@ -1,4 +1,3 @@
-// src/pages/DashboardPage.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Users, BarChart3, Clock, CheckCircle, AlertCircle,
@@ -78,8 +77,8 @@ const CustomTooltip: React.FC<ChartTooltipProps> = ({ active, payload }) => {
       <p className="font-semibold text-sm">{data.fullName}</p>
       <p className="text-xs text-gray-600 mt-1">Total: {data.evaluaciones}</p>
       <p className="text-xs text-gray-600">Completadas: {data.completadas}</p>
-      <p className="text-xs text-gray-600">Promedio: {data.promedio.toFixed(2)}</p>
-      <p className="text-xs text-gray-600">Tasa: {data.tasa.toFixed(1)}%</p>
+      <p className="text-xs text-gray-600">Promedio: {(data.promedio || 0).toFixed(2)}</p>
+      <p className="text-xs text-gray-600">Tasa: {(data.tasa || 0).toFixed(1)}%</p>
     </div>
   );
 };
@@ -107,6 +106,9 @@ const DashboardPage: React.FC = () => {
     setLoading(true);
     setError(null);
     
+    let hrDashboardError: string | null = null;
+    let myEvalsError: string | null = null;
+
     try {
       if (isAdmin) {
         console.log('Fetching HR Dashboard...'); // Debug
@@ -117,22 +119,31 @@ const DashboardPage: React.FC = () => {
         } catch (err) {
           console.log('Error fetching HR Dashboard:', err); // Debug
           if (err instanceof ApiError && err.status === 403) {
-            setError('No tienes permisos para ver el dashboard administrativo');
+            hrDashboardError = 'No tienes permisos para ver el dashboard administrativo';
           } else {
-            throw err;
+            hrDashboardError = err instanceof ApiError ? err.message : 'Error al cargar el dashboard administrativo';
           }
         }
       }
       
       console.log('Fetching My Evaluations...'); // Debug
-      const myEvalsData = await dashboardService.getMyEvaluations();
-      console.log('My Evaluations Data:', myEvalsData); // Debug
-      setMyEvaluations(myEvalsData);
+      try {
+        const myEvalsData = await dashboardService.getMyEvaluations();
+        console.log('My Evaluations Data:', myEvalsData); // Debug
+        setMyEvaluations(myEvalsData || { as_employee: { count: 0, evaluations: [] }, as_evaluator: { count: 0, evaluations: [] }, summary: { total_evaluations: 0, pending_to_evaluate: 0, completed_evaluating: 0, my_evaluations_total: 0 } });
+      } catch (err) {
+        console.log('Error fetching My Evaluations:', err); // Debug
+        myEvalsError = err instanceof ApiError ? err.message : 'Error al cargar tus evaluaciones';
+        setMyEvaluations({ as_employee: { count: 0, evaluations: [] }, as_evaluator: { count: 0, evaluations: [] }, summary: { total_evaluations: 0, pending_to_evaluate: 0, completed_evaluating: 0, my_evaluations_total: 0 } });
+      }
     } catch (err) {
-      console.error('Error loading dashboard:', err);
-      setError(err instanceof ApiError ? err.message : 'Error al cargar los datos del dashboard');
+      console.error('Unexpected error loading dashboard:', err);
+      setError('Error inesperado al cargar el dashboard');
     } finally {
       setLoading(false);
+      if (hrDashboardError || myEvalsError) {
+        setError([hrDashboardError, myEvalsError].filter(e => e).join('; '));
+      }
       console.log('Final Dashboard Data:', dashboardData); // Debug
       console.log('Final My Evaluations:', myEvaluations); // Debug
     }
@@ -158,10 +169,10 @@ const DashboardPage: React.FC = () => {
       ? dept.department_name.substring(0, 15) + '...' 
       : dept.department_name,
     fullName: dept.department_name,
-    evaluaciones: dept.total_evaluations,
-    completadas: dept.completed_evaluations,
-    promedio: dept.average_score,
-    tasa: dept.completion_rate
+    evaluaciones: dept.total_evaluations || 0,
+    completadas: dept.completed_evaluations || 0,
+    promedio: dept.average_score || 0,
+    tasa: dept.completion_rate || 0
   }));
 
   if (loading) {
@@ -235,15 +246,15 @@ const DashboardPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <StatCard
               title="Total Evaluaciones"
-              value={dashboardData.total_evaluations}
-              subtitle={`${dashboardData.completion_percentage.toFixed(1)}% completadas`}
+              value={dashboardData.total_evaluations || 0}
+              subtitle={`${(dashboardData.completion_rate || 0).toFixed(1)}% completadas`}
               icon={<BarChart3 className="w-6 h-6" />}
               color="from-blue-500 to-blue-600"
               trend={0}
             />
             <StatCard
               title="Completadas"
-              value={dashboardData.completed_evaluations}
+              value={dashboardData.completed_evaluations || 0}
               subtitle="Evaluaciones finalizadas"
               icon={<CheckCircle className="w-6 h-6" />}
               color="from-green-500 to-green-600"
@@ -251,7 +262,7 @@ const DashboardPage: React.FC = () => {
             />
             <StatCard
               title="Pendientes"
-              value={dashboardData.pending_evaluations}
+              value={dashboardData.pending_evaluations || 0}
               subtitle="Por completar"
               icon={<Clock className="w-6 h-6" />}
               color="from-yellow-500 to-yellow-600"
@@ -259,7 +270,7 @@ const DashboardPage: React.FC = () => {
             />
             <StatCard
               title="Vencidas"
-              value={dashboardData.overdue_evaluations}
+              value={dashboardData.overdue_evaluations || 0}
               subtitle="Fuera de plazo"
               icon={<AlertTriangle className="w-6 h-6" />}
               color="from-red-500 to-red-600"
@@ -269,32 +280,32 @@ const DashboardPage: React.FC = () => {
         )}
 
         {/* Personal Stats */}
-        {(!isAdmin || viewMode === 'personal') && (
+        {(!isAdmin || viewMode === 'personal') && myEvaluations && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <StatCard
               title="Mis Evaluaciones"
-              value={myEvaluations?.summary.my_evaluations_total ?? 0}
+              value={myEvaluations.summary?.my_evaluations_total ?? 0}
               subtitle="Como empleado"
               icon={<UserCheck className="w-6 h-6" />}
               color="from-purple-500 to-purple-600"
             />
             <StatCard
               title="Por Evaluar"
-              value={myEvaluations?.summary.pending_to_evaluate ?? 0}
+              value={myEvaluations.summary?.pending_to_evaluate ?? 0}
               subtitle="Pendientes de calificar"
               icon={<Target className="w-6 h-6" />}
               color="from-orange-500 to-orange-600"
             />
             <StatCard
               title="Completadas"
-              value={myEvaluations?.summary.completed_evaluating ?? 0}
+              value={myEvaluations.summary?.completed_evaluating ?? 0}
               subtitle="Evaluaciones realizadas"
               icon={<Award className="w-6 h-6" />}
               color="from-green-500 to-green-600"
             />
             <StatCard
               title="Total Asignadas"
-              value={myEvaluations?.summary.total_evaluations ?? 0}
+              value={myEvaluations.summary?.total_evaluations ?? 0}
               subtitle="En el sistema"
               icon={<Activity className="w-6 h-6" />}
               color="from-blue-500 to-blue-600"
@@ -337,9 +348,9 @@ const DashboardPage: React.FC = () => {
                   dashboardData.top_performers.map((performer: EmployeePerformanceDTO) => (
                     <div key={performer.employee_name} className="p-4 bg-gray-50 rounded-xl">
                       <p className="font-medium text-gray-900">{performer.employee_name}</p>
-                      <p className="text-sm text-gray-600 mt-1">Departamento: {performer.department}</p>
+                      <p className="text-sm text-gray-600 mt-1">Departamento: {performer.department || 'N/A'}</p>
                       <div className="flex justify-between items-center mt-2">
-                        <span className="text-sm font-semibold">Puntaje: {performer.average_score.toFixed(2)}</span>
+                        <span className="text-sm font-semibold">Puntaje: {(performer.average_score || 0).toFixed(2)}</span>
                         <span className="text-xs text-gray-500">Última: {performer.last_evaluation || 'N/A'}</span>
                       </div>
                     </div>
@@ -358,9 +369,9 @@ const DashboardPage: React.FC = () => {
                   dashboardData.bottom_performers.map((performer: EmployeePerformanceDTO) => (
                     <div key={performer.employee_name} className="p-4 bg-gray-50 rounded-xl">
                       <p className="font-medium text-gray-900">{performer.employee_name}</p>
-                      <p className="text-sm text-gray-600 mt-1">Departamento: {performer.department}</p>
+                      <p className="text-sm text-gray-600 mt-1">Departamento: {performer.department || 'N/A'}</p>
                       <div className="flex justify-between items-center mt-2">
-                        <span className="text-sm font-semibold">Puntaje: {performer.average_score.toFixed(2)}</span>
+                        <span className="text-sm font-semibold">Puntaje: {(performer.average_score || 0).toFixed(2)}</span>
                         <span className="text-xs text-gray-500">Última: {performer.last_evaluation || 'N/A'}</span>
                       </div>
                     </div>
@@ -385,9 +396,9 @@ const DashboardPage: React.FC = () => {
                   dashboardData.overdue_evaluators.map((evaluator: EvaluatorOverdueDTO) => (
                     <div key={evaluator.evaluator_name} className="p-3 bg-gray-50 rounded-xl">
                       <p className="font-medium text-gray-900 text-sm">{evaluator.evaluator_name}</p>
-                      <p className="text-xs text-gray-600 mt-1">Departamento: {evaluator.department}</p>
+                      <p className="text-xs text-gray-600 mt-1">Departamento: {evaluator.department || 'N/A'}</p>
                       <div className="flex justify-between items-center mt-2">
-                        <span className="text-sm font-semibold">Atrasadas: {evaluator.overdue_count}</span>
+                        <span className="text-sm font-semibold">Atrasadas: {evaluator.overdue_count || 0}</span>
                         <span className="text-xs text-gray-500">Más antigua: {evaluator.oldest_overdue || 'N/A'}</span>
                       </div>
                     </div>
@@ -443,17 +454,17 @@ const DashboardPage: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Mis Evaluaciones</h2>
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {myEvaluations?.as_employee.evaluations.length ? (
+              {myEvaluations?.as_employee?.evaluations?.length ? (
                 myEvaluations.as_employee.evaluations.map((evaluation) => (
                   <div key={evaluation.id} className="p-4 bg-gray-50 rounded-xl">
-                    <p className="font-medium text-gray-900">{evaluation.period_name}</p>
-                    <p className="text-sm text-gray-600 mt-1">Evaluador: {evaluation.evaluator_name}</p>
+                    <p className="font-medium text-gray-900">{evaluation.period_name || 'N/A'}</p>
+                    <p className="text-sm text-gray-600 mt-1">Evaluador: {evaluation.evaluator_name || 'N/A'}</p>
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full mt-2 ${
                       evaluation.status === 'realizada' ? 'bg-green-100 text-green-700' :
                       evaluation.status === 'pendiente' ? 'bg-yellow-100 text-yellow-700' :
                       'bg-red-100 text-red-700'
                     }`}>
-                      {evaluation.status}
+                      {evaluation.status || 'N/A'}
                     </span>
                   </div>
                 ))
@@ -463,17 +474,17 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Pending to Evaluate */}
+          /* Pending to Evaluate */
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Por Evaluar</h2>
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {myEvaluations?.as_evaluator.evaluations.filter(e => e.status === 'pendiente').length ? (
+              {myEvaluations?.as_evaluator?.evaluations?.filter(e => e.status === 'pendiente')?.length ? (
                 myEvaluations.as_evaluator.evaluations
                   .filter(e => e.status === 'pendiente')
                   .map((evaluation) => (
                     <div key={evaluation.id} className="p-4 bg-gray-50 rounded-xl">
-                      <p className="font-medium text-gray-900">{evaluation.employee_name}</p>
-                      <p className="text-sm text-gray-600 mt-1">{evaluation.period_name}</p>
+                      <p className="font-medium text-gray-900">{evaluation.employee_name || 'N/A'}</p>
+                      <p className="text-sm text-gray-600 mt-1">{evaluation.period_name || 'N/A'}</p>
                       <button 
                         onClick={navigateToEvaluations}
                         className="mt-2 px-3 py-1 bg-orange-500 text-white text-xs font-medium rounded-lg hover:bg-orange-600"

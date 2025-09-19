@@ -1,4 +1,3 @@
-// src/services/dashboardService.ts
 import { API_CONFIG } from '../constants/api';
 
 // ==================== INTERFACES ESTRICTAS ====================
@@ -8,7 +7,7 @@ export interface HRDashboardDTO {
   completed_evaluations: number;
   pending_evaluations: number;
   overdue_evaluations: number;
-  completion_percentage: number;
+  completion_rate: number; // Cambiado de completion_percentage a completion_rate
   by_department: DepartmentStatsDTO[];
   by_period: PeriodStatsDTO[];
   top_performers: EmployeePerformanceDTO[];
@@ -16,6 +15,7 @@ export interface HRDashboardDTO {
   overdue_evaluators: EvaluatorOverdueDTO[];
 }
 
+// Resto del archivo sin cambios
 export interface DepartmentStatsDTO {
   department_name: string;
   total_evaluations: number;
@@ -295,7 +295,7 @@ class DashboardServiceClass {
           totalEvaluations: hrDashboard.total_evaluations,
           completedEvaluations: hrDashboard.completed_evaluations,
           pendingEvaluations: hrDashboard.pending_evaluations,
-          averageProgress: hrDashboard.completion_percentage,
+          averageProgress: hrDashboard.completion_rate, // Cambiado de completion_percentage a completion_rate
         };
       } else {
         const [users, periods, criteria, templates, evaluations] = await Promise.all([
