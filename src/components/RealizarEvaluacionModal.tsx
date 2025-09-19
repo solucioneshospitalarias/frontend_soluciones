@@ -153,9 +153,9 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl w-full max-w-5xl max-h-[95vh] overflow-hidden shadow-2xl">
+      <div className="bg-white rounded-3xl w-full max-w-5xl h-[95vh] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 text-white p-8">
+        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 text-white p-8 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
@@ -309,7 +309,7 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
 
         {/* Footer */}
         {evaluation && !loading && (
-          <div className="border-t border-gray-200 p-8 bg-white">
+          <div className="border-t border-gray-200 p-8 bg-white flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 {isComplete() ? (
