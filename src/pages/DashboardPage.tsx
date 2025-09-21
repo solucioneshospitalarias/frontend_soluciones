@@ -32,6 +32,7 @@ interface SortState {
 interface ChartData {
   name: string;
   value: number;
+  [key: string]: any; // Add index signature to resolve TypeScript error
 }
 
 interface StatCardProps {
@@ -117,12 +118,13 @@ const DashboardPage: React.FC = () => {
       if (isAdmin) {
         console.log('Cargando todas las evaluaciones...');
         const evalsData = await servicioEvaluaciones.listarTodasLasEvaluaciones();
-        console.log('Todas las evaluaciones:', evalsData);
+        console.log('Todas las evaluaciones (sin normalizar):', evalsData);
         // Normalizar estados
         const normalizedEvals = evalsData.map(e => ({
           ...e,
           status: normalizeStatus(e.status)
         }));
+        console.log('Todas las evaluaciones (normalizadas):', normalizedEvals);
         setAllEvaluations(normalizedEvals);
       }
     } catch (err) {
@@ -198,12 +200,12 @@ const DashboardPage: React.FC = () => {
 
   const getStatusDistribution = (): ChartData[] => {
     const counts = allEvaluations.reduce((acc, e) => {
-      console.log('Estado encontrado:', e.status); // Depuración
+      console.log('Estado encontrado:', e.status);
       acc[e.status] = (acc[e.status] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    console.log('Conteo de estados:', counts); // Depuración
+    console.log('Conteo de estados:', counts);
 
     return Object.entries(counts).map(([status, count]) => ({
       name: servicioEvaluaciones.obtenerTextoEstado(status),
@@ -500,11 +502,7 @@ const DashboardPage: React.FC = () => {
                         <td className="p-2">{e.evaluator_name}</td>
                         <td className="p-2">{e.period_name}</td>
                         <td className="p-2">
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                            e.status === 'realizada' ? 'bg-green-100 text-green-700' :
-                            e.status === 'pendiente' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${servicioEvaluaciones.obtenerColorEstado(e.status)}`}>
                             {servicioEvaluaciones.obtenerTextoEstado(e.status)}
                           </span>
                         </td>
@@ -570,11 +568,7 @@ const DashboardPage: React.FC = () => {
                   <div key={evaluation.id} className="p-4 bg-gray-50 rounded-xl">
                     <p className="font-medium text-gray-900">{evaluation.period_name}</p>
                     <p className="text-sm text-gray-600">Evaluador: {evaluation.evaluator_name}</p>
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      evaluation.status === 'realizada' ? 'bg-green-100 text-green-700' :
-                      evaluation.status === 'pendiente' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${servicioEvaluaciones.obtenerColorEstado(evaluation.status)}`}>
                       {servicioEvaluaciones.obtenerTextoEstado(evaluation.status)}
                     </span>
                   </div>

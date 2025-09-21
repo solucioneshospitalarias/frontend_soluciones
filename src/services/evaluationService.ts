@@ -710,22 +710,28 @@ class ServicioEvaluaciones {
 
   obtenerTextoEstado(status: string): string {
     const mapaEstados: Record<string, string> = {
-      pending: "Pendiente",
-      in_progress: "En Progreso",
-      completed: "Completada",
-      overdue: "Vencida",
+      pending: 'Pendiente',
+      completed: 'Completada',
+      overdue: 'Vencida',
+      in_progress: 'En Progreso',
+      pendiente: 'Pendiente',
+      realizada: 'Completada',
+      atrasada: 'Vencida'
     };
-    return mapaEstados[status] || "Desconocido";
+    return mapaEstados[status.toLowerCase()] || 'Desconocido';
   }
 
   obtenerColorEstado(status: string): string {
     const mapaColores: Record<string, string> = {
-      pending: "text-yellow-600 bg-yellow-50 border-yellow-200",
-      in_progress: "text-blue-600 bg-blue-50 border-blue-200",
-      completed: "text-green-600 bg-green-50 border-green-200",
-      overdue: "text-red-600 bg-red-50 border-red-200",
+      pending: 'text-yellow-600 bg-yellow-50 border-yellow-200',
+      completed: 'text-green-600 bg-green-50 border-green-200',
+      overdue: 'text-red-600 bg-red-50 border-red-200',
+      in_progress: 'text-blue-600 bg-blue-50 border-blue-200',
+      pendiente: 'text-yellow-600 bg-yellow-50 border-yellow-200',
+      realizada: 'text-green-600 bg-green-50 border-green-200',
+      atrasada: 'text-red-600 bg-red-50 border-red-200'
     };
-    return mapaColores[status] || "text-gray-600 bg-gray-50 border-gray-200";
+    return mapaColores[status.toLowerCase()] || 'text-gray-600 bg-gray-50 border-gray-200';
   }
 
   obtenerInfoPeso(peso: number) {
