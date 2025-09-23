@@ -32,7 +32,7 @@ interface SortState {
 interface ChartData {
   name: string;
   value: number;
-  [key: string]: any; // Add index signature to resolve TypeScript error
+  [key: string]: unknown; 
 }
 
 interface StatCardProps {
