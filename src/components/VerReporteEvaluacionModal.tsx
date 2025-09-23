@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle, Loader2, Download } from 'lucide-react';
-import servicioEvaluaciones, { ErrorEvaluacion, exportarReporteEvaluacion } from '../services/evaluationService';
+import { evaluationService, ErrorEvaluacion } from '../services/evaluationService';
 import { 
   formatNumber, 
-  formatPercentage, 
-  getPerformanceLevel, 
-  getProgressBarColor
+  getPerformanceLevel
 } from '../utils/numberFormatting';
-import type { EvaluacionParaCalificarDTO } from '../types/evaluation';
+import type { ResumenEvaluacionDTO } from '../types/evaluation';
+
+// Extend ResumenEvaluacionDTO with minimal optional fields
+interface ExtendedEvaluacionDTO extends ResumenEvaluacionDTO {
+  weighted_score?: number;
+  performance_percentage?: number;
+  performance_level?: string;
+  general_comments?: string;
+  completed_at?: string;
+}
 
 interface VerReporteEvaluacionModalProps {
   show: boolean;
@@ -22,8 +29,7 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [evaluation, setEvaluation] = useState<EvaluacionParaCalificarDTO | null>(null);
-  const [exportingReport, setExportingReport] = useState(false);
+  const [evaluation, setEvaluation] = useState<ExtendedEvaluacionDTO | null>(null);
 
   useEffect(() => {
     if (show && evaluationId) {
@@ -38,14 +44,15 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
     setError(null);
 
     try {
-      const data = await servicioEvaluaciones.obtenerEvaluacionParaCalificar(evaluationId);
+      // Fetch completed evaluations
+      const evaluations = await evaluationService.getEvaluations('completed');
+      const targetEval = evaluations.find(e => e.id === evaluationId);
       
-      if (data.scores) {
-        const totalWeight = data.scores.reduce((sum, s) => sum + s.weight, 0);
-        console.log('🔍 Suma total de pesos:', totalWeight);
+      if (!targetEval) {
+        throw new ErrorEvaluacion('Evaluación no encontrada');
       }
       
-      setEvaluation(data);
+      setEvaluation(targetEval as ExtendedEvaluacionDTO);
     } catch (err) {
       const mensaje = err instanceof ErrorEvaluacion 
         ? err.message 
@@ -53,29 +60,6 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
       setError(mensaje);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleExportReport = async () => {
-    if (!evaluationId) {
-      setError('No se proporcionó un ID de evaluación');
-      return;
-    }
-    
-    setExportingReport(true);
-    setError(null);
-    try {
-      console.log('🔄 Exportando reporte de evaluación ID:', evaluationId);
-      await exportarReporteEvaluacion(evaluationId);
-      console.log('✅ Reporte exportado correctamente');
-    } catch (err) {
-      const mensaje = err instanceof ErrorEvaluacion 
-        ? err.message 
-        : 'Error al exportar el reporte de evaluación';
-      setError(mensaje);
-      console.error('❌ Error exportando reporte:', err);
-    } finally {
-      setExportingReport(false);
     }
   };
 
@@ -87,24 +71,12 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
 
   if (!show) return null;
 
-  // Corregir cálculo del porcentaje
-  let performancePercentage = evaluation?.performance_percentage ?? evaluation?.weighted_score ?? 0;
-  
-  if (performancePercentage > 100 && evaluation?.scores) {
-    const totalWeight = evaluation.scores.reduce((sum, score) => sum + score.weight, 0);
-    
-    if (totalWeight > 100) {
-      performancePercentage = evaluation.scores.reduce((sum, score) => {
-        const normalizedWeight = (score.weight / totalWeight) * 100;
-        return sum + ((score.score ?? 0) / 5) * normalizedWeight;
-      }, 0);
-    } else {
-      performancePercentage = evaluation.scores.reduce((sum, score) => {
-        return sum + ((score.score ?? 0) / 5) * score.weight;
-      }, 0);
-    }
-  }
-  
+  // Calculate performance percentage
+  const calculatePerformancePercentage = (evalData: ExtendedEvaluacionDTO): number => {
+    return evalData.performance_percentage ?? evalData.weighted_score ?? 0;
+  };
+
+  const performancePercentage = evaluation ? calculatePerformancePercentage(evaluation) : 0;
   const performanceStyle = getPerformanceLevel(performancePercentage);
 
   return (
@@ -116,15 +88,15 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
               <h2 className="text-2xl font-bold mb-2">
-                {evaluation ? `${evaluation.employee.first_name} ${evaluation.employee.last_name}` : 'Reporte de Evaluación'}
+                {evaluation ? evaluation.employee_name : 'Reporte de Evaluación'}
               </h2>
               {evaluation && (
                 <div className="flex justify-center items-center gap-4 text-sm opacity-90">
-                  <span>{evaluation.employee.position}</span>
+                  <span>N/A</span>
                   <span>•</span>
-                  <span>{evaluation.period.name}</span>
+                  <span>{evaluation.period_name}</span>
                   <span>•</span>
-                  <span>Evaluador: {evaluation.evaluator.first_name} {evaluation.evaluator.last_name}</span>
+                  <span>Evaluador: {evaluation.evaluator_name}</span>
                   <span>•</span>
                   <span>{evaluation.completed_at ? new Date(evaluation.completed_at).toLocaleDateString('es-ES') : 'N/A'}</span>
                 </div>
@@ -132,21 +104,12 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
             </div>
             <div className="flex items-center gap-2 ml-4">
               <button
-                onClick={handleExportReport}
-                disabled={exportingReport}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                disabled // Placeholder: export functionality not implemented
+                className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium opacity-50 cursor-not-allowed flex items-center gap-2"
+                title="Exportación no disponible"
               >
-                {exportingReport ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Exportando...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    Exportar
-                  </>
-                )}
+                <Download className="w-4 h-4" />
+                Exportar
               </button>
               <button
                 onClick={handleClose}
@@ -191,12 +154,7 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
                   </div>
                   <div className="mt-4 pt-4 border-t border-slate-200">
                     <div className="text-lg font-semibold text-slate-600">
-                      {formatNumber(
-                        evaluation.scores ? 
-                        evaluation.scores.reduce((sum, s) => sum + (s.score ?? 0), 0) / evaluation.scores.length : 
-                        0, 
-                        1
-                      )}
+                      {formatNumber(evaluation.weighted_score ?? 0, 1)}
                     </div>
                     <div className="text-xs text-slate-500">Promedio (1-5)</div>
                   </div>
@@ -206,97 +164,13 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
               {/* Criterios agrupados por categoría */}
               <div className="col-span-3">
                 <h3 className="text-lg font-semibold text-slate-700 mb-4">Desglose por Criterios</h3>
-                
-                {/* Agrupar criterios por categoría */}
-                {(() => {
-                  const groupedCriteria = evaluation.scores?.reduce((groups, scoreItem) => {
-                    const category = scoreItem.criteria.category || 'otros';
-                    if (!groups[category]) groups[category] = [];
-                    groups[category].push(scoreItem);
-                    return groups;
-                  }, {} as Record<string, typeof evaluation.scores>);
-
-                  const categoryNames = {
-                    'productividad': 'Productividad',
-                    'conducta_laboral': 'Conducta Laboral', 
-                    'habilidades': 'Habilidades',
-                    'otros': 'Otros'
-                  };
-
-                  return Object.entries(groupedCriteria || {}).map(([category, scores]) => (
-                    <div key={category} className="mb-6 bg-slate-50 rounded-lg p-4 border border-slate-200">
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b border-slate-300 bg-white -mx-4 px-4 -mt-4 pt-3 rounded-t-lg">
-                        {categoryNames[category as keyof typeof categoryNames] || category}
-                        <span className="ml-2 text-xs text-slate-400 font-normal">
-                          ({scores?.length} criterio{(scores?.length || 0) !== 1 ? 's' : ''})
-                        </span>
-                      </h4>
-                      <div className="grid grid-cols-2 gap-3">
-                        {scores?.map((scoreItem) => {
-                          const individualScorePercentage = ((scoreItem.score ?? 0) / 5) * 100;
-                          const totalWeight = evaluation.scores?.reduce((sum, s) => sum + s.weight, 0) ?? 100;
-                          const normalizedWeight = totalWeight > 100 ? (scoreItem.weight / totalWeight) * 100 : scoreItem.weight;
-                          const normalizedContribution = totalWeight > 100 ? 
-                            ((scoreItem.score ?? 0) / 5) * normalizedWeight : (scoreItem.contribution_points ?? scoreItem.weighted_score ?? 0);
-                          
-                          return (
-                            <div key={scoreItem.id} className="border border-slate-200 rounded-lg p-3 bg-white">
-                              
-                              {/* Header del criterio */}
-                              <div className="flex justify-between items-start mb-2">
-                                <div className="flex-1 min-w-0">
-                                  <h5 className="font-medium text-slate-700 text-sm leading-tight">{scoreItem.criteria.name}</h5>
-                                  <div className="text-xs text-slate-500 mt-1">
-                                    Peso: {formatPercentage(normalizedWeight, true, 1)}
-                                  </div>
-                                </div>
-                                <div className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded ml-2">
-                                  {formatNumber(individualScorePercentage, 0)}%
-                                </div>
-                              </div>
-                              
-                              {/* Estrellas */}
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex gap-1">
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <span
-                                      key={star}
-                                      className={`text-sm ${star <= (scoreItem.score ?? 0) ? 'text-yellow-500' : 'text-slate-300'}`}
-                                    >
-                                      ★
-                                    </span>
-                                  ))}
-                                </div>
-                                <div className="text-xs text-slate-500">
-                                  {formatNumber(normalizedContribution, 1)}/{formatNumber(normalizedWeight, 0)} pts
-                                </div>
-                              </div>
-                              
-                              {/* Barra de progreso */}
-                              <div className="w-full bg-slate-200 rounded-full h-2">
-                                <div 
-                                  className={`h-2 rounded-full transition-all duration-500 ${getProgressBarColor(individualScorePercentage)}`}
-                                  style={{ width: `${Math.min(individualScorePercentage, 100)}%` }}
-                                ></div>
-                              </div>
-                              
-                              {/* Comentarios (si existen) */}
-                              {scoreItem.comments && (
-                                <div className="mt-2 pt-2 border-t border-slate-100">
-                                  <p className="text-xs text-slate-600 italic">"{scoreItem.comments}"</p>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ));
-                })()}
+                <div className="text-gray-500 text-center py-4">
+                  No hay datos de criterios disponibles
+                </div>
               </div>
 
               {/* Solo Comentarios Generales */}
-              {evaluation.general_comments && (
+              {evaluation?.general_comments && (
                 <div className="col-span-4 mt-6">
                   <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
                     <h4 className="font-semibold text-slate-700 mb-2 text-sm">Comentarios Generales</h4>

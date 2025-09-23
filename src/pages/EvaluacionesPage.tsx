@@ -9,15 +9,12 @@ import {
   Loader2,
   Calendar,
   Eye,
-  Play
+  Play,
 } from 'lucide-react';
-import servicioEvaluaciones, { ErrorEvaluacion } from '../services/evaluationService';
-import type {
-  MisEvaluacionesRespuestaDTO,
-  ResumenEvaluacionDTO,
-} from '../types/evaluation';
+import { evaluationService, ErrorEvaluacion } from '../services/evaluationService';
+import type { MisEvaluacionesRespuestaDTO, ResumenEvaluacionDTO } from '../types/evaluation';
 import RealizarEvaluacionModal from '../components/RealizarEvaluacionModal';
-import VerReporteEvaluacionModal from '../components/VerReporteEvaluacionModal'; 
+import VerReporteEvaluacionModal from '../components/VerReporteEvaluacionModal';
 
 const EvaluacionesPage: React.FC = () => {
   // Estados
@@ -26,8 +23,6 @@ const EvaluacionesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
-  
-  // Estados para los modales
   const [modalRealizarOpen, setModalRealizarOpen] = useState(false);
   const [modalReporteOpen, setModalReporteOpen] = useState(false);
   const [evaluacionSeleccionada, setEvaluacionSeleccionada] = useState<number | null>(null);
@@ -40,15 +35,16 @@ const EvaluacionesPage: React.FC = () => {
   const cargarMisEvaluaciones = async (): Promise<void> => {
     setCargando(true);
     setError(null);
-    
+
     try {
-      const data = await servicioEvaluaciones.obtenerMisEvaluaciones();
+      const data = await evaluationService.getMyEvaluations({
+        status: filtroEstado !== 'todos' ? filtroEstado : undefined,
+      });
       setMisEvaluaciones(data);
     } catch (err) {
       const mensaje = err instanceof ErrorEvaluacion ? err.message : 'Error al cargar las evaluaciones';
       console.error('Error cargando evaluaciones:', err);
       setError(mensaje);
-      
       setMisEvaluaciones({
         as_employee: {
           evaluations: [],
@@ -63,6 +59,13 @@ const EvaluacionesPage: React.FC = () => {
       setCargando(false);
     }
   };
+
+  // Actualizar evaluaciones cuando cambie el filtro de estado
+  useEffect(() => {
+    if (!cargando) {
+      cargarMisEvaluaciones();
+    }
+  }, [filtroEstado]);
 
   // Handlers
   const handleRealizarEvaluacion = (evaluacionId: number): void => {
@@ -94,53 +97,12 @@ const EvaluacionesPage: React.FC = () => {
 
   // Componente para badge de estado
   const BadgeEstado: React.FC<{ estado: string }> = ({ estado }) => {
-    const getEstadoConfig = (status: string) => {
-      const statusLower = status.toLowerCase();
-      
-      switch (statusLower) {
-        case 'pending':
-        case 'pendiente':
-          return {
-            color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-            texto: 'Pendiente',
-          };
-        case 'completed':
-        case 'completada':
-        case 'completado':
-        case 'realizada':
-          return {
-            color: 'bg-green-100 text-green-800 border-green-200',
-            texto: 'Completada',
-          };
-        case 'overdue':
-        case 'vencida':
-        case 'vencido':
-        case 'atrasada':
-        case 'atrasado':
-          return {
-            color: 'bg-red-100 text-red-800 border-red-200',
-            texto: 'Vencida',
-          };
-        case 'in_progress':
-        case 'en_progreso':
-        case 'en_proceso':
-          return {
-            color: 'bg-blue-100 text-blue-800 border-blue-200',
-            texto: 'En Progreso',
-          };
-        default:
-          return {
-            color: 'bg-gray-100 text-gray-800 border-gray-200',
-            texto: `${status} [DEBUG]`,
-          };
-      }
-    };
+    const config = evaluationService.obtenerColorEstado(estado);
+    const texto = evaluationService.obtenerTextoEstado(estado);
 
-    const config = getEstadoConfig(estado);
-    
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${config.color}`}>
-        {config.texto}
+      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${config}`}>
+        {texto}
       </span>
     );
   };
@@ -148,12 +110,9 @@ const EvaluacionesPage: React.FC = () => {
   // Función para obtener evaluaciones por modo
   const obtenerEvaluacionesPorModo = (modo: 'empleado' | 'evaluador'): ResumenEvaluacionDTO[] => {
     if (!misEvaluaciones) return [];
-    
-    if (modo === 'empleado') {
-      return misEvaluaciones.as_employee.evaluations;
-    } else {
-      return misEvaluaciones.as_evaluator.evaluations;
-    }
+    return modo === 'empleado'
+      ? misEvaluaciones.as_employee.evaluations
+      : misEvaluaciones.as_evaluator.evaluations;
   };
 
   // Vista de error
@@ -181,11 +140,12 @@ const EvaluacionesPage: React.FC = () => {
   const evaluaciones = obtenerEvaluacionesPorModo('evaluador');
 
   // Filtrar evaluaciones localmente
-  const evaluacionesFiltradas = evaluaciones.filter(evaluacion => {
-    const coincideBusqueda = evaluacion.employee_name.toLowerCase().includes(terminoBusqueda.toLowerCase()) ||
-                           evaluacion.period_name.toLowerCase().includes(terminoBusqueda.toLowerCase());
-    const coincidenEstado = filtroEstado === 'todos' || evaluacion.status === filtroEstado;
-    return coincideBusqueda && coincidenEstado;
+  const evaluacionesFiltradas = evaluaciones.filter((evaluacion) => {
+    const coincideBusqueda =
+      evaluacion.employee_name.toLowerCase().includes(terminoBusqueda.toLowerCase()) ||
+      evaluacion.period_name.toLowerCase().includes(terminoBusqueda.toLowerCase());
+    const coincideEstado = filtroEstado === 'todos' || evaluacion.status === filtroEstado;
+    return coincideBusqueda && coincideEstado;
   });
 
   return (
@@ -197,7 +157,7 @@ const EvaluacionesPage: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Mis Evaluaciones</h1>
             <p className="text-gray-600">Evaluaciones que debo realizar como evaluador</p>
           </div>
-          <button 
+          <button
             onClick={() => console.log('Crear nueva evaluación')}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
           >
@@ -233,7 +193,6 @@ const EvaluacionesPage: React.FC = () => {
                   onChange={(e) => setTerminoBusqueda(e.target.value)}
                 />
               </div>
-              
               <div className="flex gap-3">
                 <select
                   value={filtroEstado}
@@ -242,6 +201,7 @@ const EvaluacionesPage: React.FC = () => {
                 >
                   <option value="todos">Todos los estados</option>
                   <option value="pending">Pendientes</option>
+                  <option value="in_progress">En Progreso</option>
                   <option value="completed">Completadas</option>
                   <option value="overdue">Vencidas</option>
                 </select>
@@ -264,7 +224,6 @@ const EvaluacionesPage: React.FC = () => {
                 </div>
               </div>
             </div>
-
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -278,7 +237,6 @@ const EvaluacionesPage: React.FC = () => {
                 </div>
               </div>
             </div>
-
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -301,7 +259,6 @@ const EvaluacionesPage: React.FC = () => {
                 Evaluaciones Asignadas ({evaluacionesFiltradas.length})
               </h3>
             </div>
-
             {evaluacionesFiltradas.length === 0 ? (
               <div className="text-center py-12">
                 <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -309,8 +266,7 @@ const EvaluacionesPage: React.FC = () => {
                 <p className="text-gray-400 text-sm">
                   {terminoBusqueda || filtroEstado !== 'todos'
                     ? 'Prueba ajustando los filtros de búsqueda'
-                    : 'No tienes evaluaciones asignadas en este momento'
-                  }
+                    : 'No tienes evaluaciones asignadas en este momento'}
                 </p>
               </div>
             ) : (
@@ -325,7 +281,6 @@ const EvaluacionesPage: React.FC = () => {
                           </h4>
                           <BadgeEstado estado={evaluacion.status} />
                         </div>
-                        
                         <div className="space-y-1 text-sm text-gray-600">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
@@ -333,7 +288,7 @@ const EvaluacionesPage: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4" />
-                            <span>Período: {evaluacion.period_name}</span>
+                            <span>Fecha Límite: {new Date(evaluacion.due_date).toLocaleDateString('es-ES')}</span>
                           </div>
                           {evaluacion.completed_at && (
                             <div className="flex items-center gap-2">
@@ -343,36 +298,26 @@ const EvaluacionesPage: React.FC = () => {
                           )}
                         </div>
                       </div>
-                      
-                      {/* Action Buttons */}
                       <div className="flex gap-2 ml-4">
-                        {(evaluacion.status === 'pending' || evaluacion.status === 'pendiente' || evaluacion.status === 'overdue' || evaluacion.status === 'vencida' || evaluacion.status === 'atrasada') ? (
+                        {evaluacion.status === 'pending' || evaluacion.status === 'overdue' || evaluacion.status === 'in_progress' ? (
                           <button
                             onClick={() => handleRealizarEvaluacion(evaluacion.id)}
                             className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                              (evaluacion.status === 'overdue' || evaluacion.status === 'vencida' || evaluacion.status === 'atrasada')
+                              evaluacion.status === 'overdue'
                                 ? 'bg-red-600 hover:bg-red-700 text-white'
                                 : 'bg-blue-600 hover:bg-blue-700 text-white'
                             }`}
                           >
                             <Play className="w-4 h-4" />
-                            {(evaluacion.status === 'overdue' || evaluacion.status === 'vencida' || evaluacion.status === 'atrasada') ? 'CALIFICAR (ATRASADA)' : 'CALIFICAR AHORA'}
+                            {evaluacion.status === 'overdue' ? 'CALIFICAR (VENCIDA)' : 'CALIFICAR AHORA'}
                           </button>
-                        ) : (evaluacion.status === 'completed' || evaluacion.status === 'completada' || evaluacion.status === 'completado' || evaluacion.status === 'realizada') ? (
-                          <button 
+                        ) : (
+                          <button
                             onClick={() => handleVerReporte(evaluacion.id)}
                             className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
                           >
                             <Eye className="w-4 h-4" />
                             VER REPORTE
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleRealizarEvaluacion(evaluacion.id)}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
-                          >
-                            <Play className="w-4 h-4" />
-                            EVALUAR
                           </button>
                         )}
                       </div>
@@ -386,22 +331,26 @@ const EvaluacionesPage: React.FC = () => {
       )}
 
       {/* Modal para realizar evaluación */}
-      <RealizarEvaluacionModal
-        show={modalRealizarOpen}
-        evaluationId={evaluacionSeleccionada}
-        onClose={() => {
-          setModalRealizarOpen(false);
-          setEvaluacionSeleccionada(null);
-        }}
-        onComplete={handleEvaluacionCompletada}
-      />
+      {evaluacionSeleccionada !== null && (
+        <RealizarEvaluacionModal
+          show={modalRealizarOpen}
+          evaluationId={evaluacionSeleccionada}
+          onClose={() => {
+            setModalRealizarOpen(false);
+            setEvaluacionSeleccionada(null);
+          }}
+          onComplete={handleEvaluacionCompletada}
+        />
+      )}
 
       {/* Modal para ver reporte */}
-      <VerReporteEvaluacionModal
-        show={modalReporteOpen}
-        evaluationId={evaluacionSeleccionada}
-        onClose={handleReporteCerrado}
-      />
+      {evaluacionSeleccionada !== null && (
+        <VerReporteEvaluacionModal
+          show={modalReporteOpen}
+          evaluationId={evaluacionSeleccionada}
+          onClose={handleReporteCerrado}
+        />
+      )}
     </div>
   );
 };
