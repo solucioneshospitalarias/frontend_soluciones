@@ -1,5 +1,3 @@
-// src/types/evaluation.ts
-
 export interface Criteria {
   id: number;
   name: string;
@@ -56,7 +54,6 @@ export interface Template {
   description?: string;
   position?: string;
   is_active: boolean;
-  // Puede venir como array o como objeto organizado por categorías
   criteria?: TemplateCriteria[] | TemplateCriteriaByCategory;
   summary?: {
     total_criteria: number;
@@ -76,16 +73,7 @@ export interface TemplateListItem extends Omit<Template, 'criteria' | 'summary'>
   criteria_count: number;
   categories_used: number;
 }
-// Para mantener compatibilidad con el código existente
-export interface TemplateCriteria {
-  id?: number;
-  criteria_id: number;
-  weight: number;
-  criteria?: Criteria;
-  category?: string;
-}
 
-// Para mantener compatibilidad con el código existente
 export interface TemplateCriteria {
   id?: number;
   criteria_id: number;
@@ -102,8 +90,6 @@ export interface Employee {
   position: string;
   is_active?: boolean;
 }
-
-// ==================== NUEVOS TIPOS PARA CALIFICACIÓN ====================
 
 export interface PuntuacionCriterioDTO {
   assigned_criteria_id: number;
@@ -149,12 +135,10 @@ export interface RespuestaPuntuacionDTO {
   score?: number;
   weight: number;
   weighted_score?: number;
-  
   score_percentage?: number;
   contribution_points?: number;
   max_possible_points?: number;
   is_passing?: boolean;
-  
   comments?: string;
   evidence?: string;
   criteria: CriterioEvaluacionDTO;
@@ -165,11 +149,9 @@ export interface EvaluacionParaCalificarDTO {
   status: string;
   total_score: number;
   weighted_score: number;
-  
   performance_percentage?: number;
   performance_level?: string;
   max_possible_score?: number;
-  
   general_comments?: string;
   completed_at?: string;
   created_at: string;
@@ -276,7 +258,6 @@ export interface UpdatePeriodDTO {
   start_date?: string;
   end_date?: string;
   due_date?: string;
-  // is_active se calcula automáticamente según las fechas, no se envía
 }
 
 export interface UpdateCriteriaDTO {
@@ -325,14 +306,71 @@ export interface RespuestaAPI<T> {
   data: T;
 }
 
-// Helper function para convertir criterios del backend al formato frontend
+export interface HRDashboardDTO {
+  totalEvaluations: number;
+  completedEvaluations: number;
+  pendingEvaluations: number;
+  overdueEvaluations: number;
+  averageScore: number;
+  departmentStats: {
+    department: string;
+    averageScore: number;
+    completionRate: number;
+  }[];
+}
+
+export interface AverageByDepartmentResponseDTO {
+  department: string;
+  averageScore: number;
+  evaluationCount: number;
+}
+
+export interface EmployeePerformanceResponseDTO {
+  periodId: number;
+  periodName: string;
+  totalScore: number;
+  weightedScore: number;
+  status: string;
+  completedAt?: string;
+}
+
+export interface PendingByDepartmentResponseDTO {
+  department: string;
+  pendingCount: number;
+  totalCount: number;
+}
+
+export interface EvaluationReportDTO {
+  evaluationId: number;
+  employeeName: string;
+  evaluatorName: string;
+  periodName: string;
+  totalScore: number;
+  weightedScore: number;
+  scores: {
+    criteriaId: number;
+    criteriaName: string;
+    score: number;
+    weight: number;
+  }[];
+  comments?: string;
+}
+
+export interface SubmitEvaluationDTO {
+  scores: PuntuacionCriterioDTO[];
+  comments?: string;
+}
+
+export interface ApiError extends Error {
+  status: number;
+  code?: string;
+}
+
 export function flattenTemplateCriteria(criteria: TemplateCriteria[] | TemplateCriteriaByCategory | undefined): TemplateCriteria[] {
   if (!criteria) return [];
   
-  // Si ya es un array, devolverlo tal cual
   if (Array.isArray(criteria)) return criteria;
   
-  // Si es un objeto con categorías, aplanarlo
   const flattened: TemplateCriteria[] = [];
   
   if ('productivity' in criteria) {
