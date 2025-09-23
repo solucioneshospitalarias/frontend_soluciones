@@ -1,27 +1,23 @@
 // src/context/authContext.tsx
-// ✅ ARREGLADO PARA REACT FAST REFRESH
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 import type { AuthContextType, User } from '../types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// ✅ COMPONENTE PRINCIPAL
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user'); // ✅ Verificar si hay usuario guardado
-    
+    const userStr = localStorage.getItem('user');
+         
     if (!token) {
       setIsLoading(false);
       return;
     }
 
-    // ✅ Si hay usuario en localStorage, usarlo primero
     if (userStr) {
       try {
         const parsedUser = JSON.parse(userStr);
@@ -31,31 +27,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // ✅ Verificar el token con el servidor
     authService
       .getMe(token)
       .then((res) => {
-        setUser(res);
-        localStorage.setItem('user', JSON.stringify(res)); // ✅ Guardar usuario actualizado
+        const userData = res.data || res; // Manejar ambas estructuras
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
       })
       .catch(() => {
         localStorage.removeItem('token');
-        localStorage.removeItem('user'); // ✅ Limpiar usuario también
+        localStorage.removeItem('user');
         setUser(null);
       })
       .finally(() => setIsLoading(false));
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { token, user } = await authService.login(email, password);
+    const response = await authService.login(email, password);
+    // ✅ CORRECCIÓN: extraer datos de la estructura del backend
+    const { token, refresh_token, user } = response.data;
+    
     localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user)); // ✅ Guardar usuario en localStorage
+    localStorage.setItem('user', JSON.stringify(user));
     setUser(user);
   };
 
   const logout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('user'); // ✅ Limpiar usuario también
+    localStorage.removeItem('user');
     setUser(null);
   };
 
@@ -73,7 +72,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
-
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {

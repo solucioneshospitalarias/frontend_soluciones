@@ -23,6 +23,12 @@ interface RawUserResponse {
   updated_at?: string;
 }
 
+interface APIResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   return {
@@ -32,8 +38,6 @@ const getAuthHeaders = () => {
 };
 
 const transformUserResponse = (userResponse: RawUserResponse): User => {
-  console.log('🔄 Transforming user response:', userResponse);
-  
   const position = typeof userResponse.position === 'string' 
     ? userResponse.position 
     : userResponse.position?.name || userResponse.position_name || '';
@@ -64,31 +68,20 @@ const transformUserResponse = (userResponse: RawUserResponse): User => {
 
 export const getUsers = async (): Promise<User[]> => {
   try {
-    console.log('📡 Fetching users from:', `${API_BASE_URL}/users`);
-    
     const response = await fetch(`${API_BASE_URL}/users`, {
       method: 'GET',
       headers: getAuthHeaders(),
     });
 
-    console.log('📊 Response status:', response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error response:', errorText);
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
-    const data = await response.json();
-    console.log('📦 Raw API response:', data);
+    const apiResponse: APIResponse<RawUserResponse[]> = await response.json();
+    const usersArray = apiResponse.data || [];
     
-    const usersArray = Array.isArray(data) ? data : (data.users || data.data || []);
-    console.log('👥 Users array:', usersArray);
-    
-    const transformedUsers = usersArray.map((user: RawUserResponse) => transformUserResponse(user));
-    console.log('✅ Transformed users:', transformedUsers);
-    
-    return transformedUsers;
+    return usersArray.map(user => transformUserResponse(user));
   } catch (error: unknown) {
     console.error('❌ Error fetching users:', error);
     throw error;
@@ -97,28 +90,18 @@ export const getUsers = async (): Promise<User[]> => {
 
 export const getUserById = async (id: number): Promise<User> => {
   try {
-    console.log('📡 Fetching user by ID:', id);
-    
     const response = await fetch(`${API_BASE_URL}/users/${id}`, {
       method: 'GET',
       headers: getAuthHeaders(),
     });
 
-    console.log('📊 Response status:', response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error response:', errorText);
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
-    const data: RawUserResponse = await response.json();
-    console.log('📦 Raw user response:', data);
-    
-    const transformedUser = transformUserResponse(data);
-    console.log('✅ Transformed user:', transformedUser);
-    
-    return transformedUser;
+    const apiResponse: APIResponse<RawUserResponse> = await response.json();
+    return transformUserResponse(apiResponse.data);
   } catch (error: unknown) {
     console.error('❌ Error fetching user by ID:', error);
     throw error;
@@ -127,26 +110,19 @@ export const getUserById = async (id: number): Promise<User> => {
 
 export const createUser = async (userData: UserCreateDTO): Promise<User> => {
   try {
-    console.log('🚀 Creating user with data:', userData);
-    
     const response = await fetch(`${API_BASE_URL}/users`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(userData),
     });
 
-    console.log('📊 Response status:', response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error response:', errorText);
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
-    const data: RawUserResponse = await response.json();
-    console.log('✅ User created:', data);
-    
-    return transformUserResponse(data);
+    const apiResponse: APIResponse<RawUserResponse> = await response.json();
+    return transformUserResponse(apiResponse.data);
   } catch (error: unknown) {
     console.error('❌ Error creating user:', error);
     throw error;
@@ -155,26 +131,19 @@ export const createUser = async (userData: UserCreateDTO): Promise<User> => {
 
 export const updateUser = async (id: number, userData: UserUpdateDTO): Promise<User> => {
   try {
-    console.log('🔄 Updating user:', id, userData);
-    
     const response = await fetch(`${API_BASE_URL}/users/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(userData),
     });
 
-    console.log('📊 Response status:', response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error response:', errorText);
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
-    const data: RawUserResponse = await response.json();
-    console.log('✅ User updated:', data);
-    
-    return transformUserResponse(data);
+    const apiResponse: APIResponse<RawUserResponse> = await response.json();
+    return transformUserResponse(apiResponse.data);
   } catch (error: unknown) {
     console.error('❌ Error updating user:', error);
     throw error;
@@ -183,8 +152,6 @@ export const updateUser = async (id: number, userData: UserUpdateDTO): Promise<U
 
 export const deleteUser = async (id: number): Promise<void> => {
   try {
-    console.log('🗑️ Attempting to delete user:', id);
-    
     const disableResponse = await fetch(`${API_BASE_URL}/users/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
@@ -192,7 +159,6 @@ export const deleteUser = async (id: number): Promise<void> => {
     });
 
     if (disableResponse.ok) {
-      console.log('✅ Usuario desactivado exitosamente');
       return;
     }
 
@@ -201,18 +167,13 @@ export const deleteUser = async (id: number): Promise<void> => {
       headers: getAuthHeaders(),
     });
 
-    console.log('📊 Delete response status:', deleteResponse.status);
-
     if (!deleteResponse.ok) {
       if (deleteResponse.status === 404) {
         throw new Error('La función de eliminar usuarios no está disponible. El usuario ha sido desactivado en su lugar.');
       }
       const errorText = await deleteResponse.text();
-      console.error('❌ Error response:', errorText);
       throw new Error(`HTTP ${deleteResponse.status}: ${errorText}`);
     }
-
-    console.log('✅ Usuario eliminado exitosamente');
   } catch (error: unknown) {
     console.error('❌ Error deleting user:', error);
     throw error;

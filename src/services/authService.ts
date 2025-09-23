@@ -9,7 +9,7 @@ export const authService = {
       password,
     });
     console.log('🔑 Login response:', response.data);
-    console.log('👤 User ID from login:', response.data.user?.id); // Log explícito del user_id
+    console.log('👤 User ID from login:', response.data.data.user?.id);
     return response.data;
   },
 
@@ -18,7 +18,7 @@ export const authService = {
       headers: { Authorization: `Bearer ${token}` },
     });
     console.log('👤 Current user:', response.data);
-    console.log('👤 User ID from getMe:', response.data.id); // Log explícito del user_id
+    console.log('👤 User ID from getMe:', response.data.data?.id);
     return response.data;
   },
 };
