@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Users, Calendar, Loader2, AlertCircle, Save, Search, Filter, FileCheck, User, UserCheck, CheckCircle, Clock } from 'lucide-react';
 import { getUsers } from '../services/userService';
-import { getPeriods, createEvaluationsFromTemplate } from '../services/evaluationService';
+import servicioEvaluaciones, { ErrorEvaluacion } from '../services/evaluationService';
+import { createEvaluationsFromTemplate } from '../services/evaluationService';
 import { flattenTemplateCriteria } from '../types/evaluation';
 import type { User as UserType } from '../types/user';
 import type { Period, Template, CreateEvaluationsFromTemplateDTO } from '../types/evaluation';
@@ -89,7 +90,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
       const [userData, refData, periodsData] = await Promise.all([
         getUsers(),
         referenceService.getFormReferences(),
-        getPeriods(),
+        servicioEvaluaciones.getPeriods(),
       ]);
       console.log('Users loaded:', userData);
       console.log('References loaded:', refData);

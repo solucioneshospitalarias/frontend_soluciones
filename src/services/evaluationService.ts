@@ -18,6 +18,11 @@ export type {
   MisEvaluacionesRespuestaDTO,
   PuntuacionCriterioDTO,
   FiltrosEvaluacionParams,
+  EvaluationListByPeriodResponseDTO,
+  AverageByDepartmentResponseDTO,
+  EmployeePerformanceResponseDTO,
+  PendingByDepartmentResponseDTO,
+  AverageScoreByDepartment,
 } from "../types/evaluation";
 
 import type {
@@ -38,6 +43,11 @@ import type {
   MisEvaluacionesRespuestaDTO,
   PuntuacionCriterioDTO,
   FiltrosEvaluacionParams,
+  EvaluationListByPeriodResponseDTO,
+  AverageByDepartmentResponseDTO,
+  EmployeePerformanceResponseDTO,
+  PendingByDepartmentResponseDTO,
+  AverageScoreByDepartment,
 } from "../types/evaluation";
 
 // Headers de autenticación
@@ -141,36 +151,7 @@ export const deleteCriteria = async (id: number): Promise<void> => {
 };
 
 // ==================== PERIODS ====================
-export const getPeriods = async (): Promise<Period[]> => {
-  try {
-    console.log("🔍 Fetching periods...");
-    const response = await fetch(`${API_BASE_URL}/periods`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
 
-    const data = await handleResponse<Period[]>(response);
-    console.log("✅ Periods loaded:", data);
-
-    if (data && data.length > 0) {
-      console.log("📊 First period structure:", JSON.stringify(data[0], null, 2));
-      console.log("📊 Period fields:", Object.keys(data[0]));
-    }
-
-    // Filtrar períodos para mostrar solo los no vencidos (due_date >= fecha actual)
-    const now = new Date();
-    const filteredPeriods = data.filter((period) => {
-      const dueDate = new Date(period.due_date);
-      return dueDate >= now; // Solo períodos no vencidos
-    });
-
-    console.log("✅ Filtered periods:", filteredPeriods);
-    return Array.isArray(filteredPeriods) ? filteredPeriods : [];
-  } catch (error) {
-    console.error("❌ Error fetching periods:", error);
-    throw error;
-  }
-};
 
 export const getPeriodById = async (id: number): Promise<Period> => {
   try {
@@ -533,6 +514,36 @@ class ServicioEvaluaciones {
       "Authorization": `Bearer ${token}`,
     };
   }
+  getPeriods = async (): Promise<Period[]> => {
+  try {
+    console.log("🔍 Fetching periods...");
+    const response = await fetch(`${API_BASE_URL}/periods`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    const data = await handleResponse<Period[]>(response);
+    console.log("✅ Periods loaded:", data);
+
+    if (data && data.length > 0) {
+      console.log("📊 First period structure:", JSON.stringify(data[0], null, 2));
+      console.log("📊 Period fields:", Object.keys(data[0]));
+    }
+
+    // Filtrar períodos para mostrar solo los no vencidos (due_date >= fecha actual)
+    const now = new Date();
+    const filteredPeriods = data.filter((period) => {
+      const dueDate = new Date(period.due_date);
+      return dueDate >= now; // Solo períodos no vencidos
+    });
+
+    console.log("✅ Filtered periods:", filteredPeriods);
+    return Array.isArray(filteredPeriods) ? filteredPeriods : [];
+  } catch (error) {
+    console.error("❌ Error fetching periods:", error);
+    throw error;
+  }
+};
 
   private async manejarRespuesta<T>(response: Response): Promise<T> {
     if (!response.ok) {
@@ -704,6 +715,85 @@ class ServicioEvaluaciones {
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error("❌ Error listando todas las evaluaciones:", error);
+      throw error;
+    }
+  }
+
+  // New method: Get evaluations by period
+  async getEvaluationsByPeriod(periodId: number): Promise<EvaluationListByPeriodResponseDTO[]> {
+    try {
+      console.log("🔍 Fetching evaluations for period:", periodId);
+      const response = await fetch(`${this.baseUrl}/evaluations/period/${periodId}`, {
+        method: "GET",
+        headers: this.obtenerHeadersAuth(),
+      });
+
+      const data = await this.manejarRespuesta<EvaluationListByPeriodResponseDTO[]>(response);
+      console.log("✅ Evaluations by period loaded:", data);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error("❌ Error fetching evaluations by period:", error);
+      throw error;
+    }
+  }
+
+  // New method: Get average scores by department
+  async getAverageScoresByDepartment(periodId?: number): Promise<AverageByDepartmentResponseDTO[]> {
+    try {
+      console.log("🔍 Fetching average scores by department...", { periodId });
+      const queryParams = new URLSearchParams();
+      if (periodId) queryParams.append("period_id", periodId.toString());
+
+      const url = `${this.baseUrl}/evaluations/average-by-department${
+        queryParams.toString() ? "?" + queryParams.toString() : ""
+      }`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: this.obtenerHeadersAuth(),
+      });
+
+      const data = await this.manejarRespuesta<AverageByDepartmentResponseDTO[]>(response);
+      console.log("✅ Average scores by department loaded:", data);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error("❌ Error fetching average scores by department:", error);
+      throw error;
+    }
+  }
+
+  // New method: Get employee performance
+  async getEmployeePerformance(employeeId: number): Promise<EmployeePerformanceResponseDTO[]> {
+    try {
+      console.log("🔍 Fetching performance for employee:", employeeId);
+      const response = await fetch(`${this.baseUrl}/evaluations/employee/${employeeId}`, {
+        method: "GET",
+        headers: this.obtenerHeadersAuth(),
+      });
+
+      const data = await this.manejarRespuesta<EmployeePerformanceResponseDTO[]>(response);
+      console.log("✅ Employee performance loaded:", data);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error("❌ Error fetching employee performance:", error);
+      throw error;
+    }
+  }
+
+  // New method: Get pending evaluations by department
+  async getPendingEvaluationsByDepartment(): Promise<PendingByDepartmentResponseDTO[]> {
+    try {
+      console.log("🔍 Fetching pending evaluations by department...");
+      const response = await fetch(`${this.baseUrl}/evaluations/pending-by-department`, {
+        method: "GET",
+        headers: this.obtenerHeadersAuth(),
+      });
+
+      const data = await this.manejarRespuesta<PendingByDepartmentResponseDTO[]>(response);
+      console.log("✅ Pending evaluations by department loaded:", data);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error("❌ Error fetching pending evaluations by department:", error);
       throw error;
     }
   }

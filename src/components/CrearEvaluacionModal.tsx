@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Users, Calendar, Loader2, AlertCircle, Save, Search, Filter, FileCheck, User, UserCheck, CheckCircle, Clock } from 'lucide-react';
 import { getUsers } from '../services/userService';
-import { getPeriods, getTemplates, createEvaluationsFromTemplate } from '../services/evaluationService';
+import servicioEvaluaciones, { getTemplates, createEvaluationsFromTemplate } from '../services/evaluationService'; // Updated import
 import type { User as UserType } from '../types/user';
 import type { Period, Template, CreateEvaluationsFromTemplateDTO } from '../types/evaluation';
 import type { ReferenceData, ConfirmationState } from '../services/referenceService';
@@ -57,7 +57,7 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
       const [userData, refData, periodsData, templatesData] = await Promise.all([
         getUsers(),
         referenceService.getFormReferences(),
-        getPeriods(),
+        servicioEvaluaciones.getPeriods(), // Updated to use servicioEvaluaciones.getPeriods()
         getTemplates(),
       ]);
       console.log('Users loaded:', userData);
