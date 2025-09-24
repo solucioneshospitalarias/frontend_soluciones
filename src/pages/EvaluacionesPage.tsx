@@ -9,7 +9,8 @@ import {
   Loader2,
   Calendar,
   Eye,
-  Play
+  Play,
+  Download
 } from 'lucide-react';
 import servicioEvaluaciones, { ErrorEvaluacion } from '../services/evaluationService';
 import type {
@@ -87,6 +88,41 @@ const EvaluacionesPage: React.FC = () => {
     setModalReporteOpen(false);
     setEvaluacionSeleccionada(null);
   };
+  const handleExportarEvaluacion = async (evaluacionId: number): Promise<void> => {
+  try {
+    console.log('🔄 Exportando evaluación:', evaluacionId);
+    
+    const response = await fetch(
+      `http://localhost:8080/api/v1/export/evaluations/${evaluacionId}/report`, 
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    // Descargar archivo
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `evaluacion_${evaluacionId}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    console.log('✅ Evaluación exportada exitosamente');
+  } catch (error) {
+    console.error('❌ Error exportando evaluación:', error);
+    alert('Error al exportar la evaluación');
+  }
+};
 
   const limpiarError = (): void => {
     setError(null);
@@ -345,37 +381,51 @@ const EvaluacionesPage: React.FC = () => {
                       </div>
                       
                       {/* Action Buttons */}
-                      <div className="flex gap-2 ml-4">
-                        {(evaluacion.status === 'pending' || evaluacion.status === 'pendiente' || evaluacion.status === 'overdue' || evaluacion.status === 'vencida' || evaluacion.status === 'atrasada') ? (
-                          <button
-                            onClick={() => handleRealizarEvaluacion(evaluacion.id)}
-                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                              (evaluacion.status === 'overdue' || evaluacion.status === 'vencida' || evaluacion.status === 'atrasada')
-                                ? 'bg-red-600 hover:bg-red-700 text-white'
-                                : 'bg-blue-600 hover:bg-blue-700 text-white'
-                            }`}
-                          >
-                            <Play className="w-4 h-4" />
-                            {(evaluacion.status === 'overdue' || evaluacion.status === 'vencida' || evaluacion.status === 'atrasada') ? 'CALIFICAR (ATRASADA)' : 'CALIFICAR AHORA'}
-                          </button>
-                        ) : (evaluacion.status === 'completed' || evaluacion.status === 'completada' || evaluacion.status === 'completado' || evaluacion.status === 'realizada') ? (
-                          <button 
-                            onClick={() => handleVerReporte(evaluacion.id)}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
-                          >
-                            <Eye className="w-4 h-4" />
-                            VER REPORTE
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleRealizarEvaluacion(evaluacion.id)}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
-                          >
-                            <Play className="w-4 h-4" />
-                            EVALUAR
-                          </button>
-                        )}
-                      </div>
+<div className="flex gap-2 ml-4">
+  {/* Botón Exportar - siempre disponible */}
+  <button
+    onClick={() => handleExportarEvaluacion(evaluacion.id)}
+    className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
+    title="Exportar a Excel"
+  >
+    <Download className="w-4 h-4" />
+  </button>
+
+  {/* Resto de botones sin cambios... */}
+  {(evaluacion.status === 'pending' || evaluacion.status === 'pendiente') ? (
+    <button
+      onClick={() => handleRealizarEvaluacion(evaluacion.id)}
+      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+    >
+      <Play className="w-4 h-4" />
+      CALIFICAR
+    </button>
+  ) : (evaluacion.status === 'overdue' || evaluacion.status === 'vencida' || evaluacion.status === 'atrasada') ? (
+    <button
+      onClick={() => handleVerReporte(evaluacion.id)}
+      className="inline-flex items-center gap-2 px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-lg font-medium transition-colors"
+    >
+      <Eye className="w-4 h-4" />
+      VER VENCIDA
+    </button>
+  ) : (evaluacion.status === 'completed' || evaluacion.status === 'completada' || evaluacion.status === 'realizada') ? (
+    <button 
+      onClick={() => handleVerReporte(evaluacion.id)}
+      className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+    >
+      <Eye className="w-4 h-4" />
+      VER REPORTE
+    </button>
+  ) : (
+    <button
+      onClick={() => handleRealizarEvaluacion(evaluacion.id)}
+      className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+    >
+      <Play className="w-4 h-4" />
+      EVALUAR
+    </button>
+  )}
+</div>
                     </div>
                   </div>
                 ))}
