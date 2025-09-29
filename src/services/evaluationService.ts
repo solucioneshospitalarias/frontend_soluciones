@@ -12,7 +12,6 @@ export type {
   UpdateTemplateDTO,
   CreateEvaluationsFromTemplateDTO,
   UpdatePeriodDTO,
-  UpdateCriteriaDTO,
   EvaluacionParaCalificarDTO,
   ResumenEvaluacionDTO,
   MisEvaluacionesRespuestaDTO,
@@ -52,6 +51,9 @@ import type {
 // Headers de autenticación
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("Token de autenticación no encontrado");
+  }
   return {
     "Content-Type": "application/json",
     Authorization: `Bearer ${token}`,
@@ -150,7 +152,36 @@ export const deleteCriteria = async (id: number): Promise<void> => {
 };
 
 // ==================== PERIODS ====================
+export const getPeriods = async (): Promise<Period[]> => {
+  try {
+    console.log("🔍 Fetching periods...");
+    const response = await fetch(`${API_BASE_URL}/periods`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
 
+    const data = await handleResponse<Period[]>(response);
+    console.log("✅ Periods loaded:", data);
+
+    if (data && data.length > 0) {
+      console.log("📊 First period structure:", JSON.stringify(data[0], null, 2));
+      console.log("📊 Period fields:", Object.keys(data[0]));
+    }
+
+    // Filtrar períodos para mostrar solo los no vencidos
+    const now = new Date();
+    const filteredPeriods = data.filter((period: Period) => {
+      const dueDate = new Date(period.due_date);
+      return dueDate >= now;
+    });
+
+    console.log("✅ Filtered periods:", filteredPeriods);
+    return Array.isArray(filteredPeriods) ? filteredPeriods : [];
+  } catch (error) {
+    console.error("❌ Error fetching periods:", error);
+    throw error;
+  }
+};
 
 export const getPeriodById = async (id: number): Promise<Period> => {
   try {
@@ -251,38 +282,6 @@ export const deletePeriod = async (id: number): Promise<void> => {
     throw error;
   }
 };
-export const getPeriods = async (): Promise<Period[]> => {
-  try {
-    console.log("🔍 Fetching periods...");
-    const response = await fetch(`${API_BASE_URL}/periods`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-
-    const data = await handleResponse<Period[]>(response);
-    console.log("✅ Periods loaded:", data);
-
-    if (data && data.length > 0) {
-      console.log("📊 First period structure:", JSON.stringify(data[0], null, 2));
-      console.log("📊 Period fields:", Object.keys(data[0]));
-    }
-
-    // Filtrar períodos para mostrar solo los no vencidos
-    const now = new Date();
-    const filteredPeriods = data.filter((period: Period) => {
-      const dueDate = new Date(period.due_date);
-      return dueDate >= now;
-    });
-
-    console.log("✅ Filtered periods:", filteredPeriods);
-    return Array.isArray(filteredPeriods) ? filteredPeriods : [];
-  } catch (error) {
-    console.error("❌ Error fetching periods:", error);
-    throw error;
-  }
-};
-
-
 
 // ==================== TEMPLATES ====================
 export const getTemplates = async (): Promise<Template[]> => {
@@ -545,36 +544,6 @@ class ServicioEvaluaciones {
       "Authorization": `Bearer ${token}`,
     };
   }
-  getPeriods = async (): Promise<Period[]> => {
-  try {
-    console.log("🔍 Fetching periods...");
-    const response = await fetch(`${API_BASE_URL}/periods`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-
-    const data = await handleResponse<Period[]>(response);
-    console.log("✅ Periods loaded:", data);
-
-    if (data && data.length > 0) {
-      console.log("📊 First period structure:", JSON.stringify(data[0], null, 2));
-      console.log("📊 Period fields:", Object.keys(data[0]));
-    }
-
-    // Filtrar períodos para mostrar solo los no vencidos (due_date >= fecha actual)
-    const now = new Date();
-    const filteredPeriods = data.filter((period) => {
-      const dueDate = new Date(period.due_date);
-      return dueDate >= now; // Solo períodos no vencidos
-    });
-
-    console.log("✅ Filtered periods:", filteredPeriods);
-    return Array.isArray(filteredPeriods) ? filteredPeriods : [];
-  } catch (error) {
-    console.error("❌ Error fetching periods:", error);
-    throw error;
-  }
-};
 
   private async manejarRespuesta<T>(response: Response): Promise<T> {
     if (!response.ok) {
@@ -595,11 +564,6 @@ class ServicioEvaluaciones {
 
     if (data.success === false) {
       throw new ErrorEvaluacion(data.message || "Error en la operación", 400);
-    }
-
-    if (data.data === null || data.data === undefined) {
-      console.log("⚠️ Backend retornó data: null, usando estructura por defecto");
-      return this.obtenerEstructuraPorDefecto() as T;
     }
 
     return data.data || (data as unknown as T);
@@ -638,28 +602,36 @@ class ServicioEvaluaciones {
         headers: this.obtenerHeadersAuth(),
       });
 
-      const data = await this.manejarRespuesta<MisEvaluacionesRespuestaDTO>(response);
-      console.log("✅ Mis evaluaciones procesadas:", data);
+      const data = await this.manejarRespuesta<ResumenEvaluacionDTO[]>(response);
+      console.log("✅ Raw evaluations from backend:", data);
 
+      // Map the flat array to MisEvaluacionesRespuestaDTO, assuming all evaluations are for the evaluator
       const estructuraCompleta: MisEvaluacionesRespuestaDTO = {
         as_employee: {
-          evaluations: data.as_employee?.evaluations || [],
-          summary: {
-            total: data.as_employee?.summary?.total || 0,
-            completed: data.as_employee?.summary?.completed || 0,
-            pending: data.as_employee?.summary?.pending || 0,
-          },
+          evaluations: [], // No employee evaluations in this response
+          summary: { total: 0, completed: 0, pending: 0 },
         },
         as_evaluator: {
-          evaluations: data.as_evaluator?.evaluations || [],
+          evaluations: Array.isArray(data) ? data : [],
           summary: {
-            total: data.as_evaluator?.summary?.total || 0,
-            completed: data.as_evaluator?.summary?.completed || 0,
-            pending_to_evaluate: data.as_evaluator?.summary?.pending_to_evaluate || 0,
+            total: Array.isArray(data) ? data.length : 0,
+            completed: Array.isArray(data)
+              ? data.filter((e) => e.status.toLowerCase() === "completada" || e.status.toLowerCase() === "completed").length
+              : 0,
+            pending_to_evaluate: Array.isArray(data)
+              ? data.filter(
+                  (e) =>
+                    e.status.toLowerCase() === "pendiente" ||
+                    e.status.toLowerCase() === "atrasada" ||
+                    e.status.toLowerCase() === "pending" ||
+                    e.status.toLowerCase() === "overdue"
+                ).length
+              : 0,
           },
         },
       };
 
+      console.log("✅ Mis evaluaciones procesadas:", estructuraCompleta);
       return estructuraCompleta;
     } catch (error) {
       console.error("❌ Error obteniendo mis evaluaciones:", error);
@@ -831,28 +803,28 @@ class ServicioEvaluaciones {
 
   obtenerTextoEstado(status: string): string {
     const mapaEstados: Record<string, string> = {
-      pending: 'Pendiente',
-      completed: 'Completada',
-      overdue: 'Vencida',
-      in_progress: 'En Progreso',
-      pendiente: 'Pendiente',
-      realizada: 'Completada',
-      atrasada: 'Vencida'
+      pending: "Pendiente",
+      completed: "Completada",
+      overdue: "Vencida",
+      in_progress: "En Progreso",
+      pendiente: "Pendiente",
+      realizada: "Completada",
+      atrasada: "Vencida",
     };
-    return mapaEstados[status.toLowerCase()] || 'Desconocido';
+    return mapaEstados[status.toLowerCase()] || "Desconocido";
   }
 
   obtenerColorEstado(status: string): string {
     const mapaColores: Record<string, string> = {
-      pending: 'text-yellow-600 bg-yellow-50 border-yellow-200',
-      completed: 'text-green-600 bg-green-50 border-green-200',
-      overdue: 'text-red-600 bg-red-50 border-red-200',
-      in_progress: 'text-blue-600 bg-blue-50 border-blue-200',
-      pendiente: 'text-yellow-600 bg-yellow-50 border-yellow-200',
-      realizada: 'text-green-600 bg-green-50 border-green-200',
-      atrasada: 'text-red-600 bg-red-50 border-red-200'
+      pending: "text-yellow-600 bg-yellow-50 border-yellow-200",
+      completed: "text-green-600 bg-green-50 border-green-200",
+      overdue: "text-red-600 bg-red-50 border-red-200",
+      in_progress: "text-blue-600 bg-blue-50 border-blue-200",
+      pendiente: "text-yellow-600 bg-yellow-50 border-yellow-200",
+      realizada: "text-green-600 bg-green-50 border-green-200",
+      atrasada: "text-red-600 bg-red-50 border-red-200",
     };
-    return mapaColores[status.toLowerCase()] || 'text-gray-600 bg-gray-50 border-gray-200';
+    return mapaColores[status.toLowerCase()] || "text-gray-600 bg-gray-50 border-gray-200";
   }
 
   obtenerInfoPeso(peso: number) {
