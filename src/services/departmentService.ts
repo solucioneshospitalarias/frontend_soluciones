@@ -57,6 +57,11 @@ export interface DepartmentPerformance {
   unique_employees: number;
 }
 
+// New interface for dashboard data
+interface DashboardData {
+  department_stats: DepartmentPeriodStats[];
+}
+
 // ==================== HELPER FUNCTIONS ====================
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
@@ -113,11 +118,11 @@ export const getDepartmentPeriodStats = async (
       }
     );
 
-    const dashboardData = await handleResponse<any>(response);
+    const dashboardData = await handleResponse<DashboardData>(response);
     console.log('✅ Dashboard for period loaded:', dashboardData);
 
     const deptStats = dashboardData.department_stats.find(
-      (d: any) => d.department_name.toLowerCase() === departmentName.toLowerCase()
+      (d: DepartmentPeriodStats) => d.department_name.toLowerCase() === departmentName.toLowerCase()
     );
 
     if (!deptStats) {
@@ -197,7 +202,7 @@ export const exportDepartmentEvaluations = async (
   try {
     console.log(`📥 Exporting department ${departmentId} evaluations...`);
 
-    let url = `${API_BASE_URL}/export/department/${departmentId}/evaluations`; // Fixed: removed "s" from "departments"
+    let url = `${API_BASE_URL}/export/department/${departmentId}/evaluations`;
     const params = new URLSearchParams();
 
     if (periodId) {
@@ -212,7 +217,7 @@ export const exportDepartmentEvaluations = async (
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`, // Ensure token is valid
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
     });
 
@@ -276,7 +281,7 @@ export const calculateDepartmentPerformance = async (
     const rawData = await response.json();
     console.log('Raw dashboard response:', rawData);
 
-    const dashboardData = rawData.data || rawData;
+    const dashboardData: DashboardData = rawData.data || rawData;
     console.log('Dashboard data extracted:', dashboardData);
     console.log('department_stats field:', dashboardData.department_stats);
 
@@ -285,8 +290,8 @@ export const calculateDepartmentPerformance = async (
       return [];
     }
 
-    const performance: DepartmentPerformance[] = dashboardData.department_stats.map((dept: any) => ({
-      id: dept.department_id || 0, // Fallback to 0 if not provided
+    const performance: DepartmentPerformance[] = dashboardData.department_stats.map((dept: DepartmentPeriodStats) => ({
+      id: dept.department_id || 0,
       name: dept.department_name,
       promedio: dept.average_score || 0,
       completadas: dept.completed_evaluations || 0,
