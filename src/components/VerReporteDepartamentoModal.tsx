@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Building2, Users, CheckCircle, Clock, Award, X, Download, Loader2, AlertCircle,
+  Users, CheckCircle, Clock, Award, X, Download, Loader2, AlertCircle,
 } from 'lucide-react';
 import { type Department, type DepartmentPeriodStats } from '../services/departmentService';
 import { type Period } from '../services/evaluationService';

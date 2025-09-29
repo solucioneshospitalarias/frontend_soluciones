@@ -12,6 +12,7 @@ export type {
   UpdateTemplateDTO,
   CreateEvaluationsFromTemplateDTO,
   UpdatePeriodDTO,
+  UpdateCriteriaDTO,
   EvaluacionParaCalificarDTO,
   ResumenEvaluacionDTO,
   MisEvaluacionesRespuestaDTO,
@@ -152,37 +153,6 @@ export const deleteCriteria = async (id: number): Promise<void> => {
 };
 
 // ==================== PERIODS ====================
-export const getPeriods = async (): Promise<Period[]> => {
-  try {
-    console.log("🔍 Fetching periods...");
-    const response = await fetch(`${API_BASE_URL}/periods`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-
-    const data = await handleResponse<Period[]>(response);
-    console.log("✅ Periods loaded:", data);
-
-    if (data && data.length > 0) {
-      console.log("📊 First period structure:", JSON.stringify(data[0], null, 2));
-      console.log("📊 Period fields:", Object.keys(data[0]));
-    }
-
-    // Filtrar períodos para mostrar solo los no vencidos
-    const now = new Date();
-    const filteredPeriods = data.filter((period: Period) => {
-      const dueDate = new Date(period.due_date);
-      return dueDate >= now;
-    });
-
-    console.log("✅ Filtered periods:", filteredPeriods);
-    return Array.isArray(filteredPeriods) ? filteredPeriods : [];
-  } catch (error) {
-    console.error("❌ Error fetching periods:", error);
-    throw error;
-  }
-};
-
 export const getPeriodById = async (id: number): Promise<Period> => {
   try {
     console.log("🔍 Fetching period by ID:", id);
@@ -283,6 +253,37 @@ export const deletePeriod = async (id: number): Promise<void> => {
   }
 };
 
+export const getPeriods = async (): Promise<Period[]> => {
+  try {
+    console.log("🔍 Fetching periods...");
+    const response = await fetch(`${API_BASE_URL}/periods`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    const data = await handleResponse<Period[]>(response);
+    console.log("✅ Periods loaded:", data);
+
+    if (data && data.length > 0) {
+      console.log("📊 First period structure:", JSON.stringify(data[0], null, 2));
+      console.log("📊 Period fields:", Object.keys(data[0]));
+    }
+
+    // Filtrar períodos para mostrar solo los no vencidos
+    const now = new Date();
+    const filteredPeriods = data.filter((period: Period) => {
+      const dueDate = new Date(period.due_date);
+      return dueDate >= now;
+    });
+
+    console.log("✅ Filtered periods:", filteredPeriods);
+    return Array.isArray(filteredPeriods) ? filteredPeriods : [];
+  } catch (error) {
+    console.error("❌ Error fetching periods:", error);
+    throw error;
+  }
+};
+
 // ==================== TEMPLATES ====================
 export const getTemplates = async (): Promise<Template[]> => {
   try {
@@ -358,7 +359,7 @@ export const updateTemplate = async (
     console.log("✅ Template updated:", data);
     return data;
   } catch (error) {
-    console.error("❌ Error fetching template:", error);
+    console.error("❌ Error updating template:", error);
     throw error;
   }
 };
@@ -541,7 +542,7 @@ class ServicioEvaluaciones {
     }
     return {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     };
   }
 
@@ -566,7 +567,7 @@ class ServicioEvaluaciones {
       throw new ErrorEvaluacion(data.message || "Error en la operación", 400);
     }
 
-    return data.data || (data as unknown as T);
+    return data.data || (data as T);
   }
 
   private obtenerEstructuraPorDefecto(): MisEvaluacionesRespuestaDTO {
@@ -580,6 +581,38 @@ class ServicioEvaluaciones {
         summary: { total: 0, completed: 0, pending_to_evaluate: 0 },
       },
     };
+  }
+
+  // Restore getPeriods in the class to fix the error
+  async getPeriods(): Promise<Period[]> {
+    try {
+      console.log("🔍 Fetching periods...");
+      const response = await fetch(`${this.baseUrl}/periods`, {
+        method: "GET",
+        headers: this.obtenerHeadersAuth(),
+      });
+
+      const data = await this.manejarRespuesta<Period[]>(response);
+      console.log("✅ Periods loaded:", data);
+
+      if (data && data.length > 0) {
+        console.log("📊 First period structure:", JSON.stringify(data[0], null, 2));
+        console.log("📊 Period fields:", Object.keys(data[0]));
+      }
+
+      // Filtrar períodos para mostrar solo los no vencidos
+      const now = new Date();
+      const filteredPeriods = data.filter((period: Period) => {
+        const dueDate = new Date(period.due_date);
+        return dueDate >= now;
+      });
+
+      console.log("✅ Filtered periods:", filteredPeriods);
+      return Array.isArray(filteredPeriods) ? filteredPeriods : [];
+    } catch (error) {
+      console.error("❌ Error fetching periods:", error);
+      throw error;
+    }
   }
 
   async obtenerMisEvaluaciones(
@@ -608,7 +641,7 @@ class ServicioEvaluaciones {
       // Map the flat array to MisEvaluacionesRespuestaDTO, assuming all evaluations are for the evaluator
       const estructuraCompleta: MisEvaluacionesRespuestaDTO = {
         as_employee: {
-          evaluations: [], // No employee evaluations in this response
+          evaluations: [],
           summary: { total: 0, completed: 0, pending: 0 },
         },
         as_evaluator: {
@@ -722,7 +755,6 @@ class ServicioEvaluaciones {
     }
   }
 
-  // New method: Get evaluations by period
   async getEvaluationsByPeriod(periodId: number): Promise<EvaluationListByPeriodResponseDTO[]> {
     try {
       console.log("🔍 Fetching evaluations for period:", periodId);
@@ -740,7 +772,6 @@ class ServicioEvaluaciones {
     }
   }
 
-  // New method: Get average scores by department
   async getAverageScoresByDepartment(periodId?: number): Promise<AverageByDepartmentResponseDTO[]> {
     try {
       console.log("🔍 Fetching average scores by department...", { periodId });
@@ -765,7 +796,6 @@ class ServicioEvaluaciones {
     }
   }
 
-  // New method: Get employee performance
   async getEmployeePerformance(employeeId: number): Promise<EmployeePerformanceResponseDTO[]> {
     try {
       console.log("🔍 Fetching performance for employee:", employeeId);
@@ -783,7 +813,6 @@ class ServicioEvaluaciones {
     }
   }
 
-  // New method: Get pending evaluations by department
   async getPendingEvaluationsByDepartment(): Promise<PendingByDepartmentResponseDTO[]> {
     try {
       console.log("🔍 Fetching pending evaluations by department...");

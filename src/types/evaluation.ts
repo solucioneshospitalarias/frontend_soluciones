@@ -243,7 +243,7 @@ export interface AverageScoreByDepartment {
 
 export type EstadoEvaluacion = 'pending' | 'in_progress' | 'completed' | 'overdue';
 export type CategoríaCriterio = 'productividad' | 'conducta_laboral' | 'habilidades';
-export type ModoEvaluacion = 'evaluador' | 'evaluado';
+export type ModoEvaluacion = 'evaluador' | 'empleado';
 
 export interface InfoPeso {
   nivel: 'alto' | 'medio' | 'bajo';

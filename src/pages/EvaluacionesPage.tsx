@@ -13,6 +13,7 @@ import {
 import { useEvaluaciones, useFiltrosEvaluaciones } from '../hooks/useEvaluaciones';
 import RealizarEvaluacionModal from '../components/RealizarEvaluacionModal';
 import VerReporteEvaluacionModal from '../components/VerReporteEvaluacionModal';
+import type { ResumenEvaluacionDTO } from '../types/evaluation'; // Importación del tipo
 
 const EvaluacionesPage: React.FC = () => {
   // Hooks
@@ -28,7 +29,6 @@ const EvaluacionesPage: React.FC = () => {
     filtroEstado,
     establecerTerminoBusqueda,
     establecerFiltroEstado,
-    limpiarFiltros,
   } = useFiltrosEvaluaciones();
 
   // Estados para los modales
@@ -43,7 +43,7 @@ const EvaluacionesPage: React.FC = () => {
       switch (statusLower) {
         case 'pending':
         case 'pendiente':
-        case 'incomplete': // Handle backend returning 'incomplete'
+        case 'incomplete':
           return {
             color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
             texto: 'Pendiente',
@@ -91,23 +91,37 @@ const EvaluacionesPage: React.FC = () => {
     );
   };
 
-  // Filtrar evaluaciones localmente
-  const evaluaciones = obtenerEvaluacionesPorModo('evaluador');
-  const evaluacionesFiltradas = evaluaciones.filter((evaluacion) => {
+  // Obtener ambas listas de evaluaciones
+  const evaluacionesComoEvaluador = obtenerEvaluacionesPorModo('evaluador');
+  const evaluacionesComoEmpleado = obtenerEvaluacionesPorModo('empleado'); // Corrección: Agregar esta línea
+
+  // Filtrar evaluaciones donde soy evaluador
+  const evaluacionesEvaluadorFiltradas = evaluacionesComoEvaluador.filter((evaluacion: ResumenEvaluacionDTO) => {
     const coincideBusqueda =
       evaluacion.employee_name.toLowerCase().includes(terminoBusqueda.toLowerCase()) ||
       evaluacion.period_name.toLowerCase().includes(terminoBusqueda.toLowerCase());
     const normalizedStatus =
       evaluacion.status.toLowerCase() === 'incomplete' ? 'pending' : evaluacion.status;
     const coincidenEstado = filtroEstado === 'todos' || normalizedStatus === filtroEstado;
-    console.log(
-      `🔍 Evaluación ID: ${evaluacion.id}, Status: ${evaluacion.status}, Normalized: ${normalizedStatus}, Matches: ${coincideBusqueda && coincidenEstado}`
-    );
     return coincideBusqueda && coincidenEstado;
   });
+
+  // Filtrar evaluaciones donde soy empleado
+  const evaluacionesEmpleadoFiltradas = evaluacionesComoEmpleado.filter((evaluacion: ResumenEvaluacionDTO) => {
+    const coincideBusqueda =
+      evaluacion.evaluator_name.toLowerCase().includes(terminoBusqueda.toLowerCase()) ||
+      evaluacion.period_name.toLowerCase().includes(terminoBusqueda.toLowerCase());
+    const normalizedStatus =
+      evaluacion.status.toLowerCase() === 'incomplete' ? 'pending' : evaluacion.status;
+    const coincidenEstado = filtroEstado === 'todos' || normalizedStatus === filtroEstado;
+    return coincideBusqueda && coincidenEstado;
+  });
+
+  // useEffect para depuración
   useEffect(() => {
-    console.log('📊 Filtered evaluations:', JSON.stringify(evaluacionesFiltradas, null, 2));
-  }, [evaluacionesFiltradas]);
+    console.log('📊 Evaluaciones como evaluador filtradas:', evaluacionesEvaluadorFiltradas.length);
+    console.log('📊 Evaluaciones como empleado filtradas:', evaluacionesEmpleadoFiltradas.length);
+  }, [evaluacionesEvaluadorFiltradas, evaluacionesEmpleadoFiltradas]);
 
   // Handlers
   const handleRealizarEvaluacion = (evaluacionId: number): void => {
@@ -158,7 +172,7 @@ const EvaluacionesPage: React.FC = () => {
       {/* Header */}
       <div className="mb-8 max-w-5xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-900 mb-2 font-sans">Mis Evaluaciones</h1>
-        <p className="text-gray-600 text-sm">Evaluaciones que debo realizar como evaluador</p>
+        <p className="text-gray-600 text-sm">Evaluaciones que debo realizar y recibidas</p>
       </div>
 
       {/* Loading State */}
@@ -195,7 +209,7 @@ const EvaluacionesPage: React.FC = () => {
                 >
                   <option value="todos">Todos los estados</option>
                   <option value="pending">Pendientes</option>
-                  <option value="incomplete">Incompletas</option> {/* Added for potential backend issue */}
+                  <option value="incomplete">Incompletas</option>
                   <option value="completed">Completadas</option>
                   <option value="overdue">Vencidas</option>
                 </select>
@@ -204,7 +218,7 @@ const EvaluacionesPage: React.FC = () => {
           </div>
 
           {/* Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition-all">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
@@ -244,39 +258,41 @@ const EvaluacionesPage: React.FC = () => {
                 </div>
               </div>
             </div>
+            {/* Nueva tarjeta para evaluaciones como empleado */}
+            <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition-all">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
+                  <User className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {misEvaluaciones.as_employee.evaluations.length}
+                  </p>
+                  <p className="text-gray-600 text-sm font-medium">Mis Evaluaciones</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Evaluations List */}
-          <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
+          {/* Evaluaciones donde soy EVALUADOR */}
+          <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden mb-6">
+            <div className="px-6 py-4 border-b border-gray-200 bg-blue-50">
               <h3 className="text-lg font-semibold text-gray-900 font-sans">
-                Evaluaciones Asignadas ({evaluacionesFiltradas.length})
+                📝 Evaluaciones por Realizar ({evaluacionesEvaluadorFiltradas.length})
               </h3>
+              <p className="text-sm text-gray-600">Empleados que debes evaluar</p>
             </div>
-            <div className="max-h-[600px] overflow-y-auto">
-              {evaluacionesFiltradas.length === 0 ? (
+            <div className="max-h-[400px] overflow-y-auto">
+              {evaluacionesEvaluadorFiltradas.length === 0 ? (
                 <div className="text-center py-12">
-                  <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500 text-lg font-medium mb-2">
-                    No se encontraron evaluaciones
+                    No tienes evaluaciones pendientes por realizar
                   </p>
-                  <p className="text-gray-400 text-sm">
-                    {terminoBusqueda || filtroEstado !== 'todos'
-                      ? 'Prueba ajustando los filtros de búsqueda'
-                      : 'No tienes evaluaciones asignadas en este momento'}
-                  </p>
-                  {filtroEstado !== 'todos' && (
-                    <button
-                      onClick={limpiarFiltros}
-                      className="mt-4 text-blue-600 hover:text-blue-800 transition-colors"
-                    >
-                      Limpiar filtros
-                    </button>
-                  )}
                 </div>
               ) : (
                 <div className="divide-y divide-gray-200">
-                  {evaluacionesFiltradas.map((evaluacion) => (
+                  {evaluacionesEvaluadorFiltradas.map((evaluacion: ResumenEvaluacionDTO) => (
                     <div key={evaluacion.id} className="p-6 hover:bg-gray-50 transition-all">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -343,26 +359,88 @@ const EvaluacionesPage: React.FC = () => {
               )}
             </div>
           </div>
+
+          {/* Evaluaciones donde soy EMPLEADO */}
+          <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-green-50">
+              <h3 className="text-lg font-semibold text-gray-900 font-sans">
+                👤 Mis Evaluaciones Recibidas ({evaluacionesEmpleadoFiltradas.length})
+              </h3>
+              <p className="text-sm text-gray-600">Evaluaciones realizadas sobre ti</p>
+            </div>
+            <div className="max-h-[400px] overflow-y-auto">
+              {evaluacionesEmpleadoFiltradas.length === 0 ? (
+                <div className="text-center py-12">
+                  <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 text-lg font-medium mb-2">
+                    No tienes evaluaciones recibidas
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {evaluacionesEmpleadoFiltradas.map((evaluacion: ResumenEvaluacionDTO) => (
+                    <div key={evaluacion.id} className="p-6 hover:bg-gray-50 transition-all">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h4 className="text-base font-semibold text-gray-900">
+                              Evaluador: {evaluacion.evaluator_name}
+                            </h4>
+                            <BadgeEstado estado={evaluacion.status} />
+                          </div>
+                          <div className="space-y-2 text-sm text-gray-600">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-gray-500" />
+                              <span>Período: {evaluacion.period_name}</span>
+                            </div>
+                            {evaluacion.completed_at && (
+                              <div className="flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4 text-gray-500" />
+                                <span>
+                                  Completada: {new Date(evaluacion.completed_at).toLocaleDateString('es-ES')}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {evaluacion.status === 'completed' || evaluacion.status === 'realizada' ? (
+                          <button
+                            onClick={() => handleVerReporte(evaluacion.id)}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all"
+                          >
+                            <Eye className="w-4 h-4" />
+                            VER REPORTE
+                          </button>
+                        ) : (
+                          <span className="text-sm text-gray-500 italic">Pendiente</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Modal para realizar evaluación */}
+          <RealizarEvaluacionModal
+            show={modalRealizarOpen}
+            evaluationId={evaluacionSeleccionada}
+            onClose={() => {
+              setModalRealizarOpen(false);
+              setEvaluacionSeleccionada(null);
+            }}
+            onComplete={handleEvaluacionCompletada}
+          />
+
+          {/* Modal para ver reporte */}
+          <VerReporteEvaluacionModal
+            show={modalReporteOpen}
+            evaluationId={evaluacionSeleccionada}
+            onClose={handleReporteCerrado}
+          />
         </div>
       )}
-
-      {/* Modal para realizar evaluación */}
-      <RealizarEvaluacionModal
-        show={modalRealizarOpen}
-        evaluationId={evaluacionSeleccionada}
-        onClose={() => {
-          setModalRealizarOpen(false);
-          setEvaluacionSeleccionada(null);
-        }}
-        onComplete={handleEvaluacionCompletada}
-      />
-
-      {/* Modal para ver reporte */}
-      <VerReporteEvaluacionModal
-        show={modalReporteOpen}
-        evaluationId={evaluacionSeleccionada}
-        onClose={handleReporteCerrado}
-      />
     </div>
   );
 };
