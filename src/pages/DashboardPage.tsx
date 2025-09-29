@@ -1,449 +1,367 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Users, BarChart3, Clock, CheckCircle, AlertCircle,
-  Calendar, Target, Activity, UserCheck, FileCheck,
-  ArrowRight, Award, Loader2, Eye, Building2,
-  AlertTriangle, ChevronUp, ChevronDown, Search,
-  SortAsc, SortDesc, X, Download, ChevronLeft,
-  ChevronRight, TrendingUp
+  Building2, Users, TrendingUp, Clock, CheckCircle,
+  AlertCircle, X, Download, ChevronRight, BarChart3,
+  Loader2, Calendar, Target, Award
 } from 'lucide-react';
-import { 
-  Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis
-} from 'recharts';
-import servicioEvaluaciones, { ErrorEvaluacion } from '../services/evaluationService';
 import { useAuth } from '../context/authContext';
-import VerReporteEvaluacionModal from '../components/VerReporteEvaluacionModal';
-import type { 
-  MisEvaluacionesRespuestaDTO,
-  ResumenEvaluacionDTO,
-} from '../types/evaluation';
+import {
+  getDepartments,
+  getDepartmentPeriodStats,
+  downloadDepartmentReport,
+  calculateDepartmentPerformance,
+  type Department,
+  type DepartmentPeriodStats,
+  type DepartmentPerformance
+} from '../services/departmentService';
+import { getPeriods, type Period } from '../services/evaluationService';
+import { dashboardService, type HRDashboardDTO } from '../services/dashboardService';
+import VerReporteDepartamentoModal from '../components/VerReporteDepartamentoModal';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // =============== INTERFACES ===============
-interface FilterState {
-  status: 'all' | 'pendiente' | 'realizada' | 'atrasada';
-  search: string;
-}
-
-interface SortState {
-  column: keyof ResumenEvaluacionDTO | 'daysOverdue';
-  direction: 'asc' | 'desc';
-}
-
-interface ChartData {
-  name: string;
-  value: number;
-  [key: string]: unknown; 
-}
-
-interface StatCardProps {
-  title: string;
-  value: number | string;
-  subtitle?: string;
-  icon: React.ReactNode;
-  color: string;
-  trend?: number;
-  onClick?: () => void;
-}
-
-interface Department {
-  id: number;
-  name: string;
-  description?: string;
+interface DepartmentWithStats extends Department {
+  evaluation_stats?: {
+    total: number;
+    completed: number;
+    pending: number;
+  };
   employee_count?: number;
 }
 
-interface Period {
-  id: number;
-  name: string;
-  start_date: string;
-  end_date: string;
-  due_date: string;
-  status: string;
-}
+// =============== COMPONENTES ===============
 
-interface DepartmentStats {
-  department_id: number;
-  department_name: string;
-  period_id: number;
-  period_name: string;
-  total_evaluations: number;
-  completed_evaluations: number;
-  pending_evaluations: number;
-  overdue_evaluations: number;
-  completion_rate: number;
-  average_score: number;
-  employees_evaluated: number;
-  total_employees: number;
-  generated_at: string;
-}
-
-interface DepartmentPerformance {
-  name: string;
-  completion_rate: number;
-  average_score: number;
-  total_evaluations: number;
-}
-
-// =============== COMPONENTS ===============
-const StatCard: React.FC<StatCardProps> = ({ 
-  title, value, subtitle, icon, color, trend, onClick 
-}) => (
-  <div 
-    className={`bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all ${
-      onClick ? 'cursor-pointer' : ''
-    }`}
-    onClick={onClick}
-  >
-    <div className="flex items-center justify-between mb-4">
-      <div className={`p-3 rounded-xl text-white ${color}`}>
-        {icon}
-      </div>
-      {trend !== undefined && (
-        <div className={`flex items-center gap-1 text-sm font-medium ${
-          trend >= 0 ? 'text-green-600' : 'text-red-600'
-        }`}>
-          {trend >= 0 ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          {Math.abs(trend)}%
-        </div>
-      )}
-    </div>
-    <div>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
-      <p className="text-sm text-gray-600">{title}</p>
-      {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
-    </div>
-  </div>
-);
-
-// Componente Modal de Departamento
-const DepartmentModal: React.FC<{
-  department: Department | null;
-  periods: Period[];
-  selectedPeriod: Period | null;
-  departmentStats: DepartmentStats | null;
-  loading: boolean;
-  onClose: () => void;
-  onPeriodChange: (period: Period) => void;
-  onExport: () => void;
-  exporting: boolean;
-}> = ({ 
-  department, 
-  periods, 
-  selectedPeriod, 
-  departmentStats, 
-  loading, 
-  onClose, 
-  onPeriodChange, 
-  onExport,
-  exporting 
-}) => {
-  if (!department) return null;
-
-  const formatDate = (dateString: string): string => {
-    try {
-      return new Date(dateString).toLocaleDateString('es-ES', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return dateString;
-    }
-  };
+// Card de Departamento - Diseño elegante y compacto
+const DepartmentCard: React.FC<{
+  department: DepartmentWithStats;
+  onClick: () => void;
+}> = ({ department, onClick }) => {
+  const completionRate = department.evaluation_stats
+    ? Math.round((department.evaluation_stats.completed / department.evaluation_stats.total) * 100) || 0
+    : 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-600 rounded-xl text-white">
-              <Building2 className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">{department.name}</h2>
-              <p className="text-gray-600">Reporte de evaluaciones</p>
-            </div>
+    <div
+      onClick={onClick}
+      className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all cursor-pointer group"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-blue-600 rounded-lg text-white">
+            <Building2 className="w-5 h-5" />
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="w-6 h-6 text-gray-400" />
-          </button>
-        </div>
-
-        {/* Period Selector */}
-        <div className="p-6 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-1">Período de Evaluación</h3>
-              <p className="text-sm text-gray-600">Selecciona un período para ver las estadísticas</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <select
-                value={selectedPeriod?.id || ''}
-                onChange={(e) => {
-                  const period = periods.find(p => p.id === parseInt(e.target.value));
-                  if (period) onPeriodChange(period);
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 bg-white"
-              >
-                {periods.map(period => (
-                  <option key={period.id} value={period.id}>
-                    {period.name} ({formatDate(period.start_date)} - {formatDate(period.end_date)})
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={onExport}
-                disabled={exporting || !departmentStats}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                {exporting ? 'Exportando...' : 'Exportar'}
-              </button>
-            </div>
+          <div>
+            <h3 className="font-semibold text-gray-900 text-base group-hover:text-blue-600 transition-colors">
+              {department.name}
+            </h3>
+            {department.employee_count ? (
+              <p className="text-xs text-gray-500">{department.employee_count} empleados</p>
+            ) : department.evaluation_stats && (
+              <p className="text-xs text-gray-500">{department.evaluation_stats.total} evaluaciones</p>
+            )}
           </div>
         </div>
-
-        {/* Stats Content */}
-        <div className="p-6">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-3" />
-                <p className="text-gray-600">Cargando estadísticas...</p>
-              </div>
-            </div>
-          ) : departmentStats ? (
-            <div className="space-y-6">
-              {/* Period Info */}
-              <div className="bg-blue-50 rounded-xl p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">{departmentStats.period_name}</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <span className="text-blue-700">Total Evaluaciones:</span>
-                    <p className="font-semibold text-blue-900">{departmentStats.total_evaluations}</p>
-                  </div>
-                  <div>
-                    <span className="text-blue-700">Empleados:</span>
-                    <p className="font-semibold text-blue-900">{departmentStats.employees_evaluated}/{departmentStats.total_employees}</p>
-                  </div>
-                  <div>
-                    <span className="text-blue-700">Tasa Compleción:</span>
-                    <p className="font-semibold text-blue-900">{departmentStats.completion_rate.toFixed(1)}%</p>
-                  </div>
-                  <div>
-                    <span className="text-blue-700">Puntuación Promedio:</span>
-                    <p className="font-semibold text-blue-900">{departmentStats.average_score.toFixed(1)}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-green-50 rounded-xl p-4 text-center">
-                  <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-green-900">{departmentStats.completed_evaluations}</p>
-                  <p className="text-sm text-green-700">Completadas</p>
-                </div>
-                <div className="bg-yellow-50 rounded-xl p-4 text-center">
-                  <Clock className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-yellow-900">{departmentStats.pending_evaluations}</p>
-                  <p className="text-sm text-yellow-700">Pendientes</p>
-                </div>
-                <div className="bg-red-50 rounded-xl p-4 text-center">
-                  <AlertTriangle className="w-8 h-8 text-red-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-red-900">{departmentStats.overdue_evaluations}</p>
-                  <p className="text-sm text-red-700">Vencidas</p>
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <h4 className="font-semibold text-gray-900 mb-3">Progreso de Evaluaciones</h4>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
-                    className="bg-blue-600 h-3 rounded-full transition-all duration-500"
-                    style={{ width: `${departmentStats.completion_rate}%` }}
-                  ></div>
-                </div>
-                <p className="text-sm text-gray-600 mt-2">
-                  {departmentStats.completed_evaluations} de {departmentStats.total_evaluations} evaluaciones completadas
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">No hay datos disponibles para este período</p>
-            </div>
-          )}
-        </div>
+        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
       </div>
+
+      {department.evaluation_stats && (
+        <div className="space-y-2">
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-500">Progreso</span>
+            <span className="font-medium text-gray-700">
+              {department.evaluation_stats.completed}/{department.evaluation_stats.total}
+            </span>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-1.5">
+            <div
+              className="h-1.5 rounded-full bg-blue-600 transition-all"
+              style={{ width: `${completionRate}%` }}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center gap-1">
+              <CheckCircle className="w-3 h-3 text-emerald-600" />
+              <span className="text-xs text-gray-500">
+                {department.evaluation_stats.completed} Completadas
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Clock className="w-3 h-3 text-amber-600" />
+              <span className="text-xs text-gray-500">
+                {department.evaluation_stats.pending} Pendientes
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-// =============== MAIN COMPONENT ===============
+// Gráfico de Comparación - Elegante Bar Chart con Recharts
+const DepartmentComparisonChart: React.FC<{
+  data: DepartmentPerformance[];
+  selectedPeriod: Period | null;
+  onPeriodChange: (period: Period) => void;
+  periods: Period[];
+}> = ({ data, selectedPeriod, onPeriodChange, periods }) => {
+  const sortedData = [...data].sort((a, b) => b.promedio - a.promedio);
+
+  // Prepara datos para Recharts
+  const chartData = sortedData.map(dept => ({
+    name: dept.name,
+    promedio: dept.promedio,
+    completionRate: dept.total > 0 ? (dept.completadas / dept.total) * 100 : 0,
+    completadas: dept.completadas,
+    total: dept.total,
+  }));
+
+  console.log('Chart data for Recharts:', chartData); // Debug log
+
+  const getBarColor = (value: number) => {
+    if (value >= 90) return '#10B981'; // Emerald
+    if (value >= 80) return '#3B82F6'; // Blue
+    if (value >= 70) return '#F59E0B'; // Amber
+    return '#EF4444'; // Red
+  };
+
+  return (
+    <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Rendimiento por Departamento</h2>
+            <p className="text-xs text-gray-500 mt-1">Puntuación promedio y progreso</p>
+          </div>
+          <div className="p-2 bg-blue-600 rounded-lg text-white">
+            <BarChart3 className="w-4 h-4" />
+          </div>
+        </div>
+
+        <select
+          value={selectedPeriod?.id || ''}
+          onChange={(e) => {
+            const period = periods.find(p => p.id === parseInt(e.target.value));
+            if (period) onPeriodChange(period);
+          }}
+          className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:border-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+        >
+          <option value="">📊 Todos los períodos</option>
+          {periods.map(period => (
+            <option key={period.id} value={period.id}>
+              📅 {period.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {chartData.length > 0 ? (
+        <div className="h-[280px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="name"
+                fontFamily="'Inter', sans-serif"
+                fontSize={12}
+                tick={{ fill: '#4B5563' }}
+                axisLine={{ stroke: '#e5e7eb' }}
+                tickLine={false}
+              />
+              <YAxis
+                domain={[0, 100]}
+                fontFamily="'Inter', sans-serif"
+                fontSize={12}
+                tick={{ fill: '#4B5563' }}
+                axisLine={false}
+                tickLine={false}
+                label={{
+                  value: 'Puntuación (%)',
+                  angle: -90,
+                  position: 'insideLeft',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: 12,
+                  fill: '#1F2937',
+                  offset: -5,
+                }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: 12,
+                  padding: '8px',
+                }}
+                formatter={(value: number, name: string, props: any) => [
+                  `Puntuación: ${value.toFixed(1)}%`,
+                  `Completitud: ${props.payload.completionRate.toFixed(1)}% (${props.payload.completadas}/${props.payload.total})`,
+                ]}
+                labelStyle={{ color: '#fff', fontWeight: '600' }}
+              />
+              <Bar
+                dataKey="promedio"
+                radius={[6, 6, 0, 0]}
+                barSize={40}
+                animationDuration= {1000}
+                animationEasing="ease-out"
+              >
+                {chartData.map((entry, index) => (
+                  <Bar
+                    key={entry.name}
+                    dataKey="promedio"
+                    fill={getBarColor(entry.promedio)}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-[280px] text-center">
+          <div className="p-3 bg-gray-100 rounded-full mb-2">
+            <BarChart3 className="w-6 h-6 text-gray-400" />
+          </div>
+          <p className="text-gray-500 text-sm font-medium">No hay datos disponibles</p>
+          <p className="text-gray-400 text-xs mt-1">Selecciona un período para ver estadísticas</p>
+        </div>
+      )}
+
+      {sortedData.length > 0 && (
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-emerald-50 rounded-lg p-2">
+              <div className="flex items-center gap-1 mb-1">
+                <Target className="w-3 h-3 text-emerald-600" />
+                <span className="text-xs font-medium text-gray-700">Promedio General</span>
+              </div>
+              <p className="text-base font-semibold text-gray-900">
+                {(sortedData.reduce((acc, d) => acc + d.promedio, 0) / sortedData.length).toFixed(1)}%
+              </p>
+            </div>
+            <div className="bg-blue-50 rounded-lg p-2">
+              <div className="flex items-center gap-1 mb-1">
+                <Award className="w-3 h-3 text-blue-600" />
+                <span className="text-xs font-medium text-gray-700">Mejor Depto.</span>
+              </div>
+              <p className="text-base font-semibold text-gray-900 truncate">
+                {sortedData[0]?.name}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// =============== COMPONENTE PRINCIPAL ===============
 const DashboardPage: React.FC = () => {
-  // Estados principales
-  const [allEvaluations, setAllEvaluations] = useState<ResumenEvaluacionDTO[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const { user } = useAuth();
+  const [departments, setDepartments] = useState<DepartmentWithStats[]>([]);
   const [periods, setPeriods] = useState<Period[]>([]);
+  const [dashboardData, setDashboardData] = useState<HRDashboardDTO | null>(null);
   const [departmentPerformance, setDepartmentPerformance] = useState<DepartmentPerformance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Estados del modal
-  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [selectedDepartment, setSelectedDepartment] = useState<DepartmentWithStats | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<Period | null>(null);
-  const [departmentStats, setDepartmentStats] = useState<DepartmentStats | null>(null);
+  const [modalPeriod, setModalPeriod] = useState<Period | null>(null);
+  const [departmentStats, setDepartmentStats] = useState<DepartmentPeriodStats | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
-  
-  // Estados de filtros y tabla
-  const [filter, setFilter] = useState<FilterState>({
-    status: 'all',
-    search: '',
-  });
-  const [sort, setSort] = useState<SortState>({
-    column: 'id',
-    direction: 'asc',
-  });
-  const [modalReporteOpen, setModalReporteOpen] = useState(false);
-  const [selectedEvaluationId, setSelectedEvaluationId] = useState<number | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { user } = useAuth();
-  const userRole = user?.role?.name?.toLowerCase() || '';
-  const isAdmin = userRole === 'admin' || userRole === 'hr_manager';
+  // Estado para el filtro de período del gráfico
+  const [chartPeriod, setChartPeriod] = useState<Period | null>(null);
 
-  // Cargar datos
+  // Cargar datos iniciales
   useEffect(() => {
-    loadData();
-  }, [user]);
+    loadInitialData();
+  }, []);
 
-  const loadData = async (): Promise<void> => {
+  const loadInitialData = async () => {
     setLoading(true);
     setError(null);
-    
-    try {
-      // Cargar evaluaciones
-      const evalsData = await servicioEvaluaciones.listarTodasLasEvaluaciones();
-      const normalizedEvals = evalsData.map(e => ({
-        ...e,
-        status: normalizeStatus(e.status)
-      }));
-      setAllEvaluations(normalizedEvals);
 
-      // Cargar departamentos y períodos usando los endpoints correctos
-      const [deptsResponse, periodsResponse] = await Promise.all([
-        fetch('/api/v1/references/departments', {
-          method: 'GET',
-          headers: getAuthHeaders(),
-        }),
-        fetch('/api/v1/periods', {
-          method: 'GET', 
-          headers: getAuthHeaders(),
-        })
+    try {
+      const [departmentsData, periodsData, dashboardResponse] = await Promise.all([
+        getDepartments(),
+        getPeriods(),
+        dashboardService.getHRDashboard(),
       ]);
 
-      if (deptsResponse.ok && periodsResponse.ok) {
-        const deptsResult = await deptsResponse.json();
-        const periodsResult = await periodsResponse.json();
-        
-        // Extraer data si viene envuelto en respuesta estándar
-        const depts = deptsResult.data || deptsResult;
-        const periods = periodsResult.data || periodsResult;
-        
-        setDepartments(Array.isArray(depts) ? depts : []);
-        setPeriods(Array.isArray(periods) ? periods : []);
+      console.log('Departments:', departmentsData);
+      console.log('Periods:', periodsData);
+      console.log('Dashboard data:', dashboardResponse);
 
-        // Calcular rendimiento de departamentos
-        calculateDepartmentPerformance(depts, normalizedEvals);
+      setDepartments(departmentsData);
+      setPeriods(periodsData);
+      setDashboardData(dashboardResponse);
+
+      const activePeriod = periodsData.find(p => p.is_active);
+      let performanceData: DepartmentPerformance[] = [];
+
+      if (activePeriod) {
+        setSelectedPeriod(activePeriod);
+        setModalPeriod(activePeriod);
+        setChartPeriod(activePeriod);
+
+        performanceData = await calculateDepartmentPerformance(activePeriod.id);
+        console.log('Performance data:', performanceData);
+        setDepartmentPerformance(performanceData);
       } else {
-        console.warn('Error cargando departamentos o períodos');
-        console.warn('Departments response:', deptsResponse.status, deptsResponse.statusText);
-        console.warn('Periods response:', periodsResponse.status, periodsResponse.statusText);
+        performanceData = await calculateDepartmentPerformance();
+        console.log('Performance data (no active period):', performanceData);
+        setDepartmentPerformance(performanceData);
       }
+
+      const departmentsWithStats: DepartmentWithStats[] = departmentsData.map(dept => {
+        const stats = performanceData.find(
+          d => d.name.toLowerCase() === dept.name.toLowerCase()
+        );
+
+        return {
+          ...dept,
+          employee_count: stats ? stats.unique_employees : undefined,
+          evaluation_stats: stats
+            ? {
+                total: stats.total,
+                completed: stats.completadas,
+                pending: stats.pendientes,
+              }
+            : undefined,
+        };
+      });
+      setDepartments(departmentsWithStats);
     } catch (err) {
-      console.error('Error cargando datos:', err);
-      const mensaje = err instanceof ErrorEvaluacion ? err.message : 'Error al cargar los datos del dashboard';
-      setError(mensaje);
+      console.error('Error loading dashboard data:', err);
+      setError(err instanceof Error ? err.message : 'Error al cargar los datos del dashboard');
     } finally {
       setLoading(false);
     }
   };
 
-  const normalizeStatus = (status: string): string => {
-    const normalized = status.toLowerCase().trim();
-    switch (normalized) {
-      case 'pendiente':
-      case 'pending':
-        return 'pendiente';
-      case 'realizada':
-      case 'completed':
-        return 'realizada';
-      case 'atrasada':
-      case 'overdue':
-        return 'atrasada';
-      default:
-        return 'pendiente';
-    }
-  };
-
-  const calculateDepartmentPerformance = (depts: Department[], evals: ResumenEvaluacionDTO[]) => {
-    const performance = depts.map(dept => {
-      // Filtrar evaluaciones por departamento
-      // Necesitamos obtener esta información del backend, por ahora usamos un workaround
-      const deptEvals = evals.filter(e => {
-        // Si el backend incluye employee_department, usarlo
-        if (e.employee_department) {
-          return e.employee_department === dept.name;
-        }
-        // Workaround: por ahora incluir todas las evaluaciones
-        return true;
-      });
-      
-      const completed = deptEvals.filter(e => e.status === 'realizada');
-      const completion_rate = deptEvals.length > 0 ? (completed.length / deptEvals.length) * 100 : 0;
-      const average_score = completed.length > 0 
-        ? completed.reduce((sum, e) => sum + (e.weighted_score || 0), 0) / completed.length 
-        : 0;
-
-      return {
-        name: dept.name.length > 15 ? dept.name.substring(0, 15) + '...' : dept.name,
-        completion_rate: Math.round(completion_rate),
-        average_score: Math.round(average_score * 10) / 10,
-        total_evaluations: deptEvals.length
-      };
-    });
-
-    setDepartmentPerformance(performance);
-  };
-
-  // Funciones del modal
-  const openDepartmentModal = async (department: Department) => {
+  const openDepartmentModal = async (department: DepartmentWithStats) => {
     setSelectedDepartment(department);
-    const latestPeriod = periods.length > 0 ? periods[0] : null;
-    if (latestPeriod) {
-      setSelectedPeriod(latestPeriod);
-      await loadDepartmentStats(department.id, latestPeriod.id);
+    setIsModalOpen(true);
+
+    const periodToUse = modalPeriod || periods[0];
+    if (periodToUse) {
+      await loadDepartmentStats(department.id, periodToUse.id, department.name);
     }
   };
 
-  const loadDepartmentStats = async (departmentId: number, periodId: number) => {
+  const loadDepartmentStats = async (departmentId: number, periodId: number, departmentName: string) => {
     setModalLoading(true);
+    setDepartmentStats(null);
+
     try {
-      const response = await fetch(`/api/v1/evaluations/department/${departmentId}/period/${periodId}/stats`);
-      if (response.ok) {
-        const stats = await response.json();
-        setDepartmentStats(stats);
-      } else {
-        setDepartmentStats(null);
-      }
+      const stats = await getDepartmentPeriodStats(departmentId, periodId, departmentName);
+      setDepartmentStats(stats);
     } catch (err) {
       console.error('Error loading department stats:', err);
       setDepartmentStats(null);
@@ -452,486 +370,124 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  const handlePeriodChange = (period: Period) => {
-    setSelectedPeriod(period);
+  const handleModalPeriodChange = (period: Period) => {
+    setModalPeriod(period);
     if (selectedDepartment) {
-      loadDepartmentStats(selectedDepartment.id, period.id);
+      loadDepartmentStats(selectedDepartment.id, period.id, selectedDepartment.name);
+    }
+  };
+
+  const handleChartPeriodChange = async (period: Period) => {
+    setChartPeriod(period);
+    try {
+      const performanceData = await calculateDepartmentPerformance(period.id);
+      setDepartmentPerformance(performanceData);
+    } catch (err) {
+      console.error('Error updating chart data:', err);
     }
   };
 
   const handleExport = async () => {
-    if (!selectedDepartment || !selectedPeriod) return;
-    
+    if (!selectedDepartment || !modalPeriod) {
+      console.error('Export failed: missing department or period');
+      alert('Error: Departamento o período no seleccionado.');
+      return;
+    }
+
     setExporting(true);
     try {
-      const response = await fetch(`/api/v1/export/department/${selectedDepartment.id}/evaluations?period_id=${selectedPeriod.id}`);
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `reporte_${selectedDepartment.name}_${selectedPeriod.name}.xlsx`;
-        a.click();
-      }
+      console.log(`Exporting report for department ${selectedDepartment.id} (${selectedDepartment.name}), period ${modalPeriod.id} (${modalPeriod.name})`);
+      await downloadDepartmentReport(
+        selectedDepartment.id,
+        selectedDepartment.name,
+        modalPeriod.id,
+        modalPeriod.name
+      );
+      console.log('Export completed successfully');
     } catch (err) {
-      console.error('Error exporting:', err);
+      console.error('Error exporting report:', err);
+      alert('Error al exportar el reporte. Por favor, intente nuevamente.');
     } finally {
       setExporting(false);
     }
   };
 
-  // Funciones de utilidad
-  const getDaysOverdue = (dueDate: string): number => {
-    const now = new Date();
-    const due = new Date(dueDate);
-    const diff = Math.floor((now.getTime() - due.getTime()) / (1000 * 3600 * 24));
-    return diff > 0 ? diff : 0;
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedDepartment(null);
+    setDepartmentStats(null);
   };
 
-  const getFilteredEvaluations = (): ResumenEvaluacionDTO[] => {
-    let filtered = allEvaluations;
-
-    if (filter.status !== 'all') {
-      filtered = filtered.filter(e => e.status === filter.status);
-    }
-
-    if (filter.search) {
-      const searchLower = filter.search.toLowerCase();
-      filtered = filtered.filter(e => e.employee_name.toLowerCase().includes(searchLower));
-    }
-
-    return filtered;
+  const handleRefresh = async () => {
+    await loadInitialData();
   };
 
-  const getSortedEvaluations = (evals: ResumenEvaluacionDTO[]): ResumenEvaluacionDTO[] => {
-    return [...evals].sort((a, b) => {
-      if (sort.column === 'daysOverdue') {
-        const aDays = a.status === 'atrasada' ? getDaysOverdue(a.due_date) : 0;
-        const bDays = b.status === 'atrasada' ? getDaysOverdue(b.due_date) : 0;
-        return sort.direction === 'asc' ? aDays - bDays : bDays - aDays;
-      }
-      const aVal = String(a[sort.column as keyof ResumenEvaluacionDTO]);
-      const bVal = String(b[sort.column as keyof ResumenEvaluacionDTO]);
-      if (aVal < bVal) return sort.direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sort.direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-  };
-
-  const getStatusDistribution = (): ChartData[] => {
-    const counts = allEvaluations.reduce((acc, e) => {
-      acc[e.status] = (acc[e.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return Object.entries(counts).map(([status, count]) => ({
-      name: servicioEvaluaciones.obtenerTextoEstado(status),
-      value: count
-    }));
-  };
-
-  const handleSort = (column: keyof ResumenEvaluacionDTO | 'daysOverdue'): void => {
-    setSort({
-      column,
-      direction: sort.column === column && sort.direction === 'asc' ? 'desc' : 'asc',
-    });
-  };
-
-  const handleEvaluationClick = (evaluation: ResumenEvaluacionDTO): void => {
-    setSelectedEvaluationId(evaluation.id);
-    setModalReporteOpen(true);
-  };
-
-  const closeModal = (): void => {
-    setModalReporteOpen(false);
-    setSelectedEvaluationId(null);
-  };
-
-  // Datos calculados
-  const filteredEvals = getFilteredEvaluations();
-  const sortedEvals = getSortedEvaluations(filteredEvals);
-  const statusDistribution = getStatusDistribution();
-  const COLORS = ['#FF8042', '#00C49F', '#FFBB28', '#0088FE'];
-
-  const adminStats = {
-    total: allEvaluations.length,
-    completed: allEvaluations.filter(e => e.status === 'realizada').length,
-    pending: allEvaluations.filter(e => e.status === 'pendiente').length,
-    overdue: allEvaluations.filter(e => e.status === 'atrasada').length
-  };
-
-  // Renderizado condicional de carga y error
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Cargando dashboard...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center bg-red-50 p-8 rounded-xl">
-          <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-          <p className="text-red-800 font-medium mb-2">Error al cargar el dashboard</p>
-          <p className="text-red-600 text-sm mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            Reintentar
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center bg-yellow-50 p-8 rounded-xl">
-          <AlertTriangle className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
-          <p className="text-yellow-800 font-medium">Acceso restringido</p>
-          <p className="text-yellow-600 text-sm">Solo administradores pueden acceder al dashboard</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+          <p className="text-gray-600 text-sm">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 min-h-screen">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-blue-600 rounded-xl text-white">
-            <BarChart3 className="w-8 h-8" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard de Evaluaciones</h1>
-            <p className="text-gray-600 mt-1">Vista administrativa completa del sistema</p>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard
-            title="Total Evaluaciones"
-            value={adminStats.total}
-            subtitle="En el sistema"
-            icon={<BarChart3 className="w-6 h-6" />}
-            color="bg-blue-600"
-          />
-          <StatCard
-            title="Completadas"
-            value={adminStats.completed}
-            subtitle="Evaluaciones finalizadas"
-            icon={<CheckCircle className="w-6 h-6" />}
-            color="bg-green-600"
-          />
-          <StatCard
-            title="Pendientes"
-            value={adminStats.pending}
-            subtitle="Por completar"
-            icon={<Clock className="w-6 h-6" />}
-            color="bg-yellow-600"
-          />
-          <StatCard
-            title="Vencidas"
-            value={adminStats.overdue}
-            subtitle="Fuera de plazo"
-            icon={<AlertTriangle className="w-6 h-6" />}
-            color="bg-red-600"
-          />
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 mb-6">
-        {/* Departamentos - 7/10 del ancho */}
-        <div className="lg:col-span-7 bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Departamentos</h2>
-          
-          {departments.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {departments.map(dept => {
-                // Por ahora calculamos las evaluaciones de forma simplificada
-                // TODO: El backend debería devolver evaluaciones con información de departamento
-                const deptEvals = allEvaluations.length; // Placeholder
-                const completed = allEvaluations.filter(e => e.status === 'realizada').length;
-                const completion_rate = deptEvals > 0 ? (completed / deptEvals) * 100 : 0;
-                
-                return (
-                  <div
-                    key={dept.id}
-                    className="p-4 border border-gray-200 rounded-xl hover:shadow-md transition-all cursor-pointer hover:border-blue-300"
-                    onClick={() => openDepartmentModal(dept)}
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <Building2 className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 truncate">{dept.name}</h3>
-                        <p className="text-sm text-gray-500">{Math.floor(Math.random() * 20) + 5} evaluaciones</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Completadas</span>
-                        <span className="font-medium">{completed}/{Math.floor(Math.random() * 20) + 5}</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-blue-600 h-2 rounded-full transition-all"
-                          style={{ width: `${completion_rate}%` }}
-                        ></div>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-sm font-medium text-blue-600">{completion_rate.toFixed(1)}%</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">No hay departamentos disponibles</p>
-            </div>
-          )}
-        </div>
-
-        {/* Gráfica de Rendimiento - 3/10 del ancho */}
-        <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Rendimiento</h2>
-          
-          {departmentPerformance.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart
-                data={departmentPerformance}
-                layout="horizontal"
-                margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
-              >
-                <XAxis type="number" domain={[0, 100]} />
-                <YAxis dataKey="name" type="category" width={80} />
-                <Tooltip 
-                  formatter={(value, name) => [
-                    `${value}${name === 'completion_rate' ? '%' : ''}`,
-                    name === 'completion_rate' ? 'Tasa Compleción' : 'Puntuación Promedio'
-                  ]}
-                />
-                <Bar dataKey="completion_rate" fill="#3B82F6" />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="text-center py-8">
-              <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">No hay datos de rendimiento</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Segunda fila - Status Distribution y Evaluations Table */}
+    <div className="p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          {/* Status Distribution */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Distribución por Estado</h2>
-            {statusDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    dataKey="value"
-                    data={statusDistribution}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
-                    label
-                  >
-                    {statusDistribution.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-gray-500 text-center py-4">No hay datos disponibles</p>
-            )}
-          </div>
-
-          {/* Evaluations Table */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Lista de Evaluaciones</h2>
-            
-            {/* Filters */}
-            <div className="flex items-center gap-4 mb-4">
-              <div className="flex-1 relative">
-                <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar por nombre de empleado..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500"
-                  value={filter.search}
-                  onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                />
-              </div>
-              <select
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500"
-                value={filter.status}
-                onChange={(e) => setFilter({ 
-                  ...filter, 
-                  status: e.target.value as 'all' | 'pendiente' | 'realizada' | 'atrasada' 
-                })}
-              >
-                <option value="all">Todos los estados</option>
-                <option value="pendiente">Pendiente</option>
-                <option value="realizada">Realizada</option>
-                <option value="atrasada">Atrasada</option>
-              </select>
+        {/* Área de Reportes por Departamentos */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Building2 className="w-5 h-5 text-blue-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Reportes por Departamentos</h2>
             </div>
-
-            {/* Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="p-2 cursor-pointer" onClick={() => handleSort('id')}>
-                      ID
-                      {sort.column === 'id' && (
-                        sort.direction === 'asc' ? <SortAsc className="inline w-4 h-4 ml-1" /> : <SortDesc className="inline w-4 h-4 ml-1" />
-                      )}
-                    </th>
-                    <th className="p-2 cursor-pointer" onClick={() => handleSort('employee_name')}>
-                      Empleado
-                      {sort.column === 'employee_name' && (
-                        sort.direction === 'asc' ? <SortAsc className="inline w-4 h-4 ml-1" /> : <SortDesc className="inline w-4 h-4 ml-1" />
-                      )}
-                    </th>
-                    <th className="p-2 cursor-pointer" onClick={() => handleSort('evaluator_name')}>
-                      Evaluador
-                      {sort.column === 'evaluator_name' && (
-                        sort.direction === 'asc' ? <SortAsc className="inline w-4 h-4 ml-1" /> : <SortDesc className="inline w-4 h-4 ml-1" />
-                      )}
-                    </th>
-                    <th className="p-2 cursor-pointer" onClick={() => handleSort('period_name')}>
-                      Período
-                      {sort.column === 'period_name' && (
-                        sort.direction === 'asc' ? <SortAsc className="inline w-4 h-4 ml-1" /> : <SortDesc className="inline w-4 h-4 ml-1" />
-                      )}
-                    </th>
-                    <th className="p-2 cursor-pointer" onClick={() => handleSort('status')}>
-                      Estado
-                      {sort.column === 'status' && (
-                        sort.direction === 'asc' ? <SortAsc className="inline w-4 h-4 ml-1" /> : <SortDesc className="inline w-4 h-4 ml-1" />
-                      )}
-                    </th>
-                    <th className="p-2 cursor-pointer" onClick={() => handleSort('daysOverdue')}>
-                      Días de retraso
-                      {sort.column === 'daysOverdue' && (
-                        sort.direction === 'asc' ? <SortAsc className="inline w-4 h-4 ml-1" /> : <SortDesc className="inline w-4 h-4 ml-1" />
-                      )}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedEvals.map(e => (
-                    <tr 
-                      key={e.id} 
-                      className="border-b hover:bg-gray-50 cursor-pointer" 
-                      onClick={() => handleEvaluationClick(e)}
-                    >
-                      <td className="p-2">{e.id}</td>
-                      <td className="p-2">{e.employee_name}</td>
-                      <td className="p-2">{e.evaluator_name}</td>
-                      <td className="p-2">{e.period_name}</td>
-                      <td className="p-2">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${servicioEvaluaciones.obtenerColorEstado(e.status)}`}>
-                          {servicioEvaluaciones.obtenerTextoEstado(e.status)}
-                        </span>
-                      </td>
-                      <td className="p-2">
-                        {e.status === 'atrasada' ? getDaysOverdue(e.due_date) : 0}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <p className="text-xs text-gray-500 mb-4">Selecciona un departamento para ver detalles y reportes</p>
+            <div className="max-h-[500px] overflow-y-auto rounded-lg pr-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {departments.map(department => (
+                  <DepartmentCard
+                    key={department.id}
+                    department={department}
+                    onClick={() => openDepartmentModal(department)}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Right Column - Quick Actions */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Acciones Rápidas</h2>
-            <div className="space-y-3">
-              <button
-                onClick={() => window.location.href = '/evaluaciones'}
-                className="w-full p-3 bg-blue-50 hover:bg-blue-100 rounded-lg flex items-center justify-between group"
-              >
-                <div className="flex items-center gap-3">
-                  <FileCheck className="w-5 h-5 text-blue-600" />
-                  <span className="text-sm font-medium">Gestionar Evaluaciones</span>
-                </div>
-                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
-              </button>
-              <button
-                onClick={() => window.location.href = '/employees'}
-                className="w-full p-3 bg-green-50 hover:bg-green-100 rounded-lg flex items-center justify-between group"
-              >
-                <div className="flex items-center gap-3">
-                  <Users className="w-5 h-5 text-green-600" />
-                  <span className="text-sm font-medium">Gestionar Empleados</span>
-                </div>
-                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
-              </button>
-              <button
-                onClick={() => window.location.href = '/periods'}
-                className="w-full p-3 bg-purple-50 hover:bg-purple-100 rounded-lg flex items-center justify-between group"
-              >
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-purple-600" />
-                  <span className="text-sm font-medium">Ver Períodos</span>
-                </div>
-                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
-              </button>
-            </div>
-          </div>
+        {/* Área de Gráfico de Comparación */}
+        <div className="lg:col-span-1">
+          <DepartmentComparisonChart
+            data={departmentPerformance}
+            selectedPeriod={chartPeriod}
+            onPeriodChange={handleChartPeriodChange}
+            periods={periods}
+          />
         </div>
       </div>
 
-      {/* Department Modal */}
-      <DepartmentModal
+      <VerReporteDepartamentoModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
         department={selectedDepartment}
         periods={periods}
-        selectedPeriod={selectedPeriod}
-        departmentStats={departmentStats}
+        selectedPeriod={modalPeriod}
+        onPeriodChange={handleModalPeriodChange}
+        stats={departmentStats}
         loading={modalLoading}
-        onClose={() => {
-          setSelectedDepartment(null);
-          setSelectedPeriod(null);
-          setDepartmentStats(null);
-        }}
-        onPeriodChange={handlePeriodChange}
         onExport={handleExport}
         exporting={exporting}
-      />
-
-      {/* Evaluation Report Modal */}
-      <VerReporteEvaluacionModal
-        show={modalReporteOpen}
-        evaluationId={selectedEvaluationId}
-        onClose={closeModal}
       />
     </div>
   );

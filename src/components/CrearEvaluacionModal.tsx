@@ -4,8 +4,8 @@ import { getUsers } from '../services/userService';
 import { getPeriods, getTemplates, createEvaluationsFromTemplate } from '../services/evaluationService';
 import type { User as UserType } from '../types/user';
 import type { Period, Template, CreateEvaluationsFromTemplateDTO } from '../types/evaluation';
-import type { ReferenceData, ConfirmationState } from '../services/referenceService';
 import { referenceService } from '../services/referenceService';
+import type { ReferenceData } from '../services/referenceService';
 
 interface FilterState {
   department: string;
@@ -16,14 +16,12 @@ interface CrearEvaluacionModalProps {
   show: boolean;
   onClose: () => void;
   onCreated: (newEvaluations: { evaluatedEmployeeIds: number[]; count: number }) => void;
-  setConfirmationState: React.Dispatch<React.SetStateAction<ConfirmationState>>;
 }
 
 const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
   show,
   onClose,
   onCreated,
-  setConfirmationState,
 }) => {
   const [users, setUsers] = useState<UserType[]>([]);
   const [references, setReferences] = useState<ReferenceData>({});
@@ -43,7 +41,6 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
     position: '',
   });
 
-  // Fetch users, references, periods, and templates
   useEffect(() => {
     if (show) {
       loadData();
@@ -77,7 +74,6 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
     }
   };
 
-  // Format date for periods
   const formatDate = (dateString: string): string => {
     try {
       const date = new Date(dateString);
@@ -96,7 +92,6 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
     }
   };
 
-  // Get period status with visual feedback
   const getPeriodStatus = (period: Period) => {
     const now = new Date();
     const startDate = new Date(period.start_date);
@@ -105,9 +100,9 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
     if (now >= startDate && now <= dueDate) {
       return {
         icon: CheckCircle,
-        color: 'text-green-600',
-        bg: 'bg-green-50',
-        border: 'border-green-200',
+        color: 'text-emerald-600',
+        bg: 'bg-emerald-50',
+        border: 'border-emerald-200',
         label: 'Activo',
         description: 'Disponible para evaluaciones',
       };
@@ -123,16 +118,15 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
     } else {
       return {
         icon: Clock,
-        color: 'text-yellow-600',
-        bg: 'bg-yellow-50',
-        border: 'border-yellow-200',
+        color: 'text-amber-600',
+        bg: 'bg-amber-50',
+        border: 'border-amber-200',
         label: 'No disponible',
         description: 'Período no disponible',
       };
     }
   };
 
-  // Filter employees for evaluator
   const filteredEvaluatorUsers = useMemo(() => {
     return users.filter(user => {
       const fullName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
@@ -147,7 +141,6 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
     });
   }, [users, searchTermEvaluator, filters]);
 
-  // Filter employees for evaluation (excluding evaluator)
   const filteredEmployeeUsers = useMemo(() => {
     return users.filter(user => {
       if (user.id === evaluatorId) return false;
@@ -227,14 +220,6 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
       console.log('✅ Evaluations created:', data);
 
       onCreated(data);
-      setConfirmationState({
-        show: true,
-        title: '¡Evaluaciones Creadas!',
-        message: `Se han creado ${data.count} evaluaciones exitosamente.`,
-        type: 'success',
-        onConfirm: () => setConfirmationState((prev: ConfirmationState) => ({ ...prev, show: false })),
-        loading: false,
-      });
       handleClose();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -264,52 +249,52 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-7xl max-h-[95vh] overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-7xl max-h-[90vh] overflow-hidden shadow-lg border border-slate-200">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl text-white">
-              <Users className="w-6 h-6" />
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
+              <Users className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-2xl font-semibold text-gray-900">Crear Nueva Evaluación</h2>
+              <h2 className="text-lg font-semibold text-slate-900">Crear Nueva Evaluación</h2>
               {selectedTemplate && (
-                <p className="text-sm text-gray-600">Plantilla: <span className="font-medium">{selectedTemplate.name}</span></p>
+                <p className="text-sm text-slate-600">Plantilla: <span className="font-medium">{selectedTemplate.name}</span></p>
               )}
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+            className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
             disabled={loading}
           >
-            <X className="w-6 h-6 text-gray-500" />
+            <X className="w-5 h-5 text-slate-500" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(95vh-120px)]">
+        <div className="overflow-y-auto max-h-[calc(90vh-96px)]">
           {loadingData ? (
             <div className="text-center py-12">
-              <Loader2 className="w-10 h-10 animate-spin text-blue-500 mx-auto mb-3" />
-              <p className="text-gray-600">Cargando datos...</p>
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-2" />
+              <p className="text-sm text-slate-600">Cargando datos...</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="p-6">
-              <div className="grid grid-cols-12 gap-6">
+            <form onSubmit={handleSubmit} className="p-4">
+              <div className="grid grid-cols-12 gap-4">
                 {/* Left Column - Period & Template */}
-                <div className="col-span-12 md:col-span-4 space-y-6">
+                <div className="col-span-12 md:col-span-4 space-y-4">
                   {/* Period Selection */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      <Calendar className="w-4 h-4 inline mr-2" />
+                  <div className="bg-white border border-slate-200 rounded-lg p-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <Calendar className="w-4 h-4 inline mr-1.5 text-blue-600" />
                       Período de Evaluación *
                     </label>
                     <select
                       value={periodId}
                       onChange={handlePeriodChange}
-                      className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                       disabled={loading}
                     >
                       <option value="">Seleccione un período</option>
@@ -322,10 +307,9 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
                         );
                       })}
                     </select>
-                    {/* Period status indicators */}
                     {periods.length > 0 && (
-                      <div className="mt-4 space-y-2">
-                        <p className="text-xs font-medium text-gray-600 mb-2">Estados de períodos:</p>
+                      <div className="mt-3 space-y-2">
+                        <p className="text-xs font-medium text-slate-600">Estados de períodos:</p>
                         {periods.slice(0, 3).map(period => {
                           const status = getPeriodStatus(period);
                           const StatusIcon = status.icon;
@@ -333,7 +317,7 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
                             <div key={period.id} className={`flex items-center gap-2 p-2 rounded-lg ${status.bg} ${status.border} border text-xs`}>
                               <StatusIcon className={`w-3 h-3 ${status.color}`} />
                               <div className="flex-1 min-w-0">
-                                <span className="font-medium text-gray-900 truncate">{period.name}</span>
+                                <span className="font-medium text-slate-900 truncate">{period.name}</span>
                                 <span className={`ml-2 ${status.color}`}>({status.label})</span>
                               </div>
                             </div>
@@ -344,15 +328,15 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
                   </div>
 
                   {/* Template Selection */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      <FileCheck className="w-4 h-4 inline mr-2" />
+                  <div className="bg-white border border-slate-200 rounded-lg p-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <FileCheck className="w-4 h-4 inline mr-1.5 text-blue-600" />
                       Plantilla de Evaluación *
                     </label>
                     <select
                       value={templateId}
                       onChange={handleTemplateChange}
-                      className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                       disabled={loading}
                     >
                       <option value="">Seleccione una plantilla</option>
@@ -363,9 +347,9 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
                       ))}
                     </select>
                     {selectedTemplate && (
-                      <div className="mt-4">
-                        <p className="text-sm font-medium text-gray-700">Descripción</p>
-                        <p className="text-sm text-gray-600">{selectedTemplate.description || 'Sin descripción'}</p>
+                      <div className="mt-3">
+                        <p className="text-sm font-medium text-slate-700">Descripción</p>
+                        <p className="text-sm text-slate-600">{selectedTemplate.description || 'Sin descripción'}</p>
                       </div>
                     )}
                   </div>
@@ -374,28 +358,28 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
                 {/* Center Column - Evaluator */}
                 <div className="col-span-12 md:col-span-4 space-y-4">
                   {/* Filters */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-medium text-gray-900 text-base">
-                        <Filter className="w-4 h-4 inline mr-2 text-blue-600" />
+                  <div className="bg-white border border-slate-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-medium text-slate-900 text-sm">
+                        <Filter className="w-4 h-4 inline mr-1.5 text-blue-600" />
                         Filtros
                       </h3>
                       {activeFiltersCount > 0 && (
                         <button
                           type="button"
                           onClick={clearFilters}
-                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                          className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
                         >
                           Limpiar ({activeFiltersCount})
                         </button>
                       )}
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
                         <select
                           value={filters.department}
                           onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
-                          className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
+                          className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white"
                           disabled={loading}
                         >
                           <option value="">Todos los departamentos</option>
@@ -408,7 +392,7 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
                         <select
                           value={filters.position}
                           onChange={(e) => setFilters(prev => ({ ...prev, position: e.target.value }))}
-                          className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
+                          className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white"
                           disabled={loading}
                         >
                           <option value="">Todos los cargos</option>
@@ -421,53 +405,53 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
                   </div>
 
                   {/* Evaluator Selection */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                    <div className="flex items-center gap-2 mb-4">
-                      <User className="w-5 h-5 text-blue-600" />
-                      <h3 className="font-semibold text-gray-900 text-base">Evaluador *</h3>
+                  <div className="bg-white border border-slate-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <User className="w-4 h-4 text-blue-600" />
+                      <h3 className="font-semibold text-slate-900 text-sm">Evaluador *</h3>
                     </div>
 
                     {selectedEvaluator && (
-                      <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
+                      <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-blue-900 text-base">
+                          <p className="font-medium text-blue-900 text-sm">
                             {selectedEvaluator.name || `${selectedEvaluator.first_name || ''} ${selectedEvaluator.last_name || ''}`.trim()}
                           </p>
-                          <p className="text-sm text-blue-600">{selectedEvaluator.position || '—'} | {selectedEvaluator.department || '—'}</p>
+                          <p className="text-xs text-blue-600">{selectedEvaluator.position || '—'} | {selectedEvaluator.department || '—'}</p>
                         </div>
                         <button
                           type="button"
                           onClick={() => setEvaluatorId(null)}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="text-blue-600 hover:text-blue-700"
                         >
-                          <X className="w-5 h-5" />
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
                     )}
 
-                    <div className="relative mb-4">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <div className="relative mb-3">
+                      <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                       <input
                         type="text"
                         placeholder="Buscar evaluador..."
                         value={searchTermEvaluator}
                         onChange={(e) => setSearchTermEvaluator(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white"
                         disabled={loading}
                       />
                     </div>
 
                     <div className="max-h-80 overflow-y-auto space-y-2">
                       {filteredEvaluatorUsers.length === 0 ? (
-                        <p className="text-gray-500 text-center py-6 text-sm">No se encontraron evaluadores</p>
+                        <p className="text-slate-500 text-center py-6 text-sm">No se encontraron evaluadores</p>
                       ) : (
                         filteredEvaluatorUsers.map(user => (
                           <div
                             key={user.id}
-                            className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
+                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
                               evaluatorId === user.id 
                                 ? 'bg-blue-50 border-blue-200' 
-                                : 'hover:bg-gray-50 border-transparent'
+                                : 'hover:bg-slate-50 border-transparent'
                             }`}
                             onClick={() => handleEvaluatorSelect(user.id)}
                           >
@@ -480,10 +464,10 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
                               className="w-4 h-4 text-blue-500 focus:ring-blue-500"
                             />
                             <div className="flex-1 min-w-0">
-                              <p className="text-base font-medium text-gray-900 truncate">
+                              <p className="text-sm font-medium text-slate-900 truncate">
                                 {user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim()}
                               </p>
-                              <p className="text-sm text-gray-500 truncate">
+                              <p className="text-xs text-slate-500 truncate">
                                 {user.position || '—'} | {user.department || '—'}
                               </p>
                             </div>
@@ -497,34 +481,34 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
                 {/* Right Column - Employees */}
                 <div className="col-span-12 md:col-span-4 space-y-4">
                   {/* Employee Selection */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
+                  <div className="bg-white border border-slate-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <UserCheck className="w-5 h-5 text-green-600" />
-                        <h3 className="font-semibold text-gray-900 text-base">Empleados a Evaluar *</h3>
+                        <UserCheck className="w-4 h-4 text-emerald-600" />
+                        <h3 className="font-semibold text-slate-900 text-sm">Empleados a Evaluar *</h3>
                       </div>
                       {selectedEmployees.length > 0 && (
-                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
                           {selectedEmployees.length} seleccionados
                         </span>
                       )}
                     </div>
 
-                    <div className="relative mb-4">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <div className="relative mb-3">
+                      <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                       <input
                         type="text"
                         placeholder="Buscar empleados..."
                         value={searchTermEmployees}
                         onChange={(e) => setSearchTermEmployees(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 text-sm"
+                        className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 bg-white"
                         disabled={loading}
                       />
                     </div>
 
                     <div className="max-h-80 overflow-y-auto space-y-2">
                       {filteredEmployeeUsers.length === 0 ? (
-                        <p className="text-gray-500 text-center py-6 text-sm">
+                        <p className="text-slate-500 text-center py-6 text-sm">
                           {evaluatorId 
                             ? 'No se encontraron empleados para evaluar' 
                             : 'Primero seleccione un evaluador'
@@ -534,10 +518,10 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
                         filteredEmployeeUsers.map(user => (
                           <div
                             key={user.id}
-                            className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
+                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
                               selectedEmployees.includes(user.id)
-                                ? 'bg-green-50 border-green-200'
-                                : 'hover:bg-gray-50 border-transparent'
+                                ? 'bg-emerald-50 border-emerald-200'
+                                : 'hover:bg-slate-50 border-transparent'
                             }`}
                             onClick={() => toggleEmployee(user.id)}
                           >
@@ -546,13 +530,13 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
                               checked={selectedEmployees.includes(user.id)}
                               onChange={() => toggleEmployee(user.id)}
                               disabled={loading}
-                              className="w-4 h-4 text-green-500 focus:ring-green-500"
+                              className="w-4 h-4 text-emerald-500 focus:ring-emerald-500"
                             />
                             <div className="flex-1 min-w-0">
-                              <p className="text-base font-medium text-gray-900 truncate">
+                              <p className="text-sm font-medium text-slate-900 truncate">
                                 {user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim()}
                               </p>
-                              <p className="text-sm text-gray-500 truncate">
+                              <p className="text-xs text-slate-500 truncate">
                                 {user.position || '—'} | {user.department || '—'}
                               </p>
                             </div>
@@ -566,31 +550,31 @@ const CrearEvaluacionModal: React.FC<CrearEvaluacionModalProps> = ({
 
               {/* Error Message */}
               {error && (
-                <div className="mt-6 flex items-start gap-3 bg-red-50 border border-red-200 p-4 rounded-xl">
-                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div className="mt-4 flex items-start gap-2 bg-red-50 border border-red-200 p-3 rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
                   <p className="text-red-600 text-sm">{error}</p>
                 </div>
               )}
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-6 mt-6 border-t border-gray-200">
+              <div className="flex gap-3 pt-4 mt-4 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-200 transition-colors font-medium disabled:opacity-50 text-base"
+                  className="flex-1 bg-slate-100 text-slate-700 py-2 px-4 rounded-lg text-sm hover:bg-slate-200 transition-colors font-medium disabled:opacity-50"
                   disabled={loading}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50 text-base"
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-sm hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
                   disabled={loading}
                 >
                   {loading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Save className="w-5 h-5" />
+                    <Save className="w-4 h-4" />
                   )}
                   Crear {selectedEmployees.length} Evaluacion{selectedEmployees.length !== 1 ? 'es' : ''}
                 </button>

@@ -7,21 +7,26 @@ export interface HRDashboardDTO {
   completed_evaluations: number;
   pending_evaluations: number;
   overdue_evaluations: number;
-  completion_rate: number; // Cambiado de completion_percentage a completion_rate
-  by_department: DepartmentStatsDTO[];
+  completion_rate: number;
+  department_stats: DepartmentStatsDTO[];
   by_period: PeriodStatsDTO[];
   top_performers: EmployeePerformanceDTO[];
   bottom_performers: EmployeePerformanceDTO[];
   overdue_evaluators: EvaluatorOverdueDTO[];
 }
 
-// Resto del archivo sin cambios
+
 export interface DepartmentStatsDTO {
+  department_id: number;
   department_name: string;
   total_evaluations: number;
   completed_evaluations: number;
   average_score: number;
   completion_rate: number;
+  pending_evaluations: number;
+  overdue_evaluations: number;
+  unique_employees: number;
+  period_name?: string;
 }
 
 export interface PeriodStatsDTO {
@@ -287,7 +292,7 @@ class DashboardServiceClass {
         return {
           totalEmployees: users.length,
           activeEmployees: users.filter(u => u.is_active).length,
-          totalDepartments: hrDashboard.by_department.length,
+          totalDepartments: hrDashboard.department_stats.length, // Fixed: changed from by_department
           totalPeriods: hrDashboard.by_period.length,
           activePeriods: hrDashboard.by_period.filter(p => p.completion_rate > 0).length,
           totalCriteria: criteria.length,
