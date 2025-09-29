@@ -47,7 +47,6 @@ import type {
   AverageByDepartmentResponseDTO,
   EmployeePerformanceResponseDTO,
   PendingByDepartmentResponseDTO,
-  AverageScoreByDepartment,
 } from "../types/evaluation";
 
 // Headers de autenticación
