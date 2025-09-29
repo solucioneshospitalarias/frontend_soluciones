@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage';
 import GestionEmpleadosPage from './pages/GestionEmpleadosPage';
 import GestionEvaluacionesPage from './pages/GestionEvaluacionesPage';
 import EvaluacionesPage from './pages/EvaluacionesPage';
+import OrganizationalConfigPage from './pages/OrganizationalConfigPage'; // ✅ NUEVO
 import Sidebar from './components/Sidebar';
 import { canAccessDashboard, getDefaultRouteByRole } from './utils/permissions';
 
@@ -15,13 +16,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
-// ✅ NUEVO: Componente que protege rutas administrativas
+// Componente que protege rutas administrativas
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const userRole = user?.role?.name?.toLowerCase() || '';
   
   if (!canAccessDashboard(userRole)) {
-    // Si no tiene permisos de admin, redirigir a su página por defecto
     const defaultRoute = getDefaultRouteByRole(userRole);
     return <Navigate to={defaultRoute} replace />;
   }
@@ -29,7 +29,21 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// ✅ NUEVO: Componente de redirección inteligente
+// ✅ NUEVO: Componente que protege rutas SOLO para admin
+const AdminOnlyRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuth();
+  const userRole = user?.role?.name?.toLowerCase() || '';
+  
+  // Solo admin puede acceder
+  if (userRole !== 'admin') {
+    const defaultRoute = getDefaultRouteByRole(userRole);
+    return <Navigate to={defaultRoute} replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+// Componente de redirección inteligente
 const SmartRedirect = () => {
   const { user } = useAuth();
   const userRole = user?.role?.name?.toLowerCase() || '';
@@ -98,7 +112,21 @@ const AppContent: React.FC = () => (
         }
       />
       
-      {/* ✅ MIS EVALUACIONES - Para employee, evaluator, supervisor */}
+      {/* ✅ NUEVO: CONFIGURACIÓN ORGANIZACIONAL - Solo para admin */}
+      <Route
+        path="/organizational-config"
+        element={
+          <ProtectedRoute>
+            <AdminOnlyRoute>
+              <MainLayout>
+                <OrganizationalConfigPage />
+              </MainLayout>
+            </AdminOnlyRoute>
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* ✅ MIS EVALUACIONES - Para TODOS los roles autenticados */}
       <Route
         path="/mis-evaluaciones"
         element={

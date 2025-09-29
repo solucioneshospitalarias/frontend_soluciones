@@ -139,7 +139,7 @@ const EvaluacionesPage: React.FC = () => {
     const config = getEstadoConfig(estado);
     
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${config.color}`}>
+      <span className={`inline-flex px-2.5 py-0.5 text-xs font-semibold rounded-full border ${config.color} transition-all`}>
         {config.texto}
       </span>
     );
@@ -159,16 +159,16 @@ const EvaluacionesPage: React.FC = () => {
   // Vista de error
   if (error) {
     return (
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+      <div className="p-4 bg-gray-50 min-h-screen">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 flex items-center gap-3 shadow-sm max-w-5xl mx-auto">
+          <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
           <div className="flex-1">
-            <p className="text-red-800 font-medium">Error al cargar las evaluaciones</p>
+            <p className="text-red-800 font-semibold text-base">Error al cargar las evaluaciones</p>
             <p className="text-red-600 text-sm">{error}</p>
           </div>
           <button
             onClick={limpiarError}
-            className="text-red-600 hover:text-red-800 transition-colors"
+            className="text-red-600 hover:text-red-800 transition-colors p-2 rounded-full hover:bg-red-100"
           >
             ✕
           </button>
@@ -189,46 +189,35 @@ const EvaluacionesPage: React.FC = () => {
   });
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="p-4 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Mis Evaluaciones</h1>
-            <p className="text-gray-600">Evaluaciones que debo realizar como evaluador</p>
-          </div>
-          <button 
-            onClick={() => console.log('Crear nueva evaluación')}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
-          >
-            <Target className="w-5 h-5" />
-            Nueva Evaluación
-          </button>
-        </div>
+      <div className="mb-8 max-w-5xl mx-auto">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2 font-sans">Mis Evaluaciones</h1>
+        <p className="text-gray-600 text-sm">Evaluaciones que debo realizar como evaluador</p>
       </div>
 
       {/* Loading State */}
       {cargando && (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center py-12 max-w-5xl mx-auto">
           <div className="text-center">
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-            <p className="text-gray-600">Cargando evaluaciones...</p>
+            <p className="text-gray-600 text-sm font-medium">Cargando evaluaciones...</p>
           </div>
         </div>
       )}
 
       {/* Main Content */}
       {!cargando && misEvaluaciones && (
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-5xl mx-auto">
           {/* Search and Filters */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Buscar por nombre de empleado o período..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm"
                   value={terminoBusqueda}
                   onChange={(e) => setTerminoBusqueda(e.target.value)}
                 />
@@ -238,7 +227,7 @@ const EvaluacionesPage: React.FC = () => {
                 <select
                   value={filtroEstado}
                   onChange={(e) => setFiltroEstado(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm font-medium"
                 >
                   <option value="todos">Todos los estados</option>
                   <option value="pending">Pendientes</option>
@@ -250,137 +239,134 @@ const EvaluacionesPage: React.FC = () => {
           </div>
 
           {/* Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition-all">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
                   <User className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">
                     {misEvaluaciones.as_evaluator.summary.total}
                   </p>
-                  <p className="text-gray-600 text-sm">Total Asignadas</p>
+                  <p className="text-gray-600 text-sm font-medium">Total Asignadas</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition-all">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-yellow-50 rounded-lg flex items-center justify-center">
                   <Clock className="w-6 h-6 text-yellow-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">
                     {misEvaluaciones.as_evaluator.summary.pending_to_evaluate}
                   </p>
-                  <p className="text-gray-600 text-sm">Por Calificar</p>
+                  <p className="text-gray-600 text-sm font-medium">Por Calificar</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition-all">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
                   <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">
                     {misEvaluaciones.as_evaluator.summary.completed}
                   </p>
-                  <p className="text-gray-600 text-sm">Completadas</p>
+                  <p className="text-gray-600 text-sm font-medium">Completadas</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Evaluations List */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900 font-sans">
                 Evaluaciones Asignadas ({evaluacionesFiltradas.length})
               </h3>
             </div>
-
-            {evaluacionesFiltradas.length === 0 ? (
-              <div className="text-center py-12">
-                <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg mb-2">No se encontraron evaluaciones</p>
-                <p className="text-gray-400 text-sm">
-                  {terminoBusqueda || filtroEstado !== 'todos'
-                    ? 'Prueba ajustando los filtros de búsqueda'
-                    : 'No tienes evaluaciones asignadas en este momento'
-                  }
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-200">
-                {evaluacionesFiltradas.map((evaluacion) => (
-                  <div key={evaluacion.id} className="p-6 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className="text-lg font-medium text-gray-900">
-                            {evaluacion.employee_name}
-                          </h4>
-                          <BadgeEstado estado={evaluacion.status} />
+            <div className="max-h-[600px] overflow-y-auto">
+              {evaluacionesFiltradas.length === 0 ? (
+                <div className="text-center py-12">
+                  <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 text-lg font-medium mb-2">No se encontraron evaluaciones</p>
+                  <p className="text-gray-400 text-sm">
+                    {terminoBusqueda || filtroEstado !== 'todos'
+                      ? 'Prueba ajustando los filtros de búsqueda'
+                      : 'No tienes evaluaciones asignadas en este momento'
+                    }
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {evaluacionesFiltradas.map((evaluacion) => (
+                    <div key={evaluacion.id} className="p-6 hover:bg-gray-50 transition-all">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h4 className="text-base font-semibold text-gray-900">
+                              {evaluacion.employee_name}
+                            </h4>
+                            <BadgeEstado estado={evaluacion.status} />
+                          </div>
+                          
+                          <div className="space-y-2 text-sm text-gray-600">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-gray-500" />
+                              <span>Período: {evaluacion.period_name}</span>
+                            </div>
+                            {evaluacion.completed_at && (
+                              <div className="flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4 text-gray-500" />
+                                <span>Completada: {new Date(evaluacion.completed_at).toLocaleDateString('es-ES')}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         
-                        <div className="space-y-1 text-sm text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4" />
-                            <span>Período: {evaluacion.period_name}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            <span>Período: {evaluacion.period_name}</span>
-                          </div>
-                          {evaluacion.completed_at && (
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="w-4 h-4" />
-                              <span>Completada: {new Date(evaluacion.completed_at).toLocaleDateString('es-ES')}</span>
-                            </div>
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 ml-4">
+                          {(evaluacion.status === 'pending' || evaluacion.status === 'pendiente' || evaluacion.status === 'overdue' || evaluacion.status === 'vencida' || evaluacion.status === 'atrasada') ? (
+                            <button
+                              onClick={() => handleRealizarEvaluacion(evaluacion.id)}
+                              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                                (evaluacion.status === 'overdue' || evaluacion.status === 'vencida' || evaluacion.status === 'atrasada')
+                                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+                              }`}
+                            >
+                              <Play className="w-4 h-4" />
+                              {(evaluacion.status === 'overdue' || evaluacion.status === 'vencida' || evaluacion.status === 'atrasada') ? 'CALIFICAR (ATRASADA)' : 'CALIFICAR AHORA'}
+                            </button>
+                          ) : (evaluacion.status === 'completed' || evaluacion.status === 'completada' || evaluacion.status === 'completado' || evaluacion.status === 'realizada') ? (
+                            <button 
+                              onClick={() => handleVerReporte(evaluacion.id)}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all"
+                            >
+                              <Eye className="w-4 h-4" />
+                              VER REPORTE
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleRealizarEvaluacion(evaluacion.id)}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-all"
+                            >
+                              <Play className="w-4 h-4" />
+                              EVALUAR
+                            </button>
                           )}
                         </div>
                       </div>
-                      
-                      {/* Action Buttons */}
-                      <div className="flex gap-2 ml-4">
-                        {(evaluacion.status === 'pending' || evaluacion.status === 'pendiente' || evaluacion.status === 'overdue' || evaluacion.status === 'vencida' || evaluacion.status === 'atrasada') ? (
-                          <button
-                            onClick={() => handleRealizarEvaluacion(evaluacion.id)}
-                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                              (evaluacion.status === 'overdue' || evaluacion.status === 'vencida' || evaluacion.status === 'atrasada')
-                                ? 'bg-red-600 hover:bg-red-700 text-white'
-                                : 'bg-blue-600 hover:bg-blue-700 text-white'
-                            }`}
-                          >
-                            <Play className="w-4 h-4" />
-                            {(evaluacion.status === 'overdue' || evaluacion.status === 'vencida' || evaluacion.status === 'atrasada') ? 'CALIFICAR (ATRASADA)' : 'CALIFICAR AHORA'}
-                          </button>
-                        ) : (evaluacion.status === 'completed' || evaluacion.status === 'completada' || evaluacion.status === 'completado' || evaluacion.status === 'realizada') ? (
-                          <button 
-                            onClick={() => handleVerReporte(evaluacion.id)}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
-                          >
-                            <Eye className="w-4 h-4" />
-                            VER REPORTE
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleRealizarEvaluacion(evaluacion.id)}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
-                          >
-                            <Play className="w-4 h-4" />
-                            EVALUAR
-                          </button>
-                        )}
-                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -2,22 +2,20 @@ import React from 'react';
 import {
   BarChart3,
   Users,
-  Calendar,
   Target,
-  FileText,
   LogOut,
   Menu,
   Activity,
   User,
+  Settings, // ✅ NUEVO ICONO
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import {
   canManageEmployees,
   canManageEvaluations,
-  canAccessEvaluatorView,
   canAccessDashboard,
-  canAccessReports,
+  canAccessMyEvaluations,
 } from '../utils/permissions';
 import soluciones from '../assets/soluciones-ico.png';
 
@@ -32,24 +30,33 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
   const location = useLocation();
   const userRole = user?.role?.name?.toLowerCase() || '';
 
+  // ✅ NUEVO: Función para verificar si es admin
+  const isAdmin = () => userRole === 'admin';
+
   const menuItems = [
+    // 1. Dashboard (admin, hr_manager, supervisor)
     ...(canAccessDashboard(userRole)
       ? [{ id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/dashboard' }]
       : []),
+    
+    // 2. Gestión de Empleados (admin, hr_manager)
     ...(canManageEmployees(userRole)
-      ? [{ id: 'employees', label: 'Gestión de empleados', icon: Users, path: '/employees' }]
+      ? [{ id: 'employees', label: 'Gestión de Empleados', icon: Users, path: '/employees' }]
       : []),
+    
+    // 3. Sistema de Evaluaciones (admin, hr_manager, supervisor)
     ...(canManageEvaluations(userRole)
-      ? [
-          { id: 'evaluaciones', label: 'Sistema de Evaluaciones', icon: Activity, path: '/evaluaciones' },
-          { id: 'periods', label: 'Gestión de períodos', icon: Calendar, path: '/periods' },
-        ]
+      ? [{ id: 'evaluaciones', label: 'Sistema de Evaluaciones', icon: Activity, path: '/evaluaciones' }]
       : []),
-    ...(canAccessEvaluatorView(userRole)
+    
+    // 4. ✅ NUEVO: Configuración Organizacional (solo admin)
+    ...(isAdmin()
+      ? [{ id: 'org-config', label: 'Configuración Organizacional', icon: Settings, path: '/organizational-config' }]
+      : []),
+    
+    // 5. Mis Evaluaciones (todos los roles)
+    ...(canAccessMyEvaluations(userRole)
       ? [{ id: 'my-evaluations', label: 'Mis Evaluaciones', icon: Target, path: '/mis-evaluaciones' }]
-      : []),
-    ...(canAccessReports(userRole)
-      ? [{ id: 'reports', label: 'Reportes y Análisis', icon: FileText, path: '/reports' }]
       : []),
   ];
 
