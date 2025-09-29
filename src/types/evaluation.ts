@@ -165,13 +165,16 @@ export interface EvaluacionParaCalificarDTO {
 export interface ResumenEvaluacionDTO {
   id: number;
   employee_name: string;
+  employee_position?: string;    // ✅ NUEVO
+  employee_department?: string;  // ✅ NUEVO  
   evaluator_name: string;
   period_name: string;
   status: string;
+  total_score?: number;          // ✅ NUEVO
+  weighted_score?: number;       // ✅ NUEVO
   completed_at?: string;
   due_date: string;
   employee_id: number;
-  weighted_score: number;
 }
 
 export interface MisEvaluacionesRespuestaDTO {
