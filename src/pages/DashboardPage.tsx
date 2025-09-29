@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Building2, Users, TrendingUp, Clock, CheckCircle,
-  AlertCircle, X, Download, ChevronRight, BarChart3,
-  Loader2, Calendar, Target, Award
+  Building2,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  ChevronRight,
+  BarChart3,
+  Loader2,
+  Target,
+  Award,
 } from 'lucide-react';
-import { useAuth } from '../context/authContext';
 import {
   getDepartments,
   getDepartmentPeriodStats,
@@ -12,10 +17,9 @@ import {
   calculateDepartmentPerformance,
   type Department,
   type DepartmentPeriodStats,
-  type DepartmentPerformance
+  type DepartmentPerformance,
 } from '../services/departmentService';
 import { getPeriods, type Period } from '../services/evaluationService';
-import { dashboardService, type HRDashboardDTO } from '../services/dashboardService';
 import VerReporteDepartamentoModal from '../components/VerReporteDepartamentoModal';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -27,6 +31,17 @@ interface DepartmentWithStats extends Department {
     pending: number;
   };
   employee_count?: number;
+}
+
+// Interface for Tooltip props
+interface TooltipProps {
+  payload?: {
+    name: string;
+    promedio: number;
+    completionRate: number;
+    completadas: number;
+    total: number;
+  };
 }
 
 // =============== COMPONENTES ===============
@@ -56,9 +71,9 @@ const DepartmentCard: React.FC<{
             </h3>
             {department.employee_count ? (
               <p className="text-xs text-gray-500">{department.employee_count} empleados</p>
-            ) : department.evaluation_stats && (
+            ) : department.evaluation_stats ? (
               <p className="text-xs text-gray-500">{department.evaluation_stats.total} evaluaciones</p>
-            )}
+            ) : null}
           </div>
         </div>
         <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
@@ -108,7 +123,7 @@ const DepartmentComparisonChart: React.FC<{
   const sortedData = [...data].sort((a, b) => b.promedio - a.promedio);
 
   // Prepara datos para Recharts
-  const chartData = sortedData.map(dept => ({
+  const chartData = sortedData.map((dept) => ({
     name: dept.name,
     promedio: dept.promedio,
     completionRate: dept.total > 0 ? (dept.completadas / dept.total) * 100 : 0,
@@ -194,9 +209,9 @@ const DepartmentComparisonChart: React.FC<{
                   fontSize: 12,
                   padding: '8px',
                 }}
-                formatter={(value: number, name: string, props: any) => [
-                  `Puntuación: ${value.toFixed(1)}%`,
-                  `Completitud: ${props.payload.completionRate.toFixed(1)}% (${props.payload.completadas}/${props.payload.total})`,
+                formatter={(_value: number, _name: string, props: TooltipProps) => [
+                  `Puntuación: ${props.payload?.promedio.toFixed(1)}%`,
+                  `Completitud: ${props.payload?.completionRate.toFixed(1)}% (${props.payload?.completadas}/${props.payload?.total})`,
                 ]}
                 labelStyle={{ color: '#fff', fontWeight: '600' }}
               />
@@ -207,7 +222,7 @@ const DepartmentComparisonChart: React.FC<{
                 animationDuration={1000}
                 animationEasing="ease-out"
               >
-                {chartData.map((entry, index) => (
+                {chartData.map((entry, _index) => (
                   <Bar
                     key={entry.name}
                     dataKey="promedio"
@@ -258,17 +273,15 @@ const DepartmentComparisonChart: React.FC<{
 
 // =============== COMPONENTE PRINCIPAL ===============
 const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
   const [departments, setDepartments] = useState<DepartmentWithStats[]>([]);
   const [periods, setPeriods] = useState<Period[]>([]);
-  const [dashboardData, setDashboardData] = useState<HRDashboardDTO | null>(null);
   const [departmentPerformance, setDepartmentPerformance] = useState<DepartmentPerformance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Estados del modal
   const [selectedDepartment, setSelectedDepartment] = useState<DepartmentWithStats | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<Period | null>(null);
+  const [_selectedPeriod, setSelectedPeriod] = useState<Period | null>(null);
   const [modalPeriod, setModalPeriod] = useState<Period | null>(null);
   const [departmentStats, setDepartmentStats] = useState<DepartmentPeriodStats | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
@@ -288,19 +301,16 @@ const DashboardPage: React.FC = () => {
     setError(null);
 
     try {
-      const [departmentsData, periodsData, dashboardResponse] = await Promise.all([
+      const [departmentsData, periodsData] = await Promise.all([
         getDepartments(),
         getPeriods(),
-        dashboardService.getHRDashboard(),
       ]);
 
       console.log('Departments:', departmentsData);
       console.log('Periods:', periodsData);
-      console.log('Dashboard data:', dashboardResponse);
 
       setDepartments(departmentsData);
       setPeriods(periodsData);
-      setDashboardData(dashboardResponse);
 
       const activePeriod = periodsData.find((p: Period) => p.is_active);
       let performanceData: DepartmentPerformance[] = [];
@@ -321,7 +331,7 @@ const DashboardPage: React.FC = () => {
 
       const departmentsWithStats: DepartmentWithStats[] = departmentsData.map((dept: Department) => {
         const stats = performanceData.find(
-          (d: DepartmentPerformance) => d.name.toLowerCase() === dept.name.toLowerCase()
+          (d: DepartmentPerformance) => d.name.toLowerCase() === dept.name.toLowerCase(),
         );
 
         return {
@@ -396,12 +406,14 @@ const DashboardPage: React.FC = () => {
 
     setExporting(true);
     try {
-      console.log(`Exporting report for department ${selectedDepartment.id} (${selectedDepartment.name}), period ${modalPeriod.id} (${modalPeriod.name})`);
+      console.log(
+        `Exporting report for department ${selectedDepartment.id} (${selectedDepartment.name}), period ${modalPeriod.id} (${modalPeriod.name})`,
+      );
       await downloadDepartmentReport(
         selectedDepartment.id,
         selectedDepartment.name,
         modalPeriod.id,
-        modalPeriod.name
+        modalPeriod.name,
       );
       console.log('Export completed successfully');
     } catch (err) {
@@ -416,10 +428,6 @@ const DashboardPage: React.FC = () => {
     setIsModalOpen(false);
     setSelectedDepartment(null);
     setDepartmentStats(null);
-  };
-
-  const handleRefresh = async () => {
-    await loadInitialData();
   };
 
   if (loading) {
@@ -454,7 +462,7 @@ const DashboardPage: React.FC = () => {
             <p className="text-xs text-gray-500 mb-4">Selecciona un departamento para ver detalles y reportes</p>
             <div className="max-h-[500px] overflow-y-auto rounded-lg pr-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {departments.map(department => (
+                {departments.map((department) => (
                   <DepartmentCard
                     key={department.id}
                     department={department}
