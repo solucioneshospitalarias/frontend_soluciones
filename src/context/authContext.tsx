@@ -1,4 +1,3 @@
-// src/context/authContext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 import type { AuthContextType, User } from '../types/auth';
@@ -12,7 +11,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
-         
+
     if (!token) {
       setIsLoading(false);
       return;
@@ -31,11 +30,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .getMe(token)
       .then((res) => {
         const userData = res.data || res; // Manejar ambas estructuras
+        console.log('📡 /me response:', userData); // Debug log for user data
         setUser(userData);
         localStorage.setItem('user', JSON.stringify(userData));
       })
       .catch(() => {
         localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token'); // Clear refresh_token on error
         localStorage.removeItem('user');
         setUser(null);
       })
@@ -46,14 +47,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const response = await authService.login(email, password);
     // ✅ CORRECCIÓN: extraer datos de la estructura del backend
     const { token, refresh_token, user } = response.data;
-    
+
     localStorage.setItem('token', token);
+    localStorage.setItem('refresh_token', refresh_token); // Store refresh_token
     localStorage.setItem('user', JSON.stringify(user));
     setUser(user);
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token'); // Clear refresh_token on logout
     localStorage.removeItem('user');
     setUser(null);
   };
