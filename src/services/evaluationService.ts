@@ -12,7 +12,6 @@ export type {
   UpdateTemplateDTO,
   CreateEvaluationsFromTemplateDTO,
   UpdatePeriodDTO,
-  UpdateCriteriaDTO,
   EvaluacionParaCalificarDTO,
   ResumenEvaluacionDTO,
   MisEvaluacionesRespuestaDTO,
@@ -131,7 +130,7 @@ export const updateCriteria = async (
     console.log("✅ Criteria updated:", data);
     return data;
   } catch (error) {
-    console.error("❌ Error updating criteria:", error);
+    console.error("❌ Error creating criteria:", error);
     throw error;
   }
 };
@@ -570,7 +569,7 @@ class ServicioEvaluaciones {
     return data.data || (data as T);
   }
 
-  private obtenerEstructuraPorDefecto(): MisEvaluacionesRespuestaDTO {
+  public getDefaultEvaluationsStructure(): MisEvaluacionesRespuestaDTO {
     return {
       as_employee: {
         evaluations: [],
@@ -583,7 +582,6 @@ class ServicioEvaluaciones {
     };
   }
 
-  // Restore getPeriods in the class to fix the error
   async getPeriods(): Promise<Period[]> {
     try {
       console.log("🔍 Fetching periods...");
@@ -615,9 +613,7 @@ class ServicioEvaluaciones {
     }
   }
 
-  async obtenerMisEvaluaciones(
-    filtros?: FiltrosEvaluacionParams
-  ): Promise<MisEvaluacionesRespuestaDTO> {
+  async obtenerMisEvaluaciones(filtros?: FiltrosEvaluacionParams): Promise<MisEvaluacionesRespuestaDTO> {
     try {
       console.log("🔍 Obteniendo mis evaluaciones...", filtros);
 
@@ -625,9 +621,7 @@ class ServicioEvaluaciones {
       if (filtros?.period_id) queryParams.append("period_id", filtros.period_id.toString());
       if (filtros?.status) queryParams.append("status", filtros.status);
 
-      const url = `${this.baseUrl}/me/evaluations${
-        queryParams.toString() ? "?" + queryParams.toString() : ""
-      }`;
+      const url = `${this.baseUrl}/me/evaluations${queryParams.toString() ? "?" + queryParams.toString() : ""}`;
       console.log("📡 URL:", url);
 
       const response = await fetch(url, {
@@ -635,52 +629,37 @@ class ServicioEvaluaciones {
         headers: this.obtenerHeadersAuth(),
       });
 
-      const data = await this.manejarRespuesta<ResumenEvaluacionDTO[]>(response);
-      console.log("✅ Raw evaluations from backend:", data);
+      const result = await response.json();
+      console.log("📡 Respuesta completa del backend:", result);
 
-      // Map the flat array to MisEvaluacionesRespuestaDTO, assuming all evaluations are for the evaluator
-      const estructuraCompleta: MisEvaluacionesRespuestaDTO = {
-        as_employee: {
-          evaluations: [],
-          summary: { total: 0, completed: 0, pending: 0 },
-        },
-        as_evaluator: {
-          evaluations: Array.isArray(data) ? data : [],
-          summary: {
-            total: Array.isArray(data) ? data.length : 0,
-            completed: Array.isArray(data)
-              ? data.filter((e) => e.status.toLowerCase() === "completada" || e.status.toLowerCase() === "completed").length
-              : 0,
-            pending_to_evaluate: Array.isArray(data)
-              ? data.filter(
-                  (e) =>
-                    e.status.toLowerCase() === "pendiente" ||
-                    e.status.toLowerCase() === "atrasada" ||
-                    e.status.toLowerCase() === "pending" ||
-                    e.status.toLowerCase() === "overdue"
-                ).length
-              : 0,
-          },
-        },
-      };
+      if (!response.ok || result.success === false) {
+        throw new ErrorEvaluacion(result.message || "Error en la operación", response.status);
+      }
 
-      console.log("✅ Mis evaluaciones procesadas:", estructuraCompleta);
-      return estructuraCompleta;
+      const data = result.data as MisEvaluacionesRespuestaDTO;
+
+      if (data.as_evaluator && data.as_evaluator.evaluations === null) {
+        data.as_evaluator.evaluations = [];
+      }
+      if (data.as_employee && data.as_employee.evaluations === null) {
+        data.as_employee.evaluations = [];
+      }
+
+      console.log("✅ Estructura procesada correctamente:", data);
+      return data;
     } catch (error) {
       console.error("❌ Error obteniendo mis evaluaciones:", error);
 
       if (error instanceof ErrorEvaluacion && error.status >= 500) {
         console.log("⚠️ Error del servidor, retornando estructura vacía");
-        return this.obtenerEstructuraPorDefecto();
+        return this.getDefaultEvaluationsStructure();
       }
 
       throw error;
     }
   }
 
-  async obtenerEvaluacionParaCalificar(
-    evaluacionId: number
-  ): Promise<EvaluacionParaCalificarDTO> {
+  async obtenerEvaluacionParaCalificar(evaluacionId: number): Promise<EvaluacionParaCalificarDTO> {
     try {
       console.log("🔍 Obteniendo evaluación para calificar:", evaluacionId);
 
@@ -698,10 +677,7 @@ class ServicioEvaluaciones {
     }
   }
 
-  async enviarPuntuaciones(
-    evaluacionId: number,
-    puntuaciones: PuntuacionCriterioDTO[]
-  ): Promise<void> {
+  async enviarPuntuaciones(evaluacionId: number, puntuaciones: PuntuacionCriterioDTO[]): Promise<void> {
     try {
       console.log("📤 Enviando puntuaciones para evaluación:", evaluacionId, puntuaciones);
 
@@ -725,9 +701,7 @@ class ServicioEvaluaciones {
     }
   }
 
-  async listarTodasLasEvaluaciones(
-    filtros?: FiltrosEvaluacionParams
-  ): Promise<ResumenEvaluacionDTO[]> {
+  async listarTodasLasEvaluaciones(filtros?: FiltrosEvaluacionParams): Promise<ResumenEvaluacionDTO[]> {
     try {
       console.log("🔍 Listando todas las evaluaciones...", filtros);
 
@@ -737,9 +711,7 @@ class ServicioEvaluaciones {
       if (filtros?.period_id) queryParams.append("period_id", filtros.period_id.toString());
       if (filtros?.status) queryParams.append("status", filtros.status);
 
-      const url = `${this.baseUrl}/evaluations${
-        queryParams.toString() ? "?" + queryParams.toString() : ""
-      }`;
+      const url = `${this.baseUrl}/evaluations${queryParams.toString() ? "?" + queryParams.toString() : ""}`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -778,9 +750,7 @@ class ServicioEvaluaciones {
       const queryParams = new URLSearchParams();
       if (periodId) queryParams.append("period_id", periodId.toString());
 
-      const url = `${this.baseUrl}/evaluations/average-by-department${
-        queryParams.toString() ? "?" + queryParams.toString() : ""
-      }`;
+      const url = `${this.baseUrl}/evaluations/average-by-department${queryParams.toString() ? "?" + queryParams.toString() : ""}`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -887,22 +857,13 @@ class ServicioEvaluaciones {
     return mapaColores[categoria] || "bg-gray-100 text-gray-800";
   }
 
-  validarPuntuaciones(
-    puntuaciones: Record<number, number>,
-    criteriosRequeridos: number[]
-  ): boolean {
+  validarPuntuaciones(puntuaciones: Record<number, number>, criteriosRequeridos: number[]): boolean {
     return criteriosRequeridos.every(
-      (criterioId) =>
-        puntuaciones[criterioId] !== undefined &&
-        puntuaciones[criterioId] >= 1 &&
-        puntuaciones[criterioId] <= 5
+      (criterioId) => puntuaciones[criterioId] !== undefined && puntuaciones[criterioId] >= 1 && puntuaciones[criterioId] <= 5
     );
   }
 
-  formatearPuntuacionesParaEnvio(
-    puntuaciones: Record<number, number>,
-    mapaAsignacion: Record<number, number>
-  ): PuntuacionCriterioDTO[] {
+  formatearPuntuacionesParaEnvio(puntuaciones: Record<number, number>, mapaAsignacion: Record<number, number>): PuntuacionCriterioDTO[] {
     return Object.entries(puntuaciones).map(([criterioId, puntuacion]) => ({
       assigned_criteria_id: mapaAsignacion[parseInt(criterioId)],
       score: puntuacion,
@@ -922,9 +883,13 @@ const downloadFile = (blob: Blob, filename: string): void => {
   window.URL.revokeObjectURL(url);
 };
 
-export const exportarReporteEvaluacion = async (evaluationId: number): Promise<void> => {
+export const exportarReporteEvaluacion = async (
+  evaluationId: number,
+  employeeName?: string,
+  periodName?: string
+): Promise<void> => {
   try {
-    console.log("🔄 Exportando reporte individual:", evaluationId);
+    console.log("🔄 Exportando reporte individual:", evaluationId, { employeeName, periodName });
     const response = await fetch(`${API_BASE_URL}/export/evaluations/${evaluationId}/report`, {
       method: "GET",
       headers: {
@@ -937,18 +902,14 @@ export const exportarReporteEvaluacion = async (evaluationId: number): Promise<v
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
-    const contentDisposition = response.headers.get("content-disposition");
-    let filename = `evaluacion_${evaluationId}.xlsx`;
-    if (contentDisposition) {
-      const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-      if (filenameMatch) {
-        filename = filenameMatch[1];
-      }
-    }
-
     const blob = await response.blob();
+    const date = new Date().toISOString().split('T')[0];
+    const employeeNameSafe = employeeName ? employeeName.replace(/\s+/g, '_') : `evaluacion_${evaluationId}`;
+    const periodSuffix = periodName ? `_${periodName.replace(/\s+/g, '_')}` : '';
+    const filename = `reporte_${employeeNameSafe}${periodSuffix}_${date}.xlsx`;
+
     downloadFile(blob, filename);
-    console.log("✅ Reporte exportado exitosamente");
+    console.log(`✅ Reporte exportado exitosamente: ${filename}`);
   } catch (error) {
     console.error("❌ Error exportando reporte:", error);
     throw error;
@@ -958,15 +919,12 @@ export const exportarReporteEvaluacion = async (evaluationId: number): Promise<v
 export const exportarEvaluacionesPeriodo = async (periodId: number): Promise<void> => {
   try {
     console.log("🔄 Exportando evaluaciones del período:", periodId);
-    const response = await fetch(
-      `${API_BASE_URL}/export/evaluations/export/period/${periodId}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/export/evaluations/export/period/${periodId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
