@@ -3,7 +3,7 @@ import { servicioEvaluaciones } from "../services/evaluationService";
 import type { MisEvaluacionesRespuestaDTO, ResumenEvaluacionDTO } from "../types/evaluation";
 
 interface RetornoUseEvaluaciones {
-  misEvaluaciones: MisEvaluacionesRespuestaDTO | null;
+  misEvaluaciones: MisEvaluacionesRespuestaDTO;
   cargando: boolean;
   error: string | null;
   limpiarError: () => void;
@@ -23,7 +23,9 @@ const getDefaultEvaluationsStructure = (): MisEvaluacionesRespuestaDTO => ({
 });
 
 export const useEvaluaciones = (): RetornoUseEvaluaciones => {
-  const [misEvaluaciones, setMisEvaluaciones] = useState<MisEvaluacionesRespuestaDTO | null>(null);
+  const [misEvaluaciones, setMisEvaluaciones] = useState<MisEvaluacionesRespuestaDTO>(
+    getDefaultEvaluationsStructure()
+  );
   const [cargando, setCargando] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +36,12 @@ export const useEvaluaciones = (): RetornoUseEvaluaciones => {
       console.log("🔍 Obteniendo mis evaluaciones...");
       const response = await servicioEvaluaciones.obtenerMisEvaluaciones();
       console.log("✅ Datos procesados en hook:", response);
-      setMisEvaluaciones(response);
+      // Ensure response has the correct structure
+      const normalizedResponse: MisEvaluacionesRespuestaDTO = {
+        as_employee: response.as_employee ?? { evaluations: [], summary: { total: 0, completed: 0, pending: 0 } },
+        as_evaluator: response.as_evaluator ?? { evaluations: [], summary: { total: 0, completed: 0, pending_to_evaluate: 0 } },
+      };
+      setMisEvaluaciones(normalizedResponse);
     } catch (err: any) {
       console.error("❌ Error al obtener evaluaciones:", err);
       setError(err.message || "Error al cargar las evaluaciones");
@@ -55,16 +62,13 @@ export const useEvaluaciones = (): RetornoUseEvaluaciones => {
 
   const obtenerEvaluacionesPorModo = useCallback(
     (modo: "evaluador" | "empleado"): ResumenEvaluacionDTO[] => {
-      if (!misEvaluaciones) {
-        console.warn("⚠️ misEvaluaciones es null, retornando array vacío");
-        return [];
-      }
+      console.log(`📋 Obteniendo evaluaciones para modo ${modo}...`);
       const evaluaciones =
         modo === "evaluador"
-          ? misEvaluaciones.as_evaluator.evaluations
-          : misEvaluaciones.as_employee.evaluations;
+          ? misEvaluaciones.as_evaluator?.evaluations ?? []
+          : misEvaluaciones.as_employee?.evaluations ?? [];
       console.log(`📋 Evaluaciones para modo ${modo}:`, evaluaciones);
-      return evaluaciones || [];
+      return evaluaciones;
     },
     [misEvaluaciones]
   );

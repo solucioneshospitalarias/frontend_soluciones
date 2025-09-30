@@ -13,7 +13,7 @@ interface VerReporteEvaluacionModalProps {
   show: boolean;
   evaluationId: number | null;
   onClose: () => void;
-  evaluation?: ResumenEvaluacionDTO; // Added to get employee_name and period_name for export
+  evaluation?: ResumenEvaluacionDTO | null; // Updated to allow null
 }
 
 const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({

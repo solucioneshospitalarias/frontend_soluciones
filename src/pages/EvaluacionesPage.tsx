@@ -35,7 +35,10 @@ const EvaluacionesPage: React.FC = () => {
 
   const [modalRealizarOpen, setModalRealizarOpen] = useState(false);
   const [modalReporteOpen, setModalReporteOpen] = useState(false);
-  const [evaluacionSeleccionada, setEvaluacionSeleccionada] = useState<number | null>(null);
+  const [evaluacionSeleccionada, setEvaluacionSeleccionada] = useState<{
+    id: number | null;
+    data: ResumenEvaluacionDTO | null;
+  }>({ id: null, data: null });
 
   // Initialize filter to show only pending evaluations
   useEffect(() => {
@@ -95,10 +98,10 @@ const EvaluacionesPage: React.FC = () => {
     (evaluacion: ResumenEvaluacionDTO) => {
       const coincideBusqueda =
         evaluacion.employee_name
-          .toLowerCase()
+          ?.toLowerCase()
           .includes(terminoBusqueda.toLowerCase()) ||
         evaluacion.period_name
-          .toLowerCase()
+          ?.toLowerCase()
           .includes(terminoBusqueda.toLowerCase());
       const normalizedStatus =
         evaluacion.status.toLowerCase() === "incomplete"
@@ -123,25 +126,28 @@ const EvaluacionesPage: React.FC = () => {
 
   const handleRealizarEvaluacion = (evaluacionId: number): void => {
     console.log("Abriendo evaluación ID:", evaluacionId);
-    setEvaluacionSeleccionada(evaluacionId);
+    setEvaluacionSeleccionada({ id: evaluacionId, data: null });
     setModalRealizarOpen(true);
   };
 
   const handleVerReporte = (evaluacionId: number): void => {
     console.log("Ver reporte de evaluación:", evaluacionId);
-    setEvaluacionSeleccionada(evaluacionId);
+    const selectedEval = evaluacionesComoEvaluador.find(
+      (evaluacion: ResumenEvaluacionDTO) => evaluacion.id === evaluacionId
+    );
+    setEvaluacionSeleccionada({ id: evaluacionId, data: selectedEval || null });
     setModalReporteOpen(true);
   };
 
   const handleEvaluacionCompletada = (): void => {
     refrescarEvaluaciones();
     setModalRealizarOpen(false);
-    setEvaluacionSeleccionada(null);
+    setEvaluacionSeleccionada({ id: null, data: null });
   };
 
   const handleReporteCerrado = (): void => {
     setModalReporteOpen(false);
-    setEvaluacionSeleccionada(null);
+    setEvaluacionSeleccionada({ id: null, data: null });
   };
 
   const handleToggleVerTodas = (): void => {
@@ -205,7 +211,7 @@ const EvaluacionesPage: React.FC = () => {
           </div>
         )}
 
-        {!cargando && misEvaluaciones && (
+        {!cargando && (
           <div className="flex flex-col flex-grow space-y-6">
             <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
@@ -398,17 +404,18 @@ const EvaluacionesPage: React.FC = () => {
 
             <RealizarEvaluacionModal
               show={modalRealizarOpen}
-              evaluationId={evaluacionSeleccionada}
+              evaluationId={evaluacionSeleccionada.id}
               onClose={() => {
                 setModalRealizarOpen(false);
-                setEvaluacionSeleccionada(null);
+                setEvaluacionSeleccionada({ id: null, data: null });
               }}
               onComplete={handleEvaluacionCompletada}
             />
 
             <VerReporteEvaluacionModal
               show={modalReporteOpen}
-              evaluationId={evaluacionSeleccionada}
+              evaluationId={evaluacionSeleccionada.id}
+              evaluation={evaluacionSeleccionada.data}
               onClose={handleReporteCerrado}
             />
           </div>
