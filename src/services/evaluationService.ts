@@ -60,6 +60,18 @@ export interface CreateSingleEvaluationResponse {
   evaluation_id: number;
 }
 
+// Interface for manual evaluations creation
+export interface CreateManualEvaluationsDTO {
+  period_id: number;
+  evaluator_id: number;
+  employee_ids: number[];
+  criteria: {
+    productivity: Array<{ criteria_id: number; weight: number }>;
+    work_conduct: Array<{ criteria_id: number; weight: number }>;
+    skills: Array<{ criteria_id: number; weight: number }>;
+  };
+}
+
 // Headers de autenticación
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
@@ -100,9 +112,10 @@ export const getCriteria = async (): Promise<Criteria[]> => {
     const data = await handleResponse<Criteria[]>(response);
     console.log("✅ Criteria loaded:", data);
     return Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error fetching criteria:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener criterios";
+    throw new Error(errorMessage);
   }
 };
 
@@ -120,9 +133,10 @@ export const createCriteria = async (
     const data = await handleResponse<Criteria>(response);
     console.log("✅ Criteria created:", data);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error creating criteria:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al crear criterios";
+    throw new Error(errorMessage);
   }
 };
 
@@ -141,9 +155,10 @@ export const updateCriteria = async (
     const data = await handleResponse<Criteria>(response);
     console.log("✅ Criteria updated:", data);
     return data;
-  } catch (error) {
-    console.error("❌ Error creating criteria:", error);
-    throw error;
+  } catch (error: unknown) {
+    console.error("❌ Error updating criteria:", error);
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al actualizar criterios";
+    throw new Error(errorMessage);
   }
 };
 
@@ -157,9 +172,10 @@ export const deleteCriteria = async (id: number): Promise<void> => {
 
     await handleResponse<void>(response);
     console.log("✅ Criteria deleted successfully");
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error deleting criteria:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al eliminar criterios";
+    throw new Error(errorMessage);
   }
 };
 
@@ -175,9 +191,10 @@ export const getPeriodById = async (id: number): Promise<Period> => {
     const data = await handleResponse<Period>(response);
     console.log("✅ Period loaded:", data);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error fetching period:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener período";
+    throw new Error(errorMessage);
   }
 };
 
@@ -196,9 +213,10 @@ export const createPeriod = async (
     console.log("✅ Period created:", data);
     console.log("📊 Created period structure:", JSON.stringify(data, null, 2));
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error creating period:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al crear período";
+    throw new Error(errorMessage);
   }
 };
 
@@ -217,9 +235,10 @@ export const updatePeriod = async (
     const data = await handleResponse<Period>(response);
     console.log("✅ Period updated:", data);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error updating period:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al actualizar período";
+    throw new Error(errorMessage);
   }
 };
 
@@ -242,9 +261,10 @@ export const togglePeriodStatus = async (id: number): Promise<Period> => {
 
     console.log("✅ Period status toggled (simulated):", mockPeriod);
     return mockPeriod;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error toggling period status:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al cambiar estado del período";
+    throw new Error(errorMessage);
   }
 };
 
@@ -258,9 +278,10 @@ export const deletePeriod = async (id: number): Promise<void> => {
 
     await handleResponse<void>(response);
     console.log("✅ Period deleted successfully");
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error deleting period:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al eliminar período";
+    throw new Error(errorMessage);
   }
 };
 
@@ -289,9 +310,10 @@ export const getPeriods = async (): Promise<Period[]> => {
 
     console.log("✅ Filtered periods:", filteredPeriods);
     return Array.isArray(filteredPeriods) ? filteredPeriods : [];
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error fetching periods:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener períodos";
+    throw new Error(errorMessage);
   }
 };
 
@@ -310,9 +332,10 @@ export const getTemplates = async (): Promise<Template[]> => {
       console.log(`📋 Template ${index + 1} criteria:`, template.criteria);
     });
     return Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error fetching templates:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener plantillas";
+    throw new Error(errorMessage);
   }
 };
 
@@ -328,9 +351,10 @@ export const getTemplateById = async (id: number): Promise<Template> => {
     console.log("✅ Template loaded:", data);
     console.log("📋 Template criteria:", data.criteria);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error fetching template:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener plantilla";
+    throw new Error(errorMessage);
   }
 };
 
@@ -348,9 +372,10 @@ export const createTemplate = async (
     const data = await handleResponse<Template>(response);
     console.log("✅ Template created:", data);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error creating template:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al crear plantilla";
+    throw new Error(errorMessage);
   }
 };
 
@@ -369,9 +394,10 @@ export const updateTemplate = async (
     const data = await handleResponse<Template>(response);
     console.log("✅ Template updated:", data);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error updating template:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al actualizar plantilla";
+    throw new Error(errorMessage);
   }
 };
 
@@ -385,9 +411,10 @@ export const deleteTemplate = async (id: number): Promise<void> => {
 
     await handleResponse<void>(response);
     console.log("✅ Template deleted successfully");
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error deleting template:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al eliminar plantilla";
+    throw new Error(errorMessage);
   }
 };
 
@@ -408,9 +435,10 @@ export const cloneTemplate = async (
     const data = await handleResponse<Template>(response);
     console.log("✅ Template cloned:", data);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error cloning template:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al clonar plantilla";
+    throw new Error(errorMessage);
   }
 };
 
@@ -426,9 +454,10 @@ export const getEvaluations = async (): Promise<Evaluation[]> => {
     const data = await handleResponse<Evaluation[]>(response);
     console.log("✅ Evaluations loaded:", data);
     return Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error fetching evaluations:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener evaluaciones";
+    throw new Error(errorMessage);
   }
 };
 
@@ -459,9 +488,10 @@ export const createEvaluationsFromTemplate = async (
     }>(response);
     console.log("✅ Evaluations created:", data);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error creating evaluations:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al crear evaluaciones desde plantilla";
+    throw new Error(errorMessage);
   }
 };
 
@@ -485,9 +515,10 @@ export const createSingleEvaluation = async (
     const data = await handleResponse<CreateSingleEvaluationResponse>(response);
     console.log("✅ Evaluation created:", data);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error creating evaluation:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al crear evaluación";
+    throw new Error(errorMessage);
   }
 };
 
@@ -501,9 +532,43 @@ export const deleteEvaluation = async (id: number): Promise<void> => {
 
     await handleResponse<void>(response);
     console.log("✅ Evaluation deleted successfully");
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error deleting evaluation:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al eliminar evaluación";
+    throw new Error(errorMessage);
+  }
+};
+
+// ==================== CREAR EVALUACIONES MANUALES ====================
+export const createManualEvaluations = async (
+  evaluationsData: CreateManualEvaluationsDTO
+): Promise<{ evaluatedEmployeeIds: number[]; count: number }> => {
+  try {
+    console.log("🔄 Creating manual evaluations...", evaluationsData);
+
+    const response = await fetch(`${API_BASE_URL}/evaluations/manual`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(evaluationsData),
+    });
+
+    const data = await handleResponse<{
+      created_count: number;
+      evaluated_employees: Array<{ employee_id: number; employee_name: string }>;
+      timestamp: string;
+    }>(response);
+
+    console.log("✅ Manual evaluations created:", data);
+
+    // Adaptar respuesta del backend al formato esperado por el frontend
+    return {
+      evaluatedEmployeeIds: data.evaluated_employees.map(e => e.employee_id),
+      count: data.created_count,
+    };
+  } catch (error: unknown) {
+    console.error("❌ Error creating manual evaluations:", error);
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al crear evaluaciones manuales";
+    throw new Error(errorMessage);
   }
 };
 
@@ -519,9 +584,10 @@ export const getEmployees = async (): Promise<Employee[]> => {
     const data = await handleResponse<Employee[]>(response);
     console.log("✅ Employees loaded:", data);
     return Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error fetching employees:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener empleados";
+    throw new Error(errorMessage);
   }
 };
 
@@ -536,9 +602,10 @@ export const getMyEvaluations = async (): Promise<Evaluation[]> => {
     const data = await handleResponse<Evaluation[]>(response);
     console.log("✅ My evaluations loaded:", data);
     return Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error fetching my evaluations:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener mis evaluaciones";
+    throw new Error(errorMessage);
   }
 };
 
@@ -552,9 +619,10 @@ export const deactivateItem = async (
 
     await new Promise((resolve) => setTimeout(resolve, 500));
     console.log(`✅ ${type} deactivated successfully (simulated)`);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(`❌ Error deactivating ${type}:`, error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : `Error desconocido al desactivar ${type}`;
+    throw new Error(errorMessage);
   }
 };
 
@@ -645,9 +713,10 @@ class ServicioEvaluaciones {
 
       console.log("✅ Filtered periods:", filteredPeriods);
       return Array.isArray(filteredPeriods) ? filteredPeriods : [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("❌ Error fetching periods:", error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener períodos";
+      throw new Error(errorMessage);
     }
   }
 
@@ -692,7 +761,7 @@ class ServicioEvaluaciones {
 
       console.log("✅ Estructura procesada correctamente:", data);
       return data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("❌ Error obteniendo mis evaluaciones:", error);
 
       if (error instanceof ErrorEvaluacion && error.status >= 500) {
@@ -700,7 +769,8 @@ class ServicioEvaluaciones {
         return this.getDefaultEvaluationsStructure();
       }
 
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener mis evaluaciones";
+      throw new Error(errorMessage);
     }
   }
 
@@ -716,9 +786,10 @@ class ServicioEvaluaciones {
       const data = await this.manejarRespuesta<EvaluacionParaCalificarDTO>(response);
       console.log("✅ Evaluación para calificar obtenida:", data);
       return data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("❌ Error obteniendo evaluación para calificar:", error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener evaluación para calificar";
+      throw new Error(errorMessage);
     }
   }
 
@@ -740,9 +811,10 @@ class ServicioEvaluaciones {
 
       await this.manejarRespuesta<void>(response);
       console.log("✅ Puntuaciones enviadas correctamente");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("❌ Error enviando puntuaciones:", error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al enviar puntuaciones";
+      throw new Error(errorMessage);
     }
   }
 
@@ -766,9 +838,10 @@ class ServicioEvaluaciones {
       const data = await this.manejarRespuesta<ResumenEvaluacionDTO[]>(response);
       console.log("✅ Todas las evaluaciones obtenidas:", data);
       return Array.isArray(data) ? data : [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("❌ Error listando todas las evaluaciones:", error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al listar evaluaciones";
+      throw new Error(errorMessage);
     }
   }
 
@@ -783,9 +856,10 @@ class ServicioEvaluaciones {
       const data = await this.manejarRespuesta<EvaluationListByPeriodResponseDTO[]>(response);
       console.log("✅ Evaluations by period loaded:", data);
       return Array.isArray(data) ? data : [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("❌ Error fetching evaluations by period:", error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener evaluaciones por período";
+      throw new Error(errorMessage);
     }
   }
 
@@ -805,9 +879,10 @@ class ServicioEvaluaciones {
       const data = await this.manejarRespuesta<AverageByDepartmentResponseDTO[]>(response);
       console.log("✅ Average scores by department loaded:", data);
       return Array.isArray(data) ? data : [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("❌ Error fetching average scores by department:", error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener promedios por departamento";
+      throw new Error(errorMessage);
     }
   }
 
@@ -822,9 +897,10 @@ class ServicioEvaluaciones {
       const data = await this.manejarRespuesta<EmployeePerformanceResponseDTO[]>(response);
       console.log("✅ Employee performance loaded:", data);
       return Array.isArray(data) ? data : [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("❌ Error fetching employee performance:", error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener rendimiento del empleado";
+      throw new Error(errorMessage);
     }
   }
 
@@ -839,9 +915,10 @@ class ServicioEvaluaciones {
       const data = await this.manejarRespuesta<PendingByDepartmentResponseDTO[]>(response);
       console.log("✅ Pending evaluations by department loaded:", data);
       return Array.isArray(data) ? data : [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("❌ Error fetching pending evaluations by department:", error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener evaluaciones pendientes por departamento";
+      throw new Error(errorMessage);
     }
   }
 
@@ -955,9 +1032,10 @@ export const exportarReporteEvaluacion = async (
 
     downloadFile(blob, filename);
     console.log(`✅ Reporte exportado exitosamente: ${filename}`);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error exportando reporte:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al exportar reporte";
+    throw new Error(errorMessage);
   }
 };
 
@@ -988,9 +1066,10 @@ export const exportarEvaluacionesPeriodo = async (periodId: number): Promise<voi
     const blob = await response.blob();
     downloadFile(blob, filename);
     console.log("✅ Evaluaciones del período exportadas exitosamente");
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ Error exportando evaluaciones del período:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido al exportar evaluaciones del período";
+    throw new Error(errorMessage);
   }
 };
 

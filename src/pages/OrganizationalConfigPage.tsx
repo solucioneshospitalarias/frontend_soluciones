@@ -1,4 +1,3 @@
-// src/pages/OrganizationalConfigPage.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Building2,
@@ -155,12 +154,12 @@ const OrganizationalConfigPage: React.FC = () => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showAssociationWarning, setShowAssociationWarning] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
-  const [deletingItem, setDeletingItem] = useState<any>(null);
+  const [editingItem, setEditingItem] = useState<Department | Position | null>(null);
+  const [deletingItem, setDeletingItem] = useState<Department | Position | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   
   // Estados de formulario
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<DepartmentFormData | PositionFormData>({ name: '', description: '' });
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -177,8 +176,10 @@ const OrganizationalConfigPage: React.FC = () => {
       ]);
       setDepartments(depts);
       setPositions(pos);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error loading data:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al cargar los datos';
+      setFormError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -186,7 +187,7 @@ const OrganizationalConfigPage: React.FC = () => {
 
   const handleCreate = () => {
     setEditingItem(null);
-    setFormData({});
+    setFormData({ name: '', description: '', ...(activeTab === 'positions' ? { department_id: 0 } : {}) });
     setFormError(null);
     setShowFormModal(true);
   };
@@ -216,12 +217,14 @@ const OrganizationalConfigPage: React.FC = () => {
       await loadData();
       setShowConfirmModal(false);
       setDeletingItem(null);
-    } catch (error: any) {
-      if (error.message === 'HAS_ASSOCIATIONS') {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error al eliminar';
+      if (errorMessage === 'HAS_ASSOCIATIONS') {
         setShowConfirmModal(false);
         setShowAssociationWarning(true);
       } else {
         console.error('Error deleting:', error);
+        setFormError(errorMessage);
       }
     } finally {
       setDeleteLoading(false);
@@ -235,23 +238,33 @@ const OrganizationalConfigPage: React.FC = () => {
 
     try {
       if (activeTab === 'departments') {
+        const departmentData: DepartmentFormData = {
+          name: formData.name,
+          description: formData.description,
+        };
         if (editingItem) {
-          await departmentService.update(editingItem.id, formData);
+          await departmentService.update(editingItem.id, departmentData);
         } else {
-          await departmentService.create(formData);
+          await departmentService.create(departmentData);
         }
       } else {
+        const positionData: PositionFormData = {
+          name: formData.name,
+          description: formData.description,
+          department_id: (formData as PositionFormData).department_id,
+        };
         if (editingItem) {
-          await positionService.update(editingItem.id, formData);
+          await positionService.update(editingItem.id, positionData);
         } else {
-          await positionService.create(formData);
+          await positionService.create(positionData);
         }
       }
       await loadData();
       setShowFormModal(false);
-      setFormData({});
-    } catch (error: any) {
-      setFormError(error.message || 'Error al procesar la solicitud');
+      setFormData({ name: '', description: '' });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error al procesar la solicitud';
+      setFormError(errorMessage);
     } finally {
       setFormLoading(false);
     }
@@ -486,7 +499,7 @@ const OrganizationalConfigPage: React.FC = () => {
                       Departamento <span className="text-red-500">*</span>
                     </label>
                     <select
-                      value={formData.department_id || ''}
+                      value={(formData as PositionFormData).department_id || ''}
                       onChange={(e) => setFormData({ ...formData, department_id: parseInt(e.target.value) })}
                       required
                       className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"

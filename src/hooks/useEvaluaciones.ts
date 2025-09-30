@@ -42,9 +42,11 @@ export const useEvaluaciones = (): RetornoUseEvaluaciones => {
         as_evaluator: response.as_evaluator ?? { evaluations: [], summary: { total: 0, completed: 0, pending_to_evaluate: 0 } },
       };
       setMisEvaluaciones(normalizedResponse);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("❌ Error al obtener evaluaciones:", err);
-      setError(err.message || "Error al cargar las evaluaciones");
+      // Verificar si err es un Error y tiene message
+      const errorMessage = err instanceof Error ? err.message : "Error al cargar las evaluaciones";
+      setError(errorMessage);
       setMisEvaluaciones(getDefaultEvaluationsStructure());
     } finally {
       setCargando(false);
