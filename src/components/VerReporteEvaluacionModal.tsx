@@ -7,22 +7,24 @@ import {
   getPerformanceLevel, 
   getProgressBarColor
 } from '../utils/numberFormatting';
-import type { EvaluacionParaCalificarDTO } from '../types/evaluation';
+import type { EvaluacionParaCalificarDTO, ResumenEvaluacionDTO } from '../types/evaluation';
 
 interface VerReporteEvaluacionModalProps {
   show: boolean;
   evaluationId: number | null;
   onClose: () => void;
+  evaluation?: ResumenEvaluacionDTO; // Added to get employee_name and period_name for export
 }
 
 const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
   show,
   evaluationId,
   onClose,
+  evaluation,
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [evaluation, setEvaluation] = useState<EvaluacionParaCalificarDTO | null>(null);
+  const [detailedEvaluation, setDetailedEvaluation] = useState<EvaluacionParaCalificarDTO | null>(null);
   const [exportingReport, setExportingReport] = useState(false);
 
   useEffect(() => {
@@ -45,7 +47,7 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
         console.log('🔍 Suma total de pesos:', totalWeight);
       }
       
-      setEvaluation(data);
+      setDetailedEvaluation(data);
     } catch (err) {
       const mensaje = err instanceof ErrorEvaluacion 
         ? err.message 
@@ -66,7 +68,17 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
     setError(null);
     try {
       console.log('🔄 Exportando reporte de evaluación ID:', evaluationId);
-      await exportarReporteEvaluacion(evaluationId);
+      const employeeName = evaluation 
+        ? evaluation.employee_name 
+        : detailedEvaluation 
+          ? `${detailedEvaluation.employee.first_name} ${detailedEvaluation.employee.last_name}` 
+          : `evaluacion_${evaluationId}`;
+      const periodName = evaluation 
+        ? evaluation.period_name 
+        : detailedEvaluation 
+          ? detailedEvaluation.period.name 
+          : '';
+      await exportarReporteEvaluacion(evaluationId, employeeName, periodName);
       console.log('✅ Reporte exportado correctamente');
     } catch (err) {
       const mensaje = err instanceof ErrorEvaluacion 
@@ -80,7 +92,7 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
   };
 
   const handleClose = () => {
-    setEvaluation(null);
+    setDetailedEvaluation(null);
     setError(null);
     onClose();
   };
@@ -88,18 +100,18 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
   if (!show) return null;
 
   // Corregir cálculo del porcentaje
-  let performancePercentage = evaluation?.performance_percentage ?? evaluation?.weighted_score ?? 0;
+  let performancePercentage = detailedEvaluation?.performance_percentage ?? detailedEvaluation?.weighted_score ?? 0;
   
-  if (performancePercentage > 100 && evaluation?.scores) {
-    const totalWeight = evaluation.scores.reduce((sum, score) => sum + score.weight, 0);
+  if (performancePercentage > 100 && detailedEvaluation?.scores) {
+    const totalWeight = detailedEvaluation.scores.reduce((sum, score) => sum + score.weight, 0);
     
     if (totalWeight > 100) {
-      performancePercentage = evaluation.scores.reduce((sum, score) => {
+      performancePercentage = detailedEvaluation.scores.reduce((sum, score) => {
         const normalizedWeight = (score.weight / totalWeight) * 100;
         return sum + ((score.score ?? 0) / 5) * normalizedWeight;
       }, 0);
     } else {
-      performancePercentage = evaluation.scores.reduce((sum, score) => {
+      performancePercentage = detailedEvaluation.scores.reduce((sum, score) => {
         return sum + ((score.score ?? 0) / 5) * score.weight;
       }, 0);
     }
@@ -116,17 +128,17 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
               <h2 className="text-2xl font-bold mb-2">
-                {evaluation ? `${evaluation.employee.first_name} ${evaluation.employee.last_name}` : 'Reporte de Evaluación'}
+                {detailedEvaluation ? `${detailedEvaluation.employee.first_name} ${detailedEvaluation.employee.last_name}` : 'Reporte de Evaluación'}
               </h2>
-              {evaluation && (
+              {detailedEvaluation && (
                 <div className="flex justify-center items-center gap-4 text-sm opacity-90">
-                  <span>{evaluation.employee.position}</span>
+                  <span>{detailedEvaluation.employee.position}</span>
                   <span>•</span>
-                  <span>{evaluation.period.name}</span>
+                  <span>{detailedEvaluation.period.name}</span>
                   <span>•</span>
-                  <span>Evaluador: {evaluation.evaluator.first_name} {evaluation.evaluator.last_name}</span>
+                  <span>Evaluador: {detailedEvaluation.evaluator.first_name} {detailedEvaluation.evaluator.last_name}</span>
                   <span>•</span>
-                  <span>{evaluation.completed_at ? new Date(evaluation.completed_at).toLocaleDateString('es-ES') : 'N/A'}</span>
+                  <span>{detailedEvaluation.completed_at ? new Date(detailedEvaluation.completed_at).toLocaleDateString('es-ES') : 'N/A'}</span>
                 </div>
               )}
             </div>
@@ -176,7 +188,7 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
             </div>
           )}
 
-          {evaluation && (
+          {detailedEvaluation && (
             <div className="grid grid-cols-4 gap-6">
               
               {/* Score Principal */}
@@ -187,13 +199,13 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
                   </div>
                   <div className="text-sm text-slate-500 mb-3">Puntaje Final</div>
                   <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${performanceStyle.bgColorClass} ${performanceStyle.textColorClass}`}>
-                    {evaluation.performance_level ?? performanceStyle.text}
+                    {detailedEvaluation.performance_level ?? performanceStyle.text}
                   </div>
                   <div className="mt-4 pt-4 border-t border-slate-200">
                     <div className="text-lg font-semibold text-slate-600">
                       {formatNumber(
-                        evaluation.scores ? 
-                        evaluation.scores.reduce((sum, s) => sum + (s.score ?? 0), 0) / evaluation.scores.length : 
+                        detailedEvaluation.scores ? 
+                        detailedEvaluation.scores.reduce((sum, s) => sum + (s.score ?? 0), 0) / detailedEvaluation.scores.length : 
                         0, 
                         1
                       )}
@@ -209,12 +221,12 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
                 
                 {/* Agrupar criterios por categoría */}
                 {(() => {
-                  const groupedCriteria = evaluation.scores?.reduce((groups, scoreItem) => {
+                  const groupedCriteria = detailedEvaluation.scores?.reduce((groups, scoreItem) => {
                     const category = scoreItem.criteria.category || 'otros';
                     if (!groups[category]) groups[category] = [];
                     groups[category].push(scoreItem);
                     return groups;
-                  }, {} as Record<string, typeof evaluation.scores>);
+                  }, {} as Record<string, typeof detailedEvaluation.scores>);
 
                   const categoryNames = {
                     'productividad': 'Productividad',
@@ -234,14 +246,13 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
                       <div className="grid grid-cols-2 gap-3">
                         {scores?.map((scoreItem) => {
                           const individualScorePercentage = ((scoreItem.score ?? 0) / 5) * 100;
-                          const totalWeight = evaluation.scores?.reduce((sum, s) => sum + s.weight, 0) ?? 100;
+                          const totalWeight = detailedEvaluation.scores?.reduce((sum, s) => sum + s.weight, 0) ?? 100;
                           const normalizedWeight = totalWeight > 100 ? (scoreItem.weight / totalWeight) * 100 : scoreItem.weight;
                           const normalizedContribution = totalWeight > 100 ? 
                             ((scoreItem.score ?? 0) / 5) * normalizedWeight : (scoreItem.contribution_points ?? scoreItem.weighted_score ?? 0);
                           
                           return (
                             <div key={scoreItem.id} className="border border-slate-200 rounded-lg p-3 bg-white">
-                              
                               {/* Header del criterio */}
                               <div className="flex justify-between items-start mb-2">
                                 <div className="flex-1 min-w-0">
@@ -296,12 +307,12 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
               </div>
 
               {/* Solo Comentarios Generales */}
-              {evaluation.general_comments && (
+              {detailedEvaluation.general_comments && (
                 <div className="col-span-4 mt-6">
                   <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
                     <h4 className="font-semibold text-slate-700 mb-2 text-sm">Comentarios Generales</h4>
                     <p className="text-sm text-slate-600 leading-relaxed">
-                      {evaluation.general_comments}
+                      {detailedEvaluation.general_comments}
                     </p>
                   </div>
                 </div>
