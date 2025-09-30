@@ -48,6 +48,18 @@ import type {
   PendingByDepartmentResponseDTO,
 } from "../types/evaluation";
 
+// Interface for single evaluation creation
+export interface CreateSingleEvaluationDTO {
+  template_id: number;
+  period_id: number;
+  evaluator_id: number;
+  employee_id: number;
+}
+
+export interface CreateSingleEvaluationResponse {
+  evaluation_id: number;
+}
+
 // Headers de autenticación
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
@@ -453,6 +465,32 @@ export const createEvaluationsFromTemplate = async (
   }
 };
 
+export const createSingleEvaluation = async (
+  evaluationData: CreateSingleEvaluationDTO
+): Promise<CreateSingleEvaluationResponse> => {
+  try {
+    console.log("🔄 Creating single evaluation...", evaluationData);
+    const backendPayload = {
+      template_id: evaluationData.template_id,
+      period_id: evaluationData.period_id,
+      evaluator_id: evaluationData.evaluator_id,
+      employee_id: evaluationData.employee_id,
+    };
+    console.log("📤 Backend payload:", backendPayload);
+    const response = await fetch(`${API_BASE_URL}/evaluations`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(backendPayload),
+    });
+    const data = await handleResponse<CreateSingleEvaluationResponse>(response);
+    console.log("✅ Evaluation created:", data);
+    return data;
+  } catch (error) {
+    console.error("❌ Error creating evaluation:", error);
+    throw error;
+  }
+};
+
 export const deleteEvaluation = async (id: number): Promise<void> => {
   try {
     console.log("🗑️ Deleting evaluation:", id);
@@ -490,7 +528,7 @@ export const getEmployees = async (): Promise<Employee[]> => {
 export const getMyEvaluations = async (): Promise<Evaluation[]> => {
   try {
     console.log("🔍 Fetching my evaluations...");
-    const response = await fetch(`${API_BASE_URL}/me/evaluations`, {
+    const response = await fetch(`${API_BASE_URL}/evaluations/me/evaluations`, {
       method: "GET",
       headers: getAuthHeaders(),
     });
@@ -614,57 +652,57 @@ class ServicioEvaluaciones {
   }
 
   async obtenerMisEvaluaciones(filtros?: FiltrosEvaluacionParams): Promise<MisEvaluacionesRespuestaDTO> {
-  try {
-    console.log("🔍 Obteniendo mis evaluaciones...", filtros);
+    try {
+      console.log("🔍 Obteniendo mis evaluaciones...", filtros);
 
-    const queryParams = new URLSearchParams();
-    if (filtros?.period_id) queryParams.append("period_id", filtros.period_id.toString());
-    if (filtros?.status) queryParams.append("status", filtros.status);
+      const queryParams = new URLSearchParams();
+      if (filtros?.period_id) queryParams.append("period_id", filtros.period_id.toString());
+      if (filtros?.status) queryParams.append("status", filtros.status);
 
-    const url = `${this.baseUrl}/me/evaluations${queryParams.toString() ? "?" + queryParams.toString() : ""}`;
-    console.log("📡 URL:", url);
+      const url = `${this.baseUrl}/evaluations/me/evaluations${queryParams.toString() ? "?" + queryParams.toString() : ""}`;
+      console.log("📡 URL:", url);
 
-    const response = await fetch(url, {
-      method: "GET",
-      headers: this.obtenerHeadersAuth(),
-    });
+      const response = await fetch(url, {
+        method: "GET",
+        headers: this.obtenerHeadersAuth(),
+      });
 
-    const result = await response.json();
-    console.log("📡 Respuesta completa del backend:", result);
+      const result = await response.json();
+      console.log("📡 Respuesta completa del backend:", result);
 
-    if (!response.ok || result.success === false) {
-      throw new ErrorEvaluacion(result.message || "Error en la operación", response.status);
+      if (!response.ok || result.success === false) {
+        throw new ErrorEvaluacion(result.message || "Error en la operación", response.status);
+      }
+
+      // CAMBIO CRÍTICO: Manejar cuando data es null (para admin/hr_manager)
+      if (result.data === null || result.data === undefined) {
+        console.log("⚠️ Backend devolvió null, retornando estructura vacía");
+        return this.getDefaultEvaluationsStructure();
+      }
+
+      const data = result.data as MisEvaluacionesRespuestaDTO;
+
+      // Asegurar que siempre haya arrays
+      if (data.as_evaluator && data.as_evaluator.evaluations === null) {
+        data.as_evaluator.evaluations = [];
+      }
+      if (data.as_employee && data.as_employee.evaluations === null) {
+        data.as_employee.evaluations = [];
+      }
+
+      console.log("✅ Estructura procesada correctamente:", data);
+      return data;
+    } catch (error) {
+      console.error("❌ Error obteniendo mis evaluaciones:", error);
+
+      if (error instanceof ErrorEvaluacion && error.status >= 500) {
+        console.log("⚠️ Error del servidor, retornando estructura vacía");
+        return this.getDefaultEvaluationsStructure();
+      }
+
+      throw error;
     }
-
-    // CAMBIO CRÍTICO: Manejar cuando data es null (para admin/hr_manager)
-    if (result.data === null || result.data === undefined) {
-      console.log("⚠️ Backend devolvió null, retornando estructura vacía");
-      return this.getDefaultEvaluationsStructure();
-    }
-
-    const data = result.data as MisEvaluacionesRespuestaDTO;
-
-    // Asegurar que siempre haya arrays
-    if (data.as_evaluator && data.as_evaluator.evaluations === null) {
-      data.as_evaluator.evaluations = [];
-    }
-    if (data.as_employee && data.as_employee.evaluations === null) {
-      data.as_employee.evaluations = [];
-    }
-
-    console.log("✅ Estructura procesada correctamente:", data);
-    return data;
-  } catch (error) {
-    console.error("❌ Error obteniendo mis evaluaciones:", error);
-    
-    if (error instanceof ErrorEvaluacion && error.status >= 500) {
-      console.log("⚠️ Error del servidor, retornando estructura vacía");
-      return this.getDefaultEvaluationsStructure();
-    }
-
-    throw error;
   }
-}
 
   async obtenerEvaluacionParaCalificar(evaluacionId: number): Promise<EvaluacionParaCalificarDTO> {
     try {
