@@ -35,13 +35,16 @@ interface DepartmentWithStats extends Department {
 
 // Interface for Tooltip props
 interface TooltipProps {
-  payload?: {
+  payload?: Array<{
     name: string;
-    promedio: number;
-    completionRate: number;
-    completadas: number;
-    total: number;
-  };
+    payload: {
+      name: string;
+      promedio: number;
+      completionRate: number;
+      completadas: number;
+      total: number;
+    };
+  }>;
 }
 
 // =============== COMPONENTES ===============
@@ -120,7 +123,8 @@ const DepartmentComparisonChart: React.FC<{
   onPeriodChange: (period: Period) => void;
   periods: Period[];
 }> = ({ data, selectedPeriod, onPeriodChange, periods }) => {
-  const sortedData = [...data].sort((a, b) => b.promedio - a.promedio);
+  // Verificar que data sea un arreglo válido
+  const sortedData = Array.isArray(data) ? [...data].sort((a, b) => b.promedio - a.promedio) : [];
 
   // Prepara datos para Recharts
   const chartData = sortedData.map((dept) => ({
@@ -141,7 +145,7 @@ const DepartmentComparisonChart: React.FC<{
   };
 
   return (
-    <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+    <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm h-[600px] flex flex-col">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -171,7 +175,7 @@ const DepartmentComparisonChart: React.FC<{
       </div>
 
       {chartData.length > 0 ? (
-        <div className="h-[280px]">
+        <div className="flex-1">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -210,8 +214,8 @@ const DepartmentComparisonChart: React.FC<{
                   padding: '8px',
                 }}
                 formatter={(_value: number, _name: string, props: TooltipProps) => [
-                  `Puntuación: ${props.payload?.promedio.toFixed(1)}%`,
-                  `Completitud: ${props.payload?.completionRate.toFixed(1)}% (${props.payload?.completadas}/${props.payload?.total})`,
+                  `Puntuación: ${props.payload && props.payload[0]?.payload?.promedio.toFixed(1)}%`,
+                  `Completitud: ${props.payload && props.payload[0]?.payload?.completionRate.toFixed(1)}% (${props.payload && props.payload[0]?.payload?.completadas}/${props.payload && props.payload[0]?.payload?.total})`,
                 ]}
                 labelStyle={{ color: '#fff', fontWeight: '600' }}
               />
@@ -222,9 +226,9 @@ const DepartmentComparisonChart: React.FC<{
                 animationDuration={1000}
                 animationEasing="ease-out"
               >
-                {chartData.map((entry, _index) => (
+                {chartData.map((entry, index) => (
                   <Bar
-                    key={entry.name}
+                    key={`${entry.name}-${index}`}
                     dataKey="promedio"
                     fill={getBarColor(entry.promedio)}
                   />
@@ -281,7 +285,7 @@ const DashboardPage: React.FC = () => {
 
   // Estados del modal
   const [selectedDepartment, setSelectedDepartment] = useState<DepartmentWithStats | null>(null);
-  const [_selectedPeriod, setSelectedPeriod] = useState<Period | null>(null);
+  const [selectedReportPeriod, setSelectedReportPeriod] = useState<Period | null>(null);
   const [modalPeriod, setModalPeriod] = useState<Period | null>(null);
   const [departmentStats, setDepartmentStats] = useState<DepartmentPeriodStats | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
@@ -316,7 +320,7 @@ const DashboardPage: React.FC = () => {
       let performanceData: DepartmentPerformance[] = [];
 
       if (activePeriod) {
-        setSelectedPeriod(activePeriod);
+        setSelectedReportPeriod(activePeriod);
         setModalPeriod(activePeriod);
         setChartPeriod(activePeriod);
 
@@ -359,7 +363,7 @@ const DashboardPage: React.FC = () => {
     setSelectedDepartment(department);
     setIsModalOpen(true);
 
-    const periodToUse = modalPeriod || periods[0];
+    const periodToUse = selectedReportPeriod || periods[0];
     if (periodToUse) {
       await loadDepartmentStats(department.id, periodToUse.id, department.name);
     }
@@ -384,6 +388,34 @@ const DashboardPage: React.FC = () => {
     setModalPeriod(period);
     if (selectedDepartment) {
       loadDepartmentStats(selectedDepartment.id, period.id, selectedDepartment.name);
+    }
+  };
+
+  const handleReportPeriodChange = async (period: Period) => {
+    setSelectedReportPeriod(period);
+    try {
+      const performanceData = await calculateDepartmentPerformance(period.id);
+      setDepartmentPerformance(performanceData);
+      const departmentsWithStats: DepartmentWithStats[] = departments.map((dept: Department) => {
+        const stats = performanceData.find(
+          (d: DepartmentPerformance) => d.name.toLowerCase() === dept.name.toLowerCase(),
+        );
+
+        return {
+          ...dept,
+          employee_count: stats ? stats.unique_employees : undefined,
+          evaluation_stats: stats
+            ? {
+                total: stats.total,
+                completed: stats.completadas,
+                pending: stats.pendientes,
+              }
+            : undefined,
+        };
+      });
+      setDepartments(departmentsWithStats);
+    } catch (err) {
+      console.error('Error updating report data:', err);
     }
   };
 
@@ -454,13 +486,28 @@ const DashboardPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Área de Reportes por Departamentos */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 h-[600px] flex flex-col">
             <div className="flex items-center gap-2 mb-4">
               <Building2 className="w-5 h-5 text-blue-600" />
               <h2 className="text-lg font-semibold text-gray-900">Reportes por Departamentos</h2>
             </div>
             <p className="text-xs text-gray-500 mb-4">Selecciona un departamento para ver detalles y reportes</p>
-            <div className="max-h-[500px] overflow-y-auto rounded-lg pr-2">
+            <select
+              value={selectedReportPeriod?.id || ''}
+              onChange={(e) => {
+                const period = periods.find((p: Period) => p.id === parseInt(e.target.value));
+                if (period) handleReportPeriodChange(period);
+              }}
+              className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:border-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all mb-4"
+            >
+              <option value="">📊 Todos los períodos</option>
+              {periods.map((period: Period) => (
+                <option key={period.id} value={period.id}>
+                  📅 {period.name}
+                </option>
+              ))}
+            </select>
+            <div className="max-h-[500px] overflow-y-auto rounded-lg pr-2 flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {departments.map((department) => (
                   <DepartmentCard
