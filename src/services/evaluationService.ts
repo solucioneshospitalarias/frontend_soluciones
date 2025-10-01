@@ -728,7 +728,8 @@ class ServicioEvaluaciones {
       if (filtros?.period_id) queryParams.append("period_id", filtros.period_id.toString());
       if (filtros?.status) queryParams.append("status", filtros.status);
 
-      const url = `${this.baseUrl}/evaluations/me/evaluations${queryParams.toString() ? "?" + queryParams.toString() : ""}`;
+      // ✅ CAMBIO: Ruta correcta sin /evaluations/ al inicio
+      const url = `${this.baseUrl}/me/evaluations${queryParams.toString() ? "?" + queryParams.toString() : ""}`;
       console.log("📡 URL:", url);
 
       const response = await fetch(url, {
@@ -736,10 +737,17 @@ class ServicioEvaluaciones {
         headers: this.obtenerHeadersAuth(),
       });
 
+      // ✅ IMPORTANTE: Verificar primero si la respuesta es OK antes de parsear JSON
+      if (!response.ok) {
+        console.error(`❌ Error HTTP: ${response.status}`);
+        // Si hay error 404 u otro, retornar estructura vacía
+        return this.getDefaultEvaluationsStructure();
+      }
+
       const result = await response.json();
       console.log("📡 Respuesta completa del backend:", result);
 
-      if (!response.ok || result.success === false) {
+      if (result.success === false) {
         throw new ErrorEvaluacion(result.message || "Error en la operación", response.status);
       }
 
