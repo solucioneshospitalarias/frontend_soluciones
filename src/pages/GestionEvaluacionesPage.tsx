@@ -4,16 +4,16 @@ import {
   Calendar,
   FileCheck,
   Plus,
-  Search,
-  Edit,
-  Trash2,
   Play,
-  X,
+  Search,
   BarChart3,
+  Edit,
+  Copy,
+  Trash2,
+  X,
   CheckCircle,
   TrendingUp,
   Activity,
-  Copy,
   Eye,
   RefreshCw,
   AlertCircle
@@ -38,7 +38,6 @@ import CrearPeriodoModal from '../components/CrearPeriodoModal';
 import CrearPlantillaModal from '../components/CrearPlantillaModal';
 import EditarPlantillaModal from '../components/EditarPlantillaModal';
 import ConfirmationModal from '../components/ConfirmationModal';
-import CrearEvaluacionModal from '../components/CrearEvaluacionModal';
 import EditarPeriodoModal from '../components/EditarPeriodoModal';
 import EditarCriterioModal from '../components/EditarCriterioModal';
 import VerPlantillaModal from '../components/VerPlantillaModal';
@@ -102,7 +101,6 @@ const GestionEvaluacionesPage: React.FC = () => {
   const [showCrearPeriodoModal, setShowCrearPeriodoModal] = useState(false);
   const [showCrearPlantillaModal, setShowCrearPlantillaModal] = useState(false);
   const [showEditarPlantillaModal, setShowEditarPlantillaModal] = useState(false);
-  const [showCrearEvaluacionModal, setShowCrearEvaluacionModal] = useState(false);
   const [showEditarPeriodoModal, setShowEditarPeriodoModal] = useState(false);
   const [showEditarCriterioModal, setShowEditarCriterioModal] = useState(false);
   const [showVerPlantillaModal, setShowVerPlantillaModal] = useState(false);
@@ -509,17 +507,6 @@ const GestionEvaluacionesPage: React.FC = () => {
     });
   };
 
-  const handleEvaluationCreated = (newEvaluations: { evaluatedEmployeeIds: number[]; count: number }) => {
-    loadAllData(); // Recargar todas las evaluaciones desde el backend
-    setShowCrearEvaluacionModal(false);
-    showConfirmation({
-      title: '¡Evaluaciones Creadas!',
-      message: `Se han creado ${newEvaluations.count} evaluaciones exitosamente.`,
-      type: 'success',
-      onConfirm: hideConfirmation
-    });
-  };
-
   // ==================== FUNCIÓN PARA LIMPIAR FILTROS ====================
   const clearFilters = () => {
     setSearchTerm('');
@@ -552,6 +539,7 @@ const GestionEvaluacionesPage: React.FC = () => {
       </div>
     </div>
   );
+
   // ==================== FUNCIÓN PARA RENDERIZAR CONTENIDO DE TABS ====================
   const renderTabContent = () => {
     switch (activeTab) {
@@ -1020,12 +1008,6 @@ const GestionEvaluacionesPage: React.FC = () => {
                   <p className="text-gray-600">Administración de evaluaciones creadas</p>
                 </div>
               </div>
-              <button
-                onClick={() => setShowCrearEvaluacionModal(true)}
-                className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-lg shadow-sm hover:from-orange-600 hover:to-orange-700 transition"
-              >
-                <Plus className="w-5 h-5" /> Nueva Evaluación
-              </button>
             </div>
 
             {/* Search */}
@@ -1058,7 +1040,7 @@ const GestionEvaluacionesPage: React.FC = () => {
                   <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p className="text-lg font-medium mb-2">{searchTerm ? 'No se encontraron evaluaciones con los filtros aplicados' : 'No hay evaluaciones'}</p>
                   <p className="text-sm text-center max-w-md mx-auto">
-                    Crea tu primera evaluación seleccionando una plantilla y generando evaluaciones para empleados específicos.
+                    No hay evaluaciones disponibles para visualizar.
                   </p>
                 </div>
               ) : (
@@ -1098,26 +1080,10 @@ const GestionEvaluacionesPage: React.FC = () => {
                           <button
                             onClick={() => console.log('View evaluation:', evaluation)}
                             className="p-2 hover:bg-blue-50 rounded-lg"
-                            title="Ver detalles"
+                            title="Ver evaluación"
                             disabled={isDeleting}
                           >
                             <Eye className="w-4 h-4 text-blue-600" />
-                          </button>
-                          <button
-                            onClick={() => console.log('Edit evaluation:', evaluation)}
-                            className="p-2 hover:bg-orange-50 rounded-lg"
-                            title="Editar evaluación"
-                            disabled={isDeleting}
-                          >
-                            <Edit className="w-4 h-4 text-orange-600" />
-                          </button>
-                          <button
-                            onClick={() => console.log('View report:', evaluation)}
-                            className="p-2 hover:bg-green-50 rounded-lg"
-                            title="Ver reporte"
-                            disabled={isDeleting}
-                          >
-                            <BarChart3 className="w-4 h-4 text-green-600" />
                           </button>
                           <button
                             onClick={() => handleDelete('evaluation', evaluation.id, evaluation.employee_name)}
@@ -1166,11 +1132,6 @@ const GestionEvaluacionesPage: React.FC = () => {
         }}
         onUpdated={handleTemplateUpdated}
         templateId={editingTemplateId}
-      />
-      <CrearEvaluacionModal
-        show={showCrearEvaluacionModal}
-        onClose={() => setShowCrearEvaluacionModal(false)}
-        onCreated={handleEvaluationCreated}
       />
       <EditarPeriodoModal
         show={showEditarPeriodoModal}
