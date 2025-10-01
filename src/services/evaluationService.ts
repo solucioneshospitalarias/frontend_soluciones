@@ -721,66 +721,58 @@ class ServicioEvaluaciones {
   }
 
   async obtenerMisEvaluaciones(filtros?: FiltrosEvaluacionParams): Promise<MisEvaluacionesRespuestaDTO> {
-    try {
-      console.log("🔍 Obteniendo mis evaluaciones...", filtros);
+  try {
+    console.log("🔍 Obteniendo mis evaluaciones...", filtros);
 
-      const queryParams = new URLSearchParams();
-      if (filtros?.period_id) queryParams.append("period_id", filtros.period_id.toString());
-      if (filtros?.status) queryParams.append("status", filtros.status);
+    const queryParams = new URLSearchParams();
+    if (filtros?.period_id) queryParams.append("period_id", filtros.period_id.toString());
+    if (filtros?.status) queryParams.append("status", filtros.status);
 
-      // ✅ CAMBIO: Ruta correcta sin /evaluations/ al inicio
-      const url = `${this.baseUrl}/me/evaluations${queryParams.toString() ? "?" + queryParams.toString() : ""}`;
-      console.log("📡 URL:", url);
+    const url = `${this.baseUrl}/me/evaluations${queryParams.toString() ? "?" + queryParams.toString() : ""}`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: this.obtenerHeadersAuth(),
+    });
 
-      const response = await fetch(url, {
-        method: "GET",
-        headers: this.obtenerHeadersAuth(),
-      });
-
-      // ✅ IMPORTANTE: Verificar primero si la respuesta es OK antes de parsear JSON
-      if (!response.ok) {
-        console.error(`❌ Error HTTP: ${response.status}`);
-        // Si hay error 404 u otro, retornar estructura vacía
-        return this.getDefaultEvaluationsStructure();
-      }
-
-      const result = await response.json();
-      console.log("📡 Respuesta completa del backend:", result);
-
-      if (result.success === false) {
-        throw new ErrorEvaluacion(result.message || "Error en la operación", response.status);
-      }
-
-      // CAMBIO CRÍTICO: Manejar cuando data es null (para admin/hr_manager)
-      if (result.data === null || result.data === undefined) {
-        console.log("⚠️ Backend devolvió null, retornando estructura vacía");
-        return this.getDefaultEvaluationsStructure();
-      }
-
-      const data = result.data as MisEvaluacionesRespuestaDTO;
-
-      // Asegurar que siempre haya arrays
-      if (data.as_evaluator && data.as_evaluator.evaluations === null) {
-        data.as_evaluator.evaluations = [];
-      }
-      if (data.as_employee && data.as_employee.evaluations === null) {
-        data.as_employee.evaluations = [];
-      }
-
-      console.log("✅ Estructura procesada correctamente:", data);
-      return data;
-    } catch (error: unknown) {
-      console.error("❌ Error obteniendo mis evaluaciones:", error);
-
-      if (error instanceof ErrorEvaluacion && error.status >= 500) {
-        console.log("⚠️ Error del servidor, retornando estructura vacía");
-        return this.getDefaultEvaluationsStructure();
-      }
-
-      const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener mis evaluaciones";
-      throw new Error(errorMessage);
+    if (!response.ok) {
+      console.warn("⚠️ Response not OK, returning default structure");
+      return this.getDefaultEvaluationsStructure();
     }
+
+    const result = await response.json();
+    console.log("📡 Respuesta raw del backend:", result);
+
+    // ✅ El backend devuelve la estructura completa
+    const data = result.data;
+
+    // Validar que data existe y tiene la estructura correcta
+    if (!data) {
+      console.warn("⚠️ data es null o undefined");
+      return this.getDefaultEvaluationsStructure();
+    }
+
+    // Asegurar que siempre haya arrays válidos
+    const estructuraCompleta: MisEvaluacionesRespuestaDTO = {
+      as_employee: {
+        evaluations: Array.isArray(data.as_employee?.evaluations) ? data.as_employee.evaluations : [],
+        summary: data.as_employee?.summary || { total: 0, completed: 0, pending: 0 },
+      },
+      as_evaluator: {
+        evaluations: Array.isArray(data.as_evaluator?.evaluations) ? data.as_evaluator.evaluations : [],
+        summary: data.as_evaluator?.summary || { total: 0, completed: 0, pending_to_evaluate: 0 },
+      },
+    };
+
+    console.log("✅ Estructura procesada:", estructuraCompleta);
+    console.log("📊 Como empleado:", estructuraCompleta.as_employee.evaluations.length);
+    console.log("📊 Como evaluador:", estructuraCompleta.as_evaluator.evaluations.length);
+
+    return estructuraCompleta;
+  } catch (error: unknown) {
+    console.error("❌ Error obteniendo mis evaluaciones:", error);
+    return this.getDefaultEvaluationsStructure();
   }
+}
 
   async obtenerEvaluacionParaCalificar(evaluacionId: number): Promise<EvaluacionParaCalificarDTO> {
     try {

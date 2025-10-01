@@ -11,7 +11,7 @@ import {
   Award,
 } from 'lucide-react';
 import servicioEvaluaciones, { ErrorEvaluacion } from '../services/evaluationService';
-import { roundTo } from '../utils/numberFormatting';
+import { roundTo, formatPercentage } from '../utils/numberFormatting'; // ✅ AGREGADO formatPercentage
 import type { EvaluacionParaCalificarDTO } from '../types/evaluation';
 
 interface RealizarEvaluacionModalProps {
@@ -245,7 +245,10 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
                         <p className="text-gray-600 text-sm leading-relaxed mb-2">{scoreItem.criteria.description}</p>
                         <div className="flex items-center gap-2">
                           <Award className="w-4 h-4 text-slate-600" />
-                          <span className="text-sm text-slate-600">Peso: {scoreItem.weight}%</span>
+                          {/* ✅ CAMBIO PRINCIPAL: Formatear el peso con 1 decimal */}
+                          <span className="text-sm text-slate-600">
+                            Peso: {formatPercentage(scoreItem.weight, true, 1)}
+                          </span>
                         </div>
                       </div>
                       {scores[scoreItem.id] > 0 && (
