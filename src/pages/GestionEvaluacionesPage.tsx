@@ -92,6 +92,7 @@ const GestionEvaluacionesPage: React.FC = () => {
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'todos' | string>('todos');
+  const [filtroEstado, setFiltroEstado] = useState<'todos' | 'pending' | 'completed' | 'overdue'>('todos');
   const [deletingItems, setDeletingItems] = useState<Set<number>>(new Set());
   const [cloningItems, setCloningItems] = useState<Set<number>>(new Set());
   const [showCrearEvaluacionDesdePlantillaModal, setShowCrearEvaluacionDesdePlantillaModal] = useState(false);
@@ -320,11 +321,14 @@ const GestionEvaluacionesPage: React.FC = () => {
   );
 
   const filteredEvaluations = useMemo(() =>
-    evaluations.filter(e =>
-      e.employee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      e.evaluator_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      e.period_name.toLowerCase().includes(searchTerm.toLowerCase())
-    ), [evaluations, searchTerm]
+    evaluations.filter(e => {
+      const matchesSearch =
+        e.employee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        e.evaluator_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        e.period_name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesState = filtroEstado === 'todos' || e.status === filtroEstado;
+      return matchesSearch && matchesState;
+    }), [evaluations, searchTerm, filtroEstado]
   );
 
   // ==================== FUNCIONES AUXILIARES ====================
@@ -340,6 +344,10 @@ const GestionEvaluacionesPage: React.FC = () => {
       default:
         return 'bg-blue-100 text-blue-700 border-blue-200';
     }
+  };
+
+  const formatCategory = (category: string) => {
+    return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
   const formatDate = (dateString: string) => {
@@ -514,6 +522,7 @@ const GestionEvaluacionesPage: React.FC = () => {
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedCategory('todos');
+    setFiltroEstado('todos');
   };
 
   // ==================== COMPONENTE STAT CARD ====================
@@ -653,7 +662,7 @@ const GestionEvaluacionesPage: React.FC = () => {
               >
                 {categories.map(c => (
                   <option key={c} value={c}>
-                    {c === 'todos' ? 'Todas las categorías' : c}
+                    {c === 'todos' ? 'Todas las categorías' : formatCategory(c)}
                   </option>
                 ))}
               </select>
@@ -683,13 +692,10 @@ const GestionEvaluacionesPage: React.FC = () => {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-semibold text-gray-900">{criterio.name}</h4>
-                        <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
-                          {Math.round(criterio.weight * 100)}%
-                        </span>
                       </div>
-                      <div className="text-sm text-gray-600 space-y-1">
-                        <p className="text-gray-600">{criterio.description}</p>
-                        <span className="bg-gray-100 px-2 py-1 rounded-md text-xs">{criterio.category}</span>
+                      <div className="text-sm text-gray-600 space-y-2">
+                        <span className="inline-block bg-gray-200 px-3 py-1 rounded-full text-sm font-medium text-gray-800">{formatCategory(criterio.category)}</span>
+                        <p className="text-gray-700 leading-relaxed">{criterio.description}</p>
                       </div>
                       <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
@@ -752,7 +758,7 @@ const GestionEvaluacionesPage: React.FC = () => {
               {filteredTemplates.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <FileCheck className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>{searchTerm ? 'No se encontraron plantillas con los filtros aplicados' : 'No hay plantillas configuradas'}</p>
+                  <p>{searchTerm ? 'No se encontraron plantillas con los filtros aplicados' : 'No hay plantillas configurados'}</p>
                 </div>
               ) : (
                 filteredTemplates.map(template => {
@@ -1008,12 +1014,12 @@ const GestionEvaluacionesPage: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="text-2xl font-semibold text-gray-900">Evaluaciones</h2>
-                  <p className="text-gray-600">Administración de evaluaciones creadas</p>
+                  <p className="text-gray-600">Lista de evaluaciones</p>
                 </div>
               </div>
             </div>
 
-            {/* Search */}
+            {/* Search and Filter */}
             <div className="flex gap-2 mb-4">
               <div className="relative flex-1">
                 <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
@@ -1025,7 +1031,17 @@ const GestionEvaluacionesPage: React.FC = () => {
                   onChange={e => setSearchTerm(e.target.value)}
                 />
               </div>
-              {searchTerm && (
+              <select
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                value={filtroEstado}
+                onChange={e => setFiltroEstado(e.target.value as 'todos' | 'pending' | 'completed' | 'overdue')}
+              >
+                <option value="todos">Todos los estados</option>
+                <option value="pending">Pendiente</option>
+                <option value="completed">Completada</option>
+                <option value="overdue">Vencida</option>
+              </select>
+              {(searchTerm || filtroEstado !== 'todos') && (
                 <button
                   onClick={clearFilters}
                   className="flex items-center gap-1 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
@@ -1060,7 +1076,7 @@ const GestionEvaluacionesPage: React.FC = () => {
                           <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(evaluation.status)}`}>
                             {evaluation.status === 'pending' ? 'Pendiente' :
                               evaluation.status === 'completed' ? 'Completada' :
-                                evaluation.status === 'overdue' ? 'Atrasada' : evaluation.status}
+                                evaluation.status === 'overdue' ? 'Vencida' : evaluation.status}
                           </span>
                         </div>
                         <div className="space-y-2 mb-4 text-sm text-gray-600">
