@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, User, Calendar, FileCheck, TrendingUp, CheckCircle, Clock } from 'lucide-react';
-import servicioEvaluaciones from '../services/evaluationService';
-import { formatPercentage } from '../utils/numberFormatting'; // ✅ IMPORTAR
+import { X, Loader2, User, Calendar, FileCheck, TrendingUp, CheckCircle, Clock, Download, Award } from 'lucide-react';
+import servicioEvaluaciones, { exportarReporteEvaluacion, ErrorEvaluacion } from '../services/evaluationService';
+import { formatPercentage, formatNumber, getPerformanceLevel } from '../utils/numberFormatting';
 import type { EvaluacionParaCalificarDTO, RespuestaPuntuacionDTO } from '../types/evaluation';
 
 interface VerEvaluacionModalProps {
@@ -18,6 +18,7 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
   const [evaluation, setEvaluation] = useState<EvaluacionParaCalificarDTO | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exportingReport, setExportingReport] = useState(false);
 
   useEffect(() => {
     if (show && evaluationId) {
@@ -35,7 +36,6 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
       const data = await servicioEvaluaciones.obtenerEvaluacionParaCalificar(evaluationId);
       setEvaluation(data);
     } catch (err: unknown) {
-      // Detectar si es un error 403 (evaluación vencida/no autorizada)
       const message = err instanceof Error ? err.message : 'Error al cargar la evaluación';
       
       if (message.includes('No autorizado') || message.includes('403')) {
@@ -45,6 +45,26 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportReport = async () => {
+    if (!evaluationId || !evaluation) return;
+    
+    setExportingReport(true);
+    setError(null);
+    
+    try {
+      const employeeName = `${evaluation.employee.first_name} ${evaluation.employee.last_name}`;
+      const periodName = evaluation.period.name;
+      await exportarReporteEvaluacion(evaluationId, employeeName, periodName);
+    } catch (err) {
+      const mensaje = err instanceof ErrorEvaluacion 
+        ? err.message 
+        : 'Error al exportar el reporte de evaluación';
+      setError(mensaje);
+    } finally {
+      setExportingReport(false);
     }
   };
 
@@ -101,21 +121,35 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
     return grouped;
   };
 
-  // ✅ NUEVO: Calcular el peso promedio por categoría
-  const calculateAverageWeightPerCategory = (): number => {
-    if (!evaluation || evaluation.scores.length === 0) return 0;
+  // Calcular puntaje final (solo si está completada)
+  const calculatePerformanceScore = (): number => {
+    if (!evaluation || !evaluation.scores) return 0;
 
-    const grouped = groupCriteriaByCategory();
-    const categoriesWithScores = Object.values(grouped).filter(scores => scores.length > 0);
+    // Si el backend ya lo calculó, usarlo
+    if (evaluation.performance_percentage !== undefined && evaluation.performance_percentage !== null) {
+      return evaluation.performance_percentage;
+    }
+
+    // Calcular manualmente
+    const totalWeight = evaluation.scores.reduce((sum, s) => sum + s.weight, 0);
     
-    if (categoriesWithScores.length === 0) return 0;
-
-    // Cada categoría suma 100%, entonces el promedio es 100%
-    return 100;
+    if (totalWeight > 100) {
+      // Normalizar pesos si suman más de 100
+      return evaluation.scores.reduce((sum, score) => {
+        const normalizedWeight = (score.weight / totalWeight) * 100;
+        return sum + ((score.score ?? 0) / 5) * normalizedWeight;
+      }, 0);
+    } else {
+      return evaluation.scores.reduce((sum, score) => {
+        return sum + ((score.score ?? 0) / 5) * score.weight;
+      }, 0);
+    }
   };
 
   const isCompleted = evaluation?.status === 'completed' || evaluation?.status === 'realizada';
   const isOverdue = evaluation?.status === 'overdue' || evaluation?.status === 'atrasada';
+  const performanceScore = isCompleted ? calculatePerformanceScore() : 0;
+  const performanceStyle = getPerformanceLevel(performanceScore);
 
   if (!show) return null;
 
@@ -133,12 +167,34 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
               <p className="text-sm text-gray-500">Vista completa de la evaluación</p>
             </div>
           </div>
-          <button
-            onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Botón Exportar (solo si está completada) */}
+            {isCompleted && (
+              <button
+                onClick={handleExportReport}
+                disabled={exportingReport}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              >
+                {exportingReport ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Exportando...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Exportar
+                  </>
+                )}
+              </button>
+            )}
+            <button
+              onClick={handleClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -193,6 +249,38 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* Puntaje Final (solo si está completada) */}
+              {isCompleted && (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
+                  <div className="flex items-center justify-center gap-6">
+                    <div className="flex items-center gap-3">
+                      <Award className="w-8 h-8 text-blue-600" />
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Puntaje Final</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-4xl font-bold text-gray-900">
+                            {formatNumber(performanceScore, 1)}%
+                          </span>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${performanceStyle.bgColorClass} ${performanceStyle.textColorClass}`}>
+                            {performanceStyle.text}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="h-16 w-px bg-gray-300"></div>
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600 mb-1">Promedio</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {formatNumber(
+                          evaluation.scores.reduce((sum, s) => sum + (s.score ?? 0), 0) / evaluation.scores.length,
+                          1
+                        )}<span className="text-lg text-gray-500">/5</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Info Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -256,7 +344,6 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
                           <div className="flex items-center justify-between">
                             <h4 className="font-medium text-sm">{getCategoryLabel(category)}</h4>
                             <span className="text-xs font-medium">
-                              {/* ✅ CORREGIDO: Formatear con 1 decimal */}
                               {scores.length} criterio{scores.length !== 1 ? 's' : ''} • {formatPercentage(totalWeight, false, 1)}%
                             </span>
                           </div>
@@ -275,7 +362,6 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
                                   </p>
                                 </div>
                                 <div className="flex flex-col items-end gap-2 ml-4">
-                                  {/* ✅ CORREGIDO: Usar formatPercentage */}
                                   <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium whitespace-nowrap">
                                     {formatPercentage(scoreItem.weight, true, 1)}
                                   </span>
@@ -297,7 +383,7 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
 
               {/* Summary Stats */}
               <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                   <div>
                     <p className="text-xs text-gray-600 mb-1">Total Criterios</p>
                     <p className="text-lg font-semibold text-gray-900">
@@ -307,7 +393,6 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
                   <div>
                     <p className="text-xs text-gray-600 mb-1">Categorías</p>
                     <p className="text-lg font-semibold text-gray-900">
-                      {/* ✅ CORREGIDO: Mostrar número de categorías en vez de suma de pesos */}
                       {Object.values(groupCriteriaByCategory()).filter(scores => scores.length > 0).length}
                     </p>
                   </div>
@@ -315,12 +400,6 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
                     <p className="text-xs text-gray-600 mb-1">Estado</p>
                     <p className="text-lg font-semibold text-gray-900">
                       {isCompleted ? 'Completada' : 'Pendiente'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-600 mb-1">ID Evaluación</p>
-                    <p className="text-lg font-semibold text-gray-900">
-                      #{evaluation.id}
                     </p>
                   </div>
                 </div>
