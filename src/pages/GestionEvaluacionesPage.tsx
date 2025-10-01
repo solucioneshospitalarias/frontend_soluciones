@@ -43,6 +43,7 @@ import EditarCriterioModal from '../components/EditarCriterioModal';
 import VerPlantillaModal from '../components/VerPlantillaModal';
 import ClonarPlantillaModal from '../components/ClonarPlantillaModal';
 import CrearEvaluacionDesdePlantillaModal from '../components/CrearEvaluacionDesdePlantillaModal';
+import VerEvaluacionModal from '../components/VerEvaluacionModal';
 
 interface Stats {
   totalPeriods: number;
@@ -95,6 +96,8 @@ const GestionEvaluacionesPage: React.FC = () => {
   const [cloningItems, setCloningItems] = useState<Set<number>>(new Set());
   const [showCrearEvaluacionDesdePlantillaModal, setShowCrearEvaluacionDesdePlantillaModal] = useState(false);
   const [selectedTemplateForEvaluation, setSelectedTemplateForEvaluation] = useState<Template | null>(null);
+  const [showVerEvaluacionModal, setShowVerEvaluacionModal] = useState(false);
+  const [viewingEvaluationId, setViewingEvaluationId] = useState<number | null>(null);
 
   // ==================== ESTADOS DE MODALES ====================
   const [showCrearCriterioModal, setShowCrearCriterioModal] = useState(false);
@@ -1078,7 +1081,10 @@ const GestionEvaluacionesPage: React.FC = () => {
                         </div>
                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
-                            onClick={() => console.log('View evaluation:', evaluation)}
+                            onClick={() => {
+                              setViewingEvaluationId(evaluation.id);
+                              setShowVerEvaluacionModal(true);
+                            }}
                             className="p-2 hover:bg-blue-50 rounded-lg"
                             title="Ver evaluación"
                             disabled={isDeleting}
@@ -1180,6 +1186,14 @@ const GestionEvaluacionesPage: React.FC = () => {
         onCreated={handleEvaluationFromTemplateCreated}
         template={selectedTemplateForEvaluation}
         setConfirmationState={setConfirmationState}
+      />
+      <VerEvaluacionModal
+        show={showVerEvaluacionModal}
+        onClose={() => {
+          setShowVerEvaluacionModal(false);
+          setViewingEvaluationId(null);
+        }}
+        evaluationId={viewingEvaluationId}
       />
       <ConfirmationModal
         show={confirmationState.show}
