@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, User, Calendar, FileCheck, TrendingUp, CheckCircle, Clock } from 'lucide-react';
 import servicioEvaluaciones from '../services/evaluationService';
+import { formatPercentage } from '../utils/numberFormatting'; // ✅ IMPORTAR
 import type { EvaluacionParaCalificarDTO, RespuestaPuntuacionDTO } from '../types/evaluation';
 
 interface VerEvaluacionModalProps {
@@ -34,8 +35,14 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
       const data = await servicioEvaluaciones.obtenerEvaluacionParaCalificar(evaluationId);
       setEvaluation(data);
     } catch (err: unknown) {
+      // Detectar si es un error 403 (evaluación vencida/no autorizada)
       const message = err instanceof Error ? err.message : 'Error al cargar la evaluación';
-      setError(message);
+      
+      if (message.includes('No autorizado') || message.includes('403')) {
+        setError('Esta evaluación no está disponible. Puede estar vencida o no tienes permisos para verla.');
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -79,25 +86,36 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
   };
 
   const groupCriteriaByCategory = () => {
-    if (!evaluation) return {};
+    if (!evaluation || !evaluation.scores) return {};
 
-    const grouped: Record<string, RespuestaPuntuacionDTO[]> = {
-      productividad: [],
-      conducta_laboral: [],
-      habilidades: [],
-    };
+    const grouped: Record<string, RespuestaPuntuacionDTO[]> = {};
 
     evaluation.scores.forEach((score) => {
-      const category = score.criteria.category;
-      if (category && grouped[category]) {
-        grouped[category].push(score);
+      const category = score.criteria.category || 'otros';
+      if (!grouped[category]) {
+        grouped[category] = [];
       }
+      grouped[category].push(score);
     });
 
     return grouped;
   };
 
-  const isCompleted = evaluation?.status === 'completed';
+  // ✅ NUEVO: Calcular el peso promedio por categoría
+  const calculateAverageWeightPerCategory = (): number => {
+    if (!evaluation || evaluation.scores.length === 0) return 0;
+
+    const grouped = groupCriteriaByCategory();
+    const categoriesWithScores = Object.values(grouped).filter(scores => scores.length > 0);
+    
+    if (categoriesWithScores.length === 0) return 0;
+
+    // Cada categoría suma 100%, entonces el promedio es 100%
+    return 100;
+  };
+
+  const isCompleted = evaluation?.status === 'completed' || evaluation?.status === 'realizada';
+  const isOverdue = evaluation?.status === 'overdue' || evaluation?.status === 'atrasada';
 
   if (!show) return null;
 
@@ -131,12 +149,26 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
               <p className="text-gray-600">Cargando evaluación...</p>
             </div>
           ) : error ? (
-            <div className="text-center py-12">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <X className="w-6 h-6 text-red-600" />
+            <div className="text-center py-12 px-6">
+              <div className="max-w-md mx-auto">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Clock className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="text-xl font-bold text-red-600 mb-3">Evaluación No Disponible</h3>
+                <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4 mb-4">
+                  <p className="text-red-800 font-medium text-base leading-relaxed">
+                    {error}
+                  </p>
+                </div>
+                <div className="text-sm text-gray-600 space-y-2">
+                  <p>Posibles razones:</p>
+                  <ul className="list-disc list-inside text-left space-y-1">
+                    <li>La evaluación ya venció su plazo</li>
+                    <li>No tienes permisos para acceder a ella</li>
+                    <li>El período de evaluación ha finalizado</li>
+                  </ul>
+                </div>
               </div>
-              <p className="text-red-600 font-medium mb-2">Error al cargar</p>
-              <p className="text-gray-600 text-sm">{error}</p>
             </div>
           ) : evaluation ? (
             <div className="space-y-6">
@@ -147,6 +179,11 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
                     <>
                       <CheckCircle className="w-5 h-5 text-green-600" />
                       <span className="text-green-600 font-medium">Evaluación Completada</span>
+                    </>
+                  ) : isOverdue ? (
+                    <>
+                      <Clock className="w-5 h-5 text-red-600" />
+                      <span className="text-red-600 font-medium">Evaluación Vencida - No se puede calificar</span>
                     </>
                   ) : (
                     <>
@@ -219,7 +256,8 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
                           <div className="flex items-center justify-between">
                             <h4 className="font-medium text-sm">{getCategoryLabel(category)}</h4>
                             <span className="text-xs font-medium">
-                              {scores.length} criterio{scores.length !== 1 ? 's' : ''} • {totalWeight.toFixed(0)}% del total
+                              {/* ✅ CORREGIDO: Formatear con 1 decimal */}
+                              {scores.length} criterio{scores.length !== 1 ? 's' : ''} • {formatPercentage(totalWeight, false, 1)}%
                             </span>
                           </div>
                         </div>
@@ -237,8 +275,9 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
                                   </p>
                                 </div>
                                 <div className="flex flex-col items-end gap-2 ml-4">
+                                  {/* ✅ CORREGIDO: Usar formatPercentage */}
                                   <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium whitespace-nowrap">
-                                    {(scoreItem.weight > 1 ? scoreItem.weight : scoreItem.weight * 100).toFixed(0)}%
+                                    {formatPercentage(scoreItem.weight, true, 1)}
                                   </span>
                                   {scoreItem.score !== undefined && scoreItem.score !== null && (
                                     <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
@@ -266,9 +305,10 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-600 mb-1">Peso Total</p>
+                    <p className="text-xs text-gray-600 mb-1">Categorías</p>
                     <p className="text-lg font-semibold text-gray-900">
-                      {evaluation.scores.reduce((sum, s) => sum + (s.weight > 1 ? s.weight : s.weight * 100), 0).toFixed(0)}%
+                      {/* ✅ CORREGIDO: Mostrar número de categorías en vez de suma de pesos */}
+                      {Object.values(groupCriteriaByCategory()).filter(scores => scores.length > 0).length}
                     </p>
                   </div>
                   <div>
