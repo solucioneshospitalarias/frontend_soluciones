@@ -125,6 +125,39 @@ const GestionEvaluacionesPage: React.FC = () => {
     loading: false
   });
 
+  // ==================== MAPPING DE ESTADOS API (ESPAÑOL) A FRONTEND (INGLÉS) ====================
+  const statusMap = {
+    'pendiente': 'pending',
+    'realizada': 'completed',
+    'atrasada': 'overdue',
+    'pending': 'pending',
+    'completed': 'completed',
+    'overdue': 'overdue',
+  } as const;
+
+  const mapApiStatusToFilter = (apiStatus: string): string => {
+    return statusMap[apiStatus as keyof typeof statusMap] || 'pending';
+  };
+
+  const getStatusDisplay = (status: string): string => {
+    switch (status) {
+      case 'pendiente':
+        return 'Pendiente';
+      case 'realizada':
+        return 'Realizada';
+      case 'atrasada':
+        return 'Atrasada';
+      case 'pending':
+        return 'Pendiente';
+      case 'completed':
+        return 'Realizada';
+      case 'overdue':
+        return 'Atrasada';
+      default:
+        return status;
+    }
+  };
+
   // ==================== FUNCIÓN AUXILIAR PARA CALCULAR PESOS ====================
   const calculateTemplateStats = (template: Template) => {
     let criteriaCount = 0;
@@ -221,6 +254,8 @@ const GestionEvaluacionesPage: React.FC = () => {
       ]);
 
       console.log('✅ All data loaded successfully');
+      console.log('📊 Evaluations loaded:', evaluationsData);
+
       setPeriods(Array.isArray(periodsData) ? periodsData : []);
       setCriteria(Array.isArray(criteriaData) ? criteriaData : []);
       setTemplates(Array.isArray(templatesData) ? templatesData : []);
@@ -320,25 +355,36 @@ const GestionEvaluacionesPage: React.FC = () => {
     ), [templates, searchTerm]
   );
 
-  const filteredEvaluations = useMemo(() =>
-    evaluations.filter(e => {
+  // ==================== FILTRO DE EVALUACIONES CON MAPPING DE ESTADOS ====================
+  const filteredEvaluations = useMemo(() => {
+    console.log('🔍 Filtering evaluations with searchTerm:', searchTerm, 'filtroEstado:', filtroEstado);
+    const result = evaluations.filter(e => {
       const matchesSearch =
         e.employee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         e.evaluator_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         e.period_name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesState = filtroEstado === 'todos' || e.status === filtroEstado;
+      
+      const normalizedStatus = mapApiStatusToFilter(e.status);
+      const matchesState = filtroEstado === 'todos' || normalizedStatus === filtroEstado;
+      
+      console.log(`Evaluation ID: ${e.id}, employee_name: "${e.employee_name}", status: "${e.status}" → normalized: "${normalizedStatus}", matchesSearch: ${matchesSearch}, matchesState: ${matchesState}`);
+      
       return matchesSearch && matchesState;
-    }), [evaluations, searchTerm, filtroEstado]
-  );
+    });
+    console.log('📊 Filtered Evaluations result:', result.length, 'evaluations:', result.map(e => ({ id: e.id, status: e.status })));
+    return result;
+  }, [evaluations, searchTerm, filtroEstado]);
 
   // ==================== FUNCIONES AUXILIARES ====================
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
+      case 'realizada':
       case 'completed':
         return 'bg-green-100 text-green-700 border-green-200';
+      case 'pendiente':
       case 'pending':
         return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'atrasada':
       case 'overdue':
         return 'bg-red-100 text-red-700 border-red-200';
       default:
@@ -1038,8 +1084,8 @@ const GestionEvaluacionesPage: React.FC = () => {
               >
                 <option value="todos">Todos los estados</option>
                 <option value="pending">Pendiente</option>
-                <option value="completed">Completada</option>
-                <option value="overdue">Vencida</option>
+                <option value="completed">Realizada</option>
+                <option value="overdue">Atrasada</option>
               </select>
               {(searchTerm || filtroEstado !== 'todos') && (
                 <button
@@ -1057,7 +1103,7 @@ const GestionEvaluacionesPage: React.FC = () => {
               {filteredEvaluations.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium mb-2">{searchTerm ? 'No se encontraron evaluaciones con los filtros aplicados' : 'No hay evaluaciones'}</p>
+                  <p className="text-lg font-medium mb-2">{searchTerm || filtroEstado !== 'todos' ? 'No se encontraron evaluaciones con los filtros aplicados' : 'No hay evaluaciones'}</p>
                   <p className="text-sm text-center max-w-md mx-auto">
                     No hay evaluaciones disponibles para visualizar.
                   </p>
@@ -1074,9 +1120,7 @@ const GestionEvaluacionesPage: React.FC = () => {
                         <div className="flex justify-between items-start mb-4">
                           <h3 className="font-semibold text-gray-900 text-lg">{evaluation.employee_name}</h3>
                           <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(evaluation.status)}`}>
-                            {evaluation.status === 'pending' ? 'Pendiente' :
-                              evaluation.status === 'completed' ? 'Completada' :
-                                evaluation.status === 'overdue' ? 'Vencida' : evaluation.status}
+                            {getStatusDisplay(evaluation.status)}
                           </span>
                         </div>
                         <div className="space-y-2 mb-4 text-sm text-gray-600">
