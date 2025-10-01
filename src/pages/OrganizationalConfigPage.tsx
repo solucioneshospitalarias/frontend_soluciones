@@ -359,7 +359,6 @@ const OrganizationalConfigPage: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900">{dept.name}</h3>
-                        <p className="text-xs text-gray-500">ID: {dept.id}</p>
                       </div>
                     </div>
                   </div>
@@ -404,7 +403,6 @@ const OrganizationalConfigPage: React.FC = () => {
                             </div>
                             <div>
                               <p className="font-medium text-gray-900">{pos.name}</p>
-                              <p className="text-xs text-gray-500">ID: {pos.id}</p>
                             </div>
                           </div>
                         </td>
