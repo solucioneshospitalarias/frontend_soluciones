@@ -342,10 +342,12 @@ const GestionEvaluacionesPage: React.FC = () => {
   );
 
   const filteredCriteria = useMemo(() =>
-    criteria.filter(c =>
-      c.description.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (selectedCategory === 'todos' || c.category === selectedCategory)
-    ), [criteria, searchTerm, selectedCategory]
+    criteria
+      .filter(c => c.is_active) // Solo criterios activos
+      .filter(c =>
+        c.description.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        (selectedCategory === 'todos' || c.category === selectedCategory)
+      ), [criteria, searchTerm, selectedCategory]
   );
 
   const filteredTemplates = useMemo(() =>
