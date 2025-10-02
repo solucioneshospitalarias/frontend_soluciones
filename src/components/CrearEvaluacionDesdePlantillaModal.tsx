@@ -151,7 +151,6 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
         description: `Inicia el ${formatDate(period.start_date)}`
       };
     } else {
-      // Este caso no debería ocurrir debido al filtrado en getPeriods
       return {
         icon: Clock,
         color: 'text-yellow-600',
@@ -364,7 +363,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl text-white">
+            <div className="p-3 bg-blue-600 rounded-xl text-white">
               <Users className="w-6 h-6" />
             </div>
             <div>
@@ -460,7 +459,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                         const status = getPeriodStatus(period);
                         return (
                           <option key={period.id} value={period.id}>
-                            {period.name} ({formatDate(period.start_date)} - {formatDate(period.due_date)}) - {status.label}
+                            {period.name} ({formatDate(period.start_date)} - {formatDate(period.due_date)}) - {status.label} {period.description ? `- ${period.description}` : ''}
                           </option>
                         );
                       })}
@@ -479,6 +478,9 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                               <div className="flex-1 min-w-0">
                                 <span className="font-medium text-gray-900 truncate">{period.name}</span>
                                 <span className={`ml-2 ${status.color}`}>({status.label})</span>
+                                {period.description && (
+                                  <span className="block text-gray-500 truncate">{period.description}</span>
+                                )}
                               </div>
                             </div>
                           );
