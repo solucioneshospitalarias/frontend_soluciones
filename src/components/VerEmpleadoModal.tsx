@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, AlertCircle, Loader2, Mail, Building, Briefcase, Calendar, CreditCard, UserCheck, UserX, User } from 'lucide-react';
+import { X, AlertCircle, Loader2, Mail, Building, Briefcase, Calendar, CreditCard, User } from 'lucide-react';
 import { getUserById } from '../services/userService';
 import type { User as UserType } from '../types/user';
 

@@ -11,7 +11,7 @@ import {
   Award,
 } from 'lucide-react';
 import servicioEvaluaciones, { ErrorEvaluacion } from '../services/evaluationService';
-import { roundTo, formatPercentage } from '../utils/numberFormatting'; // ✅ AGREGADO formatPercentage
+import { roundTo, formatPercentage } from '../utils/numberFormatting'; 
 import type { EvaluacionParaCalificarDTO } from '../types/evaluation';
 
 interface RealizarEvaluacionModalProps {

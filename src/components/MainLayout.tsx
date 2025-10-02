@@ -1,4 +1,3 @@
-// src/components/MainLayout.tsx
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 

@@ -1,6 +1,3 @@
-// src/components/CrearPeriodoModal.tsx
-// ✅ Modal sin toggle de estado - estado automático basado en fechas
-
 import React, { useState } from 'react';
 import { Calendar, X, Loader2, Plus, Info } from 'lucide-react';
 import { createPeriod } from '../services/evaluationService';

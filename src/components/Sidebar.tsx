@@ -7,7 +7,7 @@ import {
   Menu,
   Activity,
   User,
-  Settings, // ✅ NUEVO ICONO
+  Settings, 
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/authContext';

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, X, AlertCircle, Loader } from 'lucide-react';
 import servicioEvaluaciones, { ErrorEvaluacion } from '../services/evaluationService';
-import type { EvaluacionParaCalificarDTO } from '../types/evaluation'; // Reuse type for report, or create a new one
+import type { EvaluacionParaCalificarDTO } from '../types/evaluation';
 
 interface VerReporteModalProps {
   show: boolean;

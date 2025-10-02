@@ -1,4 +1,3 @@
-// src/components/EditarCriterioModal.tsx
 import React, { useState, useEffect } from 'react';
 import { updateCriteria, getCriteria } from '../services/evaluationService';
 import type { Criteria, UpdateCriteriaDTO } from '../types/evaluation';
