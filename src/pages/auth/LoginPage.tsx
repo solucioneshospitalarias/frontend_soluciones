@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { authService } from '../services/authService';
-import type { ChangePasswordRequest } from '../services/authService';
+import { authService } from '../../services/authService';
+import type { ChangePasswordRequest } from '../../services/authService';
 
 interface FormData {
   current_password: string;
