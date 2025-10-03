@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   BarChart3,
   Users,
+  Activity,
   Target,
+  Settings,
   LogOut,
   Menu,
-  Activity,
-  User,
-  Settings, 
+  ChevronDown,
+  Lock,
+  User as UserIcon,
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
@@ -22,39 +24,50 @@ import soluciones from '../assets/soluciones-ico.png';
 interface SidebarProps {
   isOpen: boolean;
   toggle: () => void;
+  onOpenChangePassword: () => void; // ← Nueva prop para abrir modal
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle, onOpenChangePassword }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const userRole = user?.role?.name?.toLowerCase() || '';
 
-  // ✅ NUEVO: Función para verificar si es admin
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar menú al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const isAdmin = () => userRole === 'admin';
 
+  // ✅ ORDEN MEJORADO: Dashboard > Evaluaciones > Empleados > Mis Evaluaciones
   const menuItems = [
-    // 1. Dashboard (admin, hr_manager, supervisor)
     ...(canAccessDashboard(userRole)
       ? [{ id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/dashboard' }]
       : []),
     
-    // 2. Gestión de Empleados (admin, hr_manager)
-    ...(canManageEmployees(userRole)
-      ? [{ id: 'employees', label: 'Gestión de Empleados', icon: Users, path: '/employees' }]
-      : []),
-    
-    // 3. Sistema de Evaluaciones (admin, hr_manager, supervisor)
     ...(canManageEvaluations(userRole)
       ? [{ id: 'evaluaciones', label: 'Sistema de Evaluaciones', icon: Activity, path: '/evaluaciones' }]
       : []),
     
-    // 4. ✅ NUEVO: Configuración Organizacional (solo admin)
+    ...(canManageEmployees(userRole)
+      ? [{ id: 'employees', label: 'Gestión de Empleados', icon: Users, path: '/employees' }]
+      : []),
+    
     ...(isAdmin()
       ? [{ id: 'org-config', label: 'Configuración Organizacional', icon: Settings, path: '/organizational-config' }]
       : []),
     
-    // 5. Mis Evaluaciones (todos los roles)
     ...(canAccessMyEvaluations(userRole)
       ? [{ id: 'my-evaluations', label: 'Mis Evaluaciones', icon: Target, path: '/mis-evaluaciones' }]
       : []),
@@ -64,11 +77,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
     return user?.role?.name ? user.role.name.toUpperCase() : 'ROL';
   };
 
+  const handleChangePassword = () => {
+    setShowUserMenu(false);
+    onOpenChangePassword();
+  };
+
   return (
     <>
       <button
         onClick={toggle}
-        className="fixed top-4 left-4 z-50 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-all duration-200"
+        className="fixed top-4 left-4 z-50 bg-white p-2 rounded-lg shadow-md hover:bg-gray-50 transition-colors"
       >
         <Menu className="w-6 h-6 text-[#56B167]" />
       </button>
@@ -79,20 +97,50 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
         }`}
       >
         <div className="p-4">
+          {/* Logo */}
           <div className="flex justify-center mb-6">
             <img src={soluciones} alt="Logo Soluciones" className="w-16 h-16 object-contain" />
           </div>
 
-          <div className="flex items-center gap-3 mb-6 px-4">
-            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-              <User className="w-6 h-6 text-[#56B167]" />
-            </div>
-            <div>
-              <p className="text-white font-semibold text-sm truncate">{user?.first_name || 'Usuario'}</p>
-              <p className="text-gray-200 text-xs">{getRoleName()}</p>
-            </div>
+          {/* Menú de Usuario con Dropdown */}
+          <div ref={menuRef} className="relative mb-6">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center justify-between w-full px-4 py-3 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                  <UserIcon className="w-6 h-6 text-[#56B167]" />
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="text-white font-medium text-sm truncate">
+                    {user?.first_name || 'Usuario'}
+                  </p>
+                  <p className="text-white/70 text-xs">{getRoleName()}</p>
+                </div>
+              </div>
+              <ChevronDown
+                className={`w-4 h-4 text-white/70 transition-transform flex-shrink-0 ${
+                  showUserMenu ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            {/* Dropdown Menu */}
+            {showUserMenu && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg py-1 z-50">
+                <button
+                  onClick={handleChangePassword}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <Lock className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm">Cambiar contraseña</span>
+                </button>
+              </div>
+            )}
           </div>
 
+          {/* Navegación Principal */}
           <nav className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -101,15 +149,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
                 <button
                   key={item.id}
                   onClick={() => navigate(item.path)}
-                  className={`flex items-center w-full px-4 py-2 rounded-lg transition-all text-left ${
+                  className={`flex items-center w-full px-4 py-2.5 rounded-lg transition-all text-left ${
                     isActive
-                      ? 'bg-white text-[#56B167] font-semibold shadow-sm'
-                      : 'text-white hover:bg-[#479254]'
+                      ? 'bg-white text-[#56B167] font-medium shadow-sm'
+                      : 'text-white hover:bg-white/10'
                   }`}
                 >
-                  <Icon
-                    className={`w-5 h-5 mr-2 ${isActive ? 'text-[#56B167]' : 'text-white'}`}
-                  />
+                  <Icon className="w-5 h-5 mr-3" />
                   <span className="text-sm">{item.label}</span>
                 </button>
               );
@@ -117,13 +163,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
           </nav>
         </div>
 
+        {/* Botón de Cerrar Sesión */}
         <div className="p-4">
           <button
             onClick={() => {
               logout();
               navigate('/login');
             }}
-            className="flex items-center justify-center w-full bg-white text-[#56B167] py-2 rounded-lg font-semibold hover:bg-gray-100 transition-all duration-200"
+            className="flex items-center justify-center w-full bg-white text-[#56B167] py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors"
           >
             <LogOut className="w-5 h-5 mr-2" />
             Cerrar Sesión
