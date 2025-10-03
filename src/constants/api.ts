@@ -3,6 +3,7 @@ export const API_CONFIG = {
   ENDPOINTS: {
     LOGIN: '/auth/login',
     ME: '/me',
+    CHANGE_PASSWORD: '/me/change-password',
     USERS: '/users',
     REFERENCES: {
       FORMS: '/references/forms',
