@@ -1,223 +1,242 @@
 import React, { useState } from 'react';
-import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { authService } from '../../services/authService';
-import type { ChangePasswordRequest } from '../../services/authService';
+import { useNavigate } from 'react-router-dom';
+import type { FormEvent } from 'react';
+import { User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { useAuth } from '../../context/authContext';
+import type { LoginError } from '../../types/auth';
+import logo from '../../assets/soluciones-logo.png';
+import handshake from '../../assets/login-image.jpg';
+import { AxiosError } from 'axios'; // Import AxiosError for type safety
 
-interface FormData {
-  current_password: string;
-  new_password: string;
-  confirm_password: string;
+// Tipos para el componente
+interface LoginFormData {
+  email: string;
+  password: string;
 }
 
-const ProfilePage: React.FC = () => {
-  const [formData, setFormData] = useState<FormData>({
-    current_password: '',
-    new_password: '',
-    confirm_password: '',
+// Tipo para el error de Axios (si usas Axios)
+interface ApiErrorResponse {
+  message?: string;
+  [key: string]: unknown;
+}
+
+const LoginPage: React.FC = () => {
+  const [formData, setFormData] = useState<LoginFormData>({
+    email: '',
+    password: '',
   });
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<LoginError | null>(null);
 
-  const [showPasswords, setShowPasswords] = useState({
-    current: false,
-    new: false,
-    confirm: false,
-  });
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const handleInputChange = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
-    if (message) setMessage(null);
+  // Función para manejar cambios en los inputs
+  const handleInputChange = (field: keyof LoginFormData) => (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: e.target.value,
+    }));
+    if (error) setError(null);
   };
 
-  const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
-    setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
+  // Función para obtener mensaje de error basado en la respuesta
+  const getErrorMessage = (error: AxiosError<ApiErrorResponse>): LoginError => {
+    if (error.response?.status === 403 || error.response?.status === 401) {
+      return {
+        message: 'Credenciales incorrectas. Verifica tu correo y contraseña.',
+        type: 'error',
+      };
+    }
+    if (error.response?.status && error.response.status >= 500) {
+      return {
+        message: 'Servicio temporalmente no disponible. Intenta más tarde.',
+        type: 'warning',
+      };
+    }
+    return {
+      message:
+        error.response?.data?.message ||
+        'Error al iniciar sesión. Verifica tus credenciales.',
+      type: 'error',
+    };
   };
 
-  const validateForm = (): string | null => {
-    if (!formData.current_password) return 'La contraseña actual es requerida';
-    if (!formData.new_password) return 'La nueva contraseña es requerida';
-    if (formData.new_password.length < 6) return 'La nueva contraseña debe tener al menos 6 caracteres';
-    if (formData.new_password === formData.current_password) return 'La nueva contraseña debe ser diferente a la actual';
-    if (formData.new_password !== formData.confirm_password) return 'Las contraseñas no coinciden';
-    return null;
+  // Validación simple del formulario
+  const validateForm = (): boolean => {
+    if (!formData.email.trim()) {
+      setError({
+        message: 'El correo electrónico es requerido.',
+        type: 'warning',
+      });
+      return false;
+    }
+    if (!formData.password.trim()) {
+      setError({
+        message: 'La contraseña es requerida.',
+        type: 'warning',
+      });
+      return false;
+    }
+    return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Manejo del submit del formulario
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const validationError = validateForm();
-    if (validationError) {
-      setMessage({ type: 'error', text: validationError });
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
-    setMessage(null);
+    setError(null);
 
     try {
-      const requestData: ChangePasswordRequest = {
-        current_password: formData.current_password,
-        new_password: formData.new_password,
-      };
-
-      await authService.changePassword(requestData);
-
-      setMessage({ type: 'success', text: 'Contraseña cambiada exitosamente' });
-      setFormData({ current_password: '', new_password: '', confirm_password: '' });
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || error.message || 'Error al cambiar la contraseña';
-      setMessage({ type: 'error', text: errorMessage });
+      await login(formData.email, formData.password);
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(getErrorMessage(err as AxiosError<ApiErrorResponse>));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Mi Perfil</h1>
-          <p className="text-gray-600 mt-2">Gestiona la seguridad de tu cuenta</p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-4xl w-full">
+        <div className="flex">
+          {/* Sección del Formulario */}
+          <div className="w-full lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center">
+            <div className="max-w-md mx-auto w-full">
+              {/* Logo */}
+              <div className="flex justify-center mb-6">
+                <img src={logo} alt="Logo Soluciones SAS" className="h-16 object-contain" />
+              </div>
 
-        {/* Card de Cambiar Contraseña */}
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <Lock className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800">Cambiar Contraseña</h2>
-              <p className="text-sm text-gray-600">Actualiza tu contraseña periódicamente para mayor seguridad</p>
+              {/* Encabezado */}
+              <div className="text-center mb-8">
+                <h1 className="text-3xl font-bold text-[#56B167] mb-2">Bienvenido</h1>
+                <p className="text-gray-600">Inicia sesión para acceder a tu panel de control</p>
+              </div>
+
+              {/* Mensaje de Error */}
+              {error && (
+                <div
+                  className={`flex items-center gap-3 p-4 mb-6 rounded-lg text-sm ${
+                    error.type === 'error'
+                      ? 'bg-red-50 border border-red-200 text-red-700'
+                      : 'bg-amber-50 border border-amber-200 text-amber-700'
+                  }`}
+                >
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <span>{error.message}</span>
+                </div>
+              )}
+
+              {/* Formulario */}
+              <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+                {/* Campo Email */}
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Correo Electrónico
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleInputChange('email')}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#56B167] focus:border-transparent transition-all outline-none"
+                      placeholder="Ingresa tu correo electrónico"
+                      disabled={loading}
+                      autoComplete="email"
+                    />
+                  </div>
+                </div>
+
+                {/* Campo Contraseña */}
+                <div>
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Contraseña
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={handleInputChange('password')}
+                      className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#56B167] focus:border-transparent transition-all outline-none"
+                      placeholder="••••••••"
+                      disabled={loading}
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
+                      disabled={loading}
+                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Botón de Submit */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full bg-gradient-to-r from-[#56B167] to-[#479254] text-white py-3 px-4 rounded-lg font-semibold hover:from-[#479254] hover:to-[#367244] focus:outline-none focus:ring-2 focus:ring-[#56B167] focus:ring-offset-2 transform transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none ${
+                    !loading ? 'hover:scale-105' : ''
+                  }`}
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Iniciando sesión...
+                    </div>
+                  ) : (
+                    'Iniciar Sesión'
+                  )}
+                </button>
+              </form>
             </div>
           </div>
 
-          {/* Mensaje de éxito/error */}
-          {message && (
-            <div
-              className={`flex items-center gap-3 p-4 mb-6 rounded-lg ${
-                message.type === 'success'
-                  ? 'bg-green-50 border border-green-200 text-green-700'
-                  : 'bg-red-50 border border-red-200 text-red-700'
-              }`}
-            >
-              {message.type === 'success' ? (
-                <CheckCircle className="w-5 h-5 flex-shrink-0" />
-              ) : (
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              )}
-              <span className="text-sm">{message.text}</span>
-            </div>
-          )}
-
-          {/* Formulario */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Contraseña Actual */}
-            <div>
-              <label htmlFor="current_password" className="block text-sm font-medium text-gray-700 mb-2">
-                Contraseña Actual *
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  id="current_password"
-                  type={showPasswords.current ? 'text' : 'password'}
-                  value={formData.current_password}
-                  onChange={handleInputChange('current_password')}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all outline-none"
-                  placeholder="Ingresa tu contraseña actual"
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePasswordVisibility('current')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  disabled={loading}
-                >
-                  {showPasswords.current ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
+          {/* Sección de Imagen - Solo en desktop */}
+          <div className="hidden lg:block lg:w-1/2 relative">
+            <img
+              src={handshake}
+              alt="Imagen de bienvenida - Profesionales trabajando"
+              className="object-cover w-full h-full"
+            />
+            <div className="absolute inset-0 bg-[#56B167]/75 flex items-center justify-center p-8">
+              <div className="text-center text-white max-w-md">
+                <h2 className="text-3xl font-bold mb-4 leading-tight">
+                  Gestiona y evalúa el <span className="text-yellow-300">talento de tu equipo</span>{' '}
+                  de manera eficiente
+                </h2>
+                <p className="text-green-100 text-lg">
+                  Herramientas modernas para el desarrollo profesional
+                </p>
               </div>
             </div>
-
-            {/* Nueva Contraseña */}
-            <div>
-              <label htmlFor="new_password" className="block text-sm font-medium text-gray-700 mb-2">
-                Nueva Contraseña *
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  id="new_password"
-                  type={showPasswords.new ? 'text' : 'password'}
-                  value={formData.new_password}
-                  onChange={handleInputChange('new_password')}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all outline-none"
-                  placeholder="Mínimo 6 caracteres"
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePasswordVisibility('new')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  disabled={loading}
-                >
-                  {showPasswords.new ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              <p className="mt-1 text-xs text-gray-500">Debe tener al menos 6 caracteres</p>
-            </div>
-
-            {/* Confirmar Contraseña */}
-            <div>
-              <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700 mb-2">
-                Confirmar Nueva Contraseña *
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  id="confirm_password"
-                  type={showPasswords.confirm ? 'text' : 'password'}
-                  value={formData.confirm_password}
-                  onChange={handleInputChange('confirm_password')}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all outline-none"
-                  placeholder="Confirma tu nueva contraseña"
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePasswordVisibility('confirm')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  disabled={loading}
-                >
-                  {showPasswords.confirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Botón Submit */}
-            <div className="pt-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-4 rounded-lg font-semibold hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transform transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Cambiando contraseña...
-                  </div>
-                ) : (
-                  'Cambiar Contraseña'
-                )}
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default ProfilePage;
+export default LoginPage;
