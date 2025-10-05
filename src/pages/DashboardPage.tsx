@@ -9,6 +9,7 @@ import {
   Loader2,
   Target,
   Award,
+  Info,
 } from 'lucide-react';
 import {
   getDepartments,
@@ -49,7 +50,7 @@ interface TooltipProps {
 
 // =============== COMPONENTES ===============
 
-// Card de Departamento - Diseño elegante y compacto
+// Card de Departamento - Diseño elegante y compacto con mensaje informativo
 const DepartmentCard: React.FC<{
   department: DepartmentWithStats;
   onClick: () => void;
@@ -116,7 +117,7 @@ const DepartmentCard: React.FC<{
   );
 };
 
-// Gráfico de Comparación - Elegante Bar Chart con Recharts
+// Gráfico de Comparación - Con tooltip mejorado y mensaje informativo
 const DepartmentComparisonChart: React.FC<{
   data: DepartmentPerformance[];
   selectedPeriod: Period | null;
@@ -135,8 +136,6 @@ const DepartmentComparisonChart: React.FC<{
     total: dept.total,
   }));
 
-  console.log('Chart data for Recharts:', chartData); // Debug log
-
   const getBarColor = (value: number) => {
     if (value >= 90) return '#10B981'; // Emerald
     if (value >= 80) return '#3B82F6'; // Blue
@@ -150,10 +149,21 @@ const DepartmentComparisonChart: React.FC<{
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Rendimiento por Departamento</h2>
-            <p className="text-xs text-gray-500 mt-1">Puntuación promedio y progreso</p>
+            <p className="text-xs text-gray-500 mt-1">Puntuación promedio de evaluaciones completadas</p>
           </div>
           <div className="p-2 bg-blue-600 rounded-lg text-white">
             <BarChart3 className="w-4 h-4" />
+          </div>
+        </div>
+
+        {/* ✅ MENSAJE INFORMATIVO SOBRE EL CÁLCULO */}
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start gap-2">
+            <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-blue-700 leading-relaxed">
+              <strong>Nota:</strong> Los promedios reflejan únicamente las evaluaciones completadas. 
+              Las evaluaciones pendientes no afectan el puntaje de desempeño.
+            </p>
           </div>
         </div>
 
@@ -206,18 +216,41 @@ const DepartmentComparisonChart: React.FC<{
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                  backgroundColor: 'rgba(0, 0, 0, 0.9)',
                   border: 'none',
                   borderRadius: '8px',
                   fontFamily: "'Inter', sans-serif",
                   fontSize: 12,
-                  padding: '8px',
+                  padding: '12px',
                 }}
-                formatter={(_value: number, _name: string, props: TooltipProps) => [
-                  `Puntuación: ${props.payload && props.payload[0]?.payload?.promedio.toFixed(1)}%`,
-                  `Completitud: ${props.payload && props.payload[0]?.payload?.completionRate.toFixed(1)}% (${props.payload && props.payload[0]?.payload?.completadas}/${props.payload && props.payload[0]?.payload?.total})`,
-                ]}
-                labelStyle={{ color: '#fff', fontWeight: '600' }}
+                content={({ payload }) => {
+                  if (!payload || !payload[0]) return null;
+                  const data = payload[0].payload;
+                  return (
+                    <div className="text-white">
+                      <div className="font-semibold mb-2 border-b border-white/20 pb-2">
+                        {data.name}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between gap-4">
+                          <span className="text-gray-300">Promedio:</span>
+                          <span className="font-semibold">{data.promedio.toFixed(1)}%</span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <span className="text-gray-300">Completadas:</span>
+                          <span className="font-semibold">{data.completadas} de {data.total}</span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <span className="text-gray-300">Completitud:</span>
+                          <span className="font-semibold">{data.completionRate.toFixed(1)}%</span>
+                        </div>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-white/20 text-xs text-gray-400">
+                        * Promedio solo de evaluaciones completadas
+                      </div>
+                    </div>
+                  );
+                }}
               />
               <Bar
                 dataKey="promedio"
@@ -258,6 +291,9 @@ const DepartmentComparisonChart: React.FC<{
               <p className="text-base font-semibold text-gray-900">
                 {(sortedData.reduce((acc, d) => acc + d.promedio, 0) / sortedData.length).toFixed(1)}%
               </p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                De {sortedData.reduce((acc, d) => acc + d.completadas, 0)} evaluaciones
+              </p>
             </div>
             <div className="bg-blue-50 rounded-lg p-2">
               <div className="flex items-center gap-1 mb-1">
@@ -266,6 +302,9 @@ const DepartmentComparisonChart: React.FC<{
               </div>
               <p className="text-base font-semibold text-gray-900 truncate">
                 {sortedData[0]?.name}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {sortedData[0]?.promedio.toFixed(1)}%
               </p>
             </div>
           </div>
