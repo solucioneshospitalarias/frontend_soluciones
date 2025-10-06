@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: 'http://back-rrhh.solucioneshospitalariases.com/api/v1',
+  BASE_URL: 'https://back-rrhh.solucioneshospitalariases.com/api/v1',
   ENDPOINTS: {
     LOGIN: '/auth/login',
     ME: '/me',
