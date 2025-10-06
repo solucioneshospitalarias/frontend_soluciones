@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { getUserById, updateUser, adminResetPassword } from '../services/userService';
 import { referenceService, type ReferenceData } from '../services/referenceService';
-import type { User, UserUpdateDTO } from '../types/user'; // Asumiendo que PasswordResetDTO está en el service
+import type { User, UserUpdateDTO } from '../types/user';
 import { Briefcase, UserCheck, X, Loader2, Shield, Calendar, Mail, Hash, Save, AlertCircle, Lock, Eye, EyeOff } from 'lucide-react';
 import { AxiosError } from 'axios';
 
-// ✅ Tipo local para el form de password (incluye confirm para frontend)
-interface PasswordForm extends Partial<{ new_password: string; confirm_password: string }> {}
+interface PasswordForm {
+  new_password: string;
+  confirm_password: string;
+}
 
 interface EditarEmpleadoModalProps {
   show: boolean;
@@ -23,10 +25,9 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [form, setForm] = useState<Partial<UserUpdateDTO>>({});
-  const [passwordForm, setPasswordForm] = useState<PasswordForm>({ new_password: '', confirm_password: '' }); // ✅ Tipo local
+  const [passwordForm, setPasswordForm] = useState<PasswordForm>({ new_password: '', confirm_password: '' });
   const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'strong'>('weak');
   const [references, setReferences] = useState<ReferenceData>({});
   const [loadingUser, setLoadingUser] = useState(false);
   const [loadingReferences, setLoadingReferences] = useState(false);
@@ -38,7 +39,6 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Cargar datos cuando se abre el modal (sin cambios)
   useEffect(() => {
     if (show && userId) {
       loadUserData();
@@ -46,7 +46,6 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
     }
   }, [show, userId]);
 
-  // Actualizar department_id cuando cambie la posición (sin cambios)
   useEffect(() => {
     if (form.position_id && references.positions) {
       const selectedPosition = references.positions.find(pos => pos.id === form.position_id);
@@ -97,17 +96,12 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
     }
   };
 
-  // ✅ Validar password (mínimo 6 chars, como pediste)
   const validatePassword = (): boolean => {
     const errors: Record<string, string> = {};
     const { new_password, confirm_password } = passwordForm;
 
-    if (!new_password || new_password.length < 6) { // ✅ Cambiado a 6
+    if (!new_password || new_password.length < 6) {
       errors.new_password = 'La contraseña debe tener al menos 6 caracteres.';
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(new_password)) {
-      errors.new_password = 'Debe incluir mayúscula, minúscula y número.';
-    } else {
-      setPasswordStrength(new_password.length > 10 ? 'strong' : 'weak'); // Ajuste simple
     }
 
     if (new_password && confirm_password && new_password !== confirm_password) {
@@ -118,25 +112,19 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
     return Object.keys(errors).length === 0;
   };
 
-  // ✅ Manejar cambio en password fields
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setPasswordForm(prev => ({ ...prev, [name]: value } as PasswordForm)); // ✅ Cast para TS
+    setPasswordForm(prev => ({ ...prev, [name]: value }));
 
-    if (passwordErrors[name as keyof typeof passwordErrors]) {
+    if (passwordErrors[name]) {
       setPasswordErrors(prev => {
         const newErrors = { ...prev };
-        delete newErrors[name as keyof typeof passwordErrors];
+        delete newErrors[name];
         return newErrors;
       });
     }
-
-    if (name === 'new_password') {
-      validatePassword(); // Actualiza strength en tiempo real
-    }
   };
 
-  // ✅ Reset password (independiente de handleSubmit)
   const handlePasswordReset = async () => {
     if (!userId || !validatePassword()) return;
 
@@ -144,37 +132,29 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
     setError(null);
 
     try {
-      await adminResetPassword(userId, passwordForm.new_password as string);
+      await adminResetPassword(userId, passwordForm.new_password);
       
-      setSuccessMessage('¡Contraseña reseteada exitosamente! El usuario recibirá un email de notificación.');
+      setSuccessMessage('¡Contraseña reseteada exitosamente!');
       setShowSuccess(true);
       
-      // Limpiar
       setPasswordForm({ new_password: '', confirm_password: '' });
       setPasswordErrors({});
       setShowPasswordSection(false);
       
-      await onUpdated(); // Refresca si es necesario
-      
       setTimeout(() => {
         setShowSuccess(false);
         setSuccessMessage('');
-      }, 3000);
+      }, 2000);
       
     } catch (err) {
       console.error('Error reseteando contraseña:', err);
-      const axiosError = err as AxiosError<{ details?: string }>;
-      setError(
-        axiosError.response?.data?.details ||
-        axiosError.message ||
-        'Error al resetear la contraseña.'
-      );
+      const axiosError = err as AxiosError<{ error?: string }>;
+      setError(axiosError.response?.data?.error || axiosError.message || 'Error al resetear la contraseña');
     } finally {
       setLoadingPassword(false);
     }
   };
 
-  // ✅ handleChange (sin cambios, del original)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     let parsedValue: string | number | boolean = value;
@@ -185,10 +165,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
       parsedValue = (e.target as HTMLInputElement).checked;
     }
 
-    setForm(prev => ({
-      ...prev,
-      [name]: parsedValue,
-    }));
+    setForm(prev => ({ ...prev, [name]: parsedValue }));
 
     if (fieldErrors[name]) {
       setFieldErrors(prev => {
@@ -199,30 +176,19 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
     }
   };
 
-  // ✅ validateForm (sin cambios, del original)
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
 
-    if (!form.first_name?.trim()) {
-      errors.first_name = 'El nombre es obligatorio.';
-    }
-    if (!form.last_name?.trim()) {
-      errors.last_name = 'El apellido es obligatorio.';
-    }
+    if (!form.first_name?.trim()) errors.first_name = 'El nombre es obligatorio.';
+    if (!form.last_name?.trim()) errors.last_name = 'El apellido es obligatorio.';
     if (!form.email?.trim()) {
       errors.email = 'El correo electrónico es obligatorio.';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       errors.email = 'Formato de correo electrónico inválido.';
     }
-    if (!form.document?.trim()) {
-      errors.document = 'El documento es obligatorio.';
-    }
-    if (!form.role_id) {
-      errors.role_id = 'Debes seleccionar un rol.';
-    }
-    if (!form.position_id) {
-      errors.position_id = 'Debes seleccionar un cargo.';
-    }
+    if (!form.document?.trim()) errors.document = 'El documento es obligatorio.';
+    if (!form.role_id) errors.role_id = 'Debes seleccionar un rol.';
+    if (!form.position_id) errors.position_id = 'Debes seleccionar un cargo.';
     if (form.hire_date && new Date(form.hire_date) > new Date()) {
       errors.hire_date = 'La fecha de contratación no puede ser futura.';
     }
@@ -231,8 +197,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
     return Object.keys(errors).length === 0;
   };
 
-  // ✅ handleSubmit (sin cambios, del original, pero con successMessage dinámico)
-  const handleSubmit = async (e: React.FormEvent) => { // ✅ Ahora TS lo encuentra
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!userId || !validateForm()) return;
@@ -248,24 +213,20 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
 
       await updateUser(userId, payload);
       
-      setSuccessMessage('¡Empleado actualizado exitosamente!'); // ✅ Dinámico
+      setSuccessMessage('¡Empleado actualizado exitosamente!');
       setShowSuccess(true);
       await onUpdated();
       
       setTimeout(() => {
         setShowSuccess(false);
         setSuccessMessage('');
-        onClose(); // Cierra después del éxito
+        onClose();
       }, 2000);
       
     } catch (err) {
       console.error('Error updating user:', err);
       const axiosError = err as AxiosError<{ details?: string }>;
-      setError(
-        axiosError.response?.data?.details ||
-        axiosError.message ||
-        'Error al actualizar empleado'
-      );
+      setError(axiosError.response?.data?.details || axiosError.message || 'Error al actualizar empleado');
     } finally {
       setLoading(false);
     }
@@ -275,7 +236,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
     if (loading || loadingPassword) return;
     setUser(null);
     setForm({});
-    setPasswordForm({ new_password: '', confirm_password: '' }); // ✅ Limpia passwords
+    setPasswordForm({ new_password: '', confirm_password: '' });
     setError(null);
     setFieldErrors({});
     setPasswordErrors({});
@@ -285,7 +246,6 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
     onClose();
   };
 
-  // getSelectedPositionDepartment (sin cambios)
   const getSelectedPositionDepartment = () => {
     if (form.position_id && references.positions) {
       const selectedPosition = references.positions.find(pos => pos.id === form.position_id);
@@ -300,7 +260,6 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
     <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
         
-        {/* Success State (con mensaje dinámico) */}
         {showSuccess ? (
           <div className="p-6">
             <div className="text-center py-8">
@@ -313,7 +272,6 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
           </div>
         ) : (
           <>
-            {/* Header (sin cambios) */}
             <div className="flex justify-between items-center p-6 border-b border-gray-200">
               <h3 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
                 <UserCheck className="w-6 h-6 text-blue-500" />
@@ -329,7 +287,6 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
               </button>
             </div>
 
-            {/* Body */}
             <form onSubmit={handleSubmit} className="p-6">
               {(loadingUser || loadingReferences) ? (
                 <div className="flex items-center justify-center py-12">
@@ -338,7 +295,6 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {/* Error general */}
                   {error && (
                     <div className="flex items-start gap-3 bg-red-50 border border-red-200 p-4 rounded-lg">
                       <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -346,14 +302,12 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                     </div>
                   )}
 
-                  {/* Información Personal (sin cambios) */}
                   <div className="border border-gray-200 rounded-xl p-4">
                     <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
                       <UserCheck className="w-4 h-4" />
                       Información Personal
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* ... (campos existentes: first_name, last_name, email, document — copia del original) */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Nombre(s) *
@@ -438,16 +392,123 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Información Laboral (sin cambios, copia del original) */}
                   <div className="border border-gray-200 rounded-xl p-4">
                     <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
                       <Briefcase className="w-4 h-4" />
                       Información Laboral
                     </h4>
-                    {/* ... (fecha, rol, posición, estado — copia del original) */}
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          Fecha de Contratación
+                        </label>
+                        <input
+                          name="hire_date"
+                          value={form.hire_date || ''}
+                          onChange={handleChange}
+                          type="date"
+                          max={new Date().toISOString().split('T')[0]}
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                            fieldErrors.hire_date ? 'border-red-300' : 'border-gray-300'
+                          }`}
+                          disabled={loading}
+                        />
+                        {fieldErrors.hire_date && (
+                          <p className="text-red-600 text-sm mt-1">{fieldErrors.hire_date}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <Shield className="inline w-4 h-4 mr-1" />
+                          Rol del Sistema *
+                        </label>
+                        <select
+                          name="role_id"
+                          value={form.role_id ?? ''}
+                          onChange={handleChange}
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                            fieldErrors.role_id ? 'border-red-300' : 'border-gray-300'
+                          }`}
+                          disabled={loading}
+                        >
+                          <option value="">Seleccionar rol</option>
+                          {references.roles?.map(role => (
+                            <option key={role.id} value={role.id}>
+                              {role.name} - {role.description}
+                            </option>
+                          ))}
+                        </select>
+                        {fieldErrors.role_id && (
+                          <p className="text-red-600 text-sm mt-1">{fieldErrors.role_id}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <Briefcase className="inline w-4 h-4 mr-1" />
+                          Cargo *
+                        </label>
+                        <select
+                          name="position_id"
+                          value={form.position_id ?? ''}
+                          onChange={handleChange}
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                            fieldErrors.position_id ? 'border-red-300' : 'border-gray-300'
+                          }`}
+                          disabled={loading}
+                        >
+                          <option value="">Seleccionar cargo</option>
+                          {references.positions?.map(position => (
+                            <option key={position.id} value={position.id}>
+                              {position.name} - {position.department_name}
+                              {position.description && ` (${position.description})`}
+                            </option>
+                          ))}
+                        </select>
+                        {fieldErrors.position_id && (
+                          <p className="text-red-600 text-sm mt-1">{fieldErrors.position_id}</p>
+                        )}
+                        {form.position_id && form.position_id > 0 && getSelectedPositionDepartment() && (
+                          <p className="text-sm text-blue-600 mt-1">
+                            📍 Departamento: {getSelectedPositionDepartment()}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Estado del empleado
+                        </label>
+                        <div className="flex gap-6">
+                          <label className="inline-flex items-center">
+                            <input
+                              type="radio"
+                              name="is_active_radio"
+                              checked={form.is_active === true}
+                              onChange={() => setForm(prev => ({ ...prev, is_active: true }))}
+                              className="text-green-600 border-gray-300 focus:ring-green-500"
+                              disabled={loading}
+                            />
+                            <span className="ml-2 text-gray-700">Activo</span>
+                          </label>
+                          <label className="inline-flex items-center">
+                            <input
+                              type="radio"
+                              name="is_active_radio"
+                              checked={form.is_active === false}
+                              onChange={() => setForm(prev => ({ ...prev, is_active: false }))}
+                              className="text-red-600 border-gray-300 focus:ring-red-500"
+                              disabled={loading}
+                            />
+                            <span className="ml-2 text-gray-700">Inactivo</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* ✅ Sección de Password (nueva) */}
                   <div className="border border-gray-200 rounded-xl p-4">
                     <button 
                       type="button"
@@ -456,7 +517,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                     >
                       <div className="flex items-center gap-2">
                         <Lock className="w-4 h-4 text-gray-600" />
-                        <span className="font-medium text-gray-800">Cambiar Contraseña (Reset Admin)</span>
+                        <span className="font-medium text-gray-800">Cambiar Contraseña (Solo Admin)</span>
                       </div>
                       <span className={`text-xs font-medium ${
                         showPasswordSection ? 'text-green-600' : 'text-gray-500'
@@ -475,12 +536,13 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                             <input
                               name="new_password"
                               type={showPassword ? "text" : "password"}
-                              value={passwordForm.new_password || ''}
+                              value={passwordForm.new_password}
                               onChange={handlePasswordChange}
+                              minLength={6}
                               className={`w-full p-3 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                                 passwordErrors.new_password ? 'border-red-300' : 'border-gray-300'
                               }`}
-                              placeholder="Nueva contraseña (mín. 6 chars)"
+                              placeholder="Mínimo 6 caracteres"
                               disabled={loadingPassword}
                             />
                             <button
@@ -488,26 +550,11 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                               onClick={() => setShowPassword(!showPassword)}
                               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                             >
-                              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                           </div>
                           {passwordErrors.new_password && (
                             <p className="text-red-600 text-xs mt-1">{passwordErrors.new_password}</p>
-                          )}
-                          {/* Barra de fuerza */}
-                          {passwordForm.new_password && (
-                            <div className="mt-2">
-                              <div className={`h-1 rounded-full transition-all duration-300 ${
-                                passwordStrength === 'strong' ? 'bg-green-500' : 'bg-yellow-500'
-                              }`} 
-                              style={{ width: `${Math.min((passwordForm.new_password.length / 12) * 100, 100)}%` }} 
-                              />
-                              <p className={`text-xs mt-1 ${
-                                passwordStrength === 'strong' ? 'text-green-600' : 'text-yellow-600'
-                              }`}>
-                                {passwordStrength === 'strong' ? 'Fuerte' : 'Débil'}
-                              </p>
-                            </div>
                           )}
                         </div>
 
@@ -518,12 +565,13 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                           <input
                             name="confirm_password"
                             type={showPassword ? "text" : "password"}
-                            value={passwordForm.confirm_password || ''}
+                            value={passwordForm.confirm_password}
                             onChange={handlePasswordChange}
-                            className={`w-full p-3 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                            minLength={6}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                               passwordErrors.confirm_password ? 'border-red-300' : 'border-gray-300'
                             }`}
-                            placeholder="Repite la nueva contraseña"
+                            placeholder="Repite la contraseña"
                             disabled={loadingPassword}
                           />
                           {passwordErrors.confirm_password && (
@@ -534,8 +582,8 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                         <button
                           type="button"
                           onClick={handlePasswordReset}
-                          disabled={loadingPassword || Object.keys(passwordErrors).length > 0 || !passwordForm.new_password}
-                          className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:cursor-not-allowed"
+                          disabled={loadingPassword || !passwordForm.new_password || passwordForm.new_password.length < 6}
+                          className="w-full bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:cursor-not-allowed"
                         >
                           {loadingPassword ? (
                             <>
@@ -550,14 +598,13 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                           )}
                         </button>
 
-                        <p className="text-xs text-gray-500 text-center italic">
-                          El usuario recibirá un email con la nueva contraseña temporal.
+                        <p className="text-xs text-gray-500 text-center">
+                          La contraseña se actualizará inmediatamente.
                         </p>
                       </div>
                     )}
                   </div>
 
-                  {/* Footer (sin cambios) */}
                   <div className="flex gap-3 pt-6 border-t border-gray-200">
                     <button
                       type="button"
