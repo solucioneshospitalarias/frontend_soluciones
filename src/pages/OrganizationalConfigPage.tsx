@@ -12,6 +12,7 @@ import {
   X,
   AlertTriangle
 } from 'lucide-react';
+import { API_BASE_URL } from '../constants/api';
 
 // ==================== TIPOS ====================
 interface Department {
@@ -44,8 +45,6 @@ interface PositionFormData {
 }
 
 // ==================== SERVICIOS API ====================
-const API_BASE_URL = 'https://rrhh-back.solucioneshospitalariaseu.com/api/v1';
-
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   return {
@@ -141,6 +140,8 @@ const positionService = {
     }
   },
 };
+
+// ... resto del componente igual
 
 // ==================== COMPONENTE PRINCIPAL ====================
 const OrganizationalConfigPage: React.FC = () => {
