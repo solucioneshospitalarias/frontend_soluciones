@@ -17,6 +17,9 @@ export interface User {
   updated_at: string;
 }
 
+export interface PasswordResetDTO {
+  new_password: string;
+}
 export interface UserCreateDTO {
   first_name: string;
   last_name: string;

@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '../constants/api';
-import type { User, UserCreateDTO, UserUpdateDTO } from '../types/user';
+import type { User, UserCreateDTO, UserUpdateDTO, PasswordResetDTO } from '../types/user';
 
 interface RawUserResponse {
   id: number;
@@ -176,6 +176,28 @@ export const deleteUser = async (id: number): Promise<void> => {
     }
   } catch (error: unknown) {
     console.error('❌ Error deleting user:', error);
+    throw error;
+  }
+};
+
+export const adminResetPassword = async (userId: number, newPassword: string): Promise<void> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/reset-password`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ new_password: newPassword } as PasswordResetDTO),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({})) as { error?: string; message?: string };
+      const errorMsg = errorData.error || errorData.message || `HTTP ${response.status}`;
+      throw new Error(errorMsg);
+    }
+
+    // Opcional: Log de éxito para debugging
+    console.log(`✅ Contraseña reseteada para usuario ${userId}`);
+  } catch (error: unknown) {
+    console.error('❌ Error resetting password:', error);
     throw error;
   }
 };
