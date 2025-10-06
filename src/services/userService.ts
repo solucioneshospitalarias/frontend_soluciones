@@ -185,17 +185,13 @@ export const adminResetPassword = async (userId: number, newPassword: string): P
     const response = await fetch(`${API_BASE_URL}/users/${userId}/reset-password`, {
       method: 'PUT',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ new_password: newPassword } as PasswordResetDTO),
+      body: JSON.stringify({ new_password: newPassword }), // ✅ CORRECTO
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({})) as { error?: string; message?: string };
-      const errorMsg = errorData.error || errorData.message || `HTTP ${response.status}`;
-      throw new Error(errorMsg);
+      throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
     }
-
-    // Opcional: Log de éxito para debugging
-    console.log(`✅ Contraseña reseteada para usuario ${userId}`);
   } catch (error: unknown) {
     console.error('❌ Error resetting password:', error);
     throw error;
