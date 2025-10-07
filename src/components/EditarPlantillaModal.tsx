@@ -124,11 +124,21 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
     setLoadingData(true);
     setError(null);
     try {
-      // Primero cargar criterios disponibles
+      // Cargar criterios disponibles
       const criteriaData = await getCriteria();
-      setAvailableCriteria(Array.isArray(criteriaData) ? criteriaData : []);
+      
+      // ✅ CORRECCIÓN 1: Filtrar solo criterios ACTIVOS (is_active === true)
+      const activeCriteria = Array.isArray(criteriaData) 
+        ? criteriaData.filter(c => c.is_active === true) 
+        : [];
+      
+      console.log('📋 Total criteria fetched:', criteriaData.length);
+      console.log('✅ Active criteria:', activeCriteria.length);
+      console.log('❌ Inactive criteria filtered out:', criteriaData.length - activeCriteria.length);
+      
+      setAvailableCriteria(activeCriteria);
 
-      // Luego cargar la plantilla específica usando getTemplateById
+      // Luego cargar la plantilla específica
       const template = await getTemplateById(templateId);
       
       console.log('📋 Template loaded from backend:', template);
@@ -221,29 +231,87 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
     return 'text-red-600 font-bold';
   };
 
+  // ✅ CORRECCIÓN 2: Normalización que incluye criterios con peso 0
   const normalizeWeightsByCategory = (category: 'productividad' | 'conducta_laboral' | 'habilidades') => {
-    const categoryItems = form.selectedCriteria.filter(sc => sc.category === category);
-    const unlockedItems = categoryItems.filter(sc => !sc.isLocked);
+    console.log(`🔄 Starting normalization for category: ${category}`);
+    
+    setForm(prev => {
+      let updatedCriteria = [...prev.selectedCriteria];
+      
+      // 1. Filtrar criterios de la categoría objetivo
+      const categoryItems = updatedCriteria.filter(sc => sc.category === category);
+      
+      console.log(`📊 Category items for ${category}:`, categoryItems.length);
+      
+      // ✅ Separar criterios bloqueados y desbloqueados (incluye criterios con peso 0)
+      const lockedItems = categoryItems.filter(sc => sc.isLocked);
+      const unlockedItems = categoryItems.filter(sc => !sc.isLocked);
+      
+      console.log(`🔒 Locked items: ${lockedItems.length}`);
+      console.log(`🔓 Unlocked items: ${unlockedItems.length} (including zero-weight items)`);
+      console.log(`   Unlocked IDs:`, unlockedItems.map(sc => sc.criteriaId));
 
-    if (unlockedItems.length === 0) return;
+      if (unlockedItems.length === 0) {
+        console.warn(`⚠️ No unlocked items in ${category} to normalize`);
+        return prev;
+      }
 
-    const lockedIndices = categoryItems
-      .map((item, index) => item.isLocked ? index : -1)
-      .filter(index => index >= 0);
+      // 2. Calcular peso bloqueado total
+      const lockedWeight = lockedItems.reduce((sum, sc) => sum + sc.weight, 0);
+      console.log(`💰 Total locked weight: ${lockedWeight.toFixed(2)}%`);
+      
+      // 3. Calcular peso disponible para distribuir
+      const remainingWeight = Math.max(0, 100 - lockedWeight);
+      console.log(`💵 Remaining weight to distribute: ${remainingWeight.toFixed(2)}%`);
 
-    const weights = categoryItems.map(item => item.weight);
-    const normalizedWeights = normalizeWeights(weights, lockedIndices);
+      // 4. ✅ DISTRIBUIR EQUITATIVAMENTE entre TODOS los criterios desbloqueados
+      const weightPerItem = remainingWeight / unlockedItems.length;
+      console.log(`⚖️ Weight per unlocked item: ${weightPerItem.toFixed(2)}%`);
 
-    setForm(prev => ({
-      ...prev,
-      selectedCriteria: prev.selectedCriteria.map(sc => {
-        const index = categoryItems.findIndex(item => item.criteriaId === sc.criteriaId);
-        if (index >= 0 && sc.category === category) {
-          return { ...sc, weight: normalizedWeights[index] };
+      // 5. Aplicar el nuevo peso a todos los criterios desbloqueados
+      updatedCriteria = updatedCriteria.map(sc => {
+        if (sc.category === category && !sc.isLocked) {
+          const newWeight = Number(weightPerItem.toFixed(2));
+          console.log(`  → Criteria ${sc.criteriaId}: ${sc.weight.toFixed(2)}% → ${newWeight}%`);
+          return { ...sc, weight: newWeight };
         }
         return sc;
-      }),
-    }));
+      });
+
+      // 6. Ajuste de precisión para asegurar que sume exactamente 100%
+      const finalCategoryItems = updatedCriteria.filter(sc => sc.category === category);
+      const finalTotal = finalCategoryItems.reduce((sum, sc) => sum + sc.weight, 0);
+      
+      console.log(`🧮 Total after distribution: ${finalTotal.toFixed(2)}%`);
+
+      // Si hay diferencia por redondeo, ajustar en el último criterio desbloqueado
+      if (Math.abs(finalTotal - 100) > 0.01 && unlockedItems.length > 0) {
+        const adjustment = 100 - finalTotal;
+        const lastUnlocked = unlockedItems[unlockedItems.length - 1];
+        
+        updatedCriteria = updatedCriteria.map(sc => {
+          if (sc.criteriaId === lastUnlocked.criteriaId) {
+            const adjustedWeight = Number((sc.weight + adjustment).toFixed(2));
+            console.log(`  🔧 Final adjustment on criteria ${sc.criteriaId}: ${sc.weight.toFixed(2)}% → ${adjustedWeight}%`);
+            return { ...sc, weight: adjustedWeight };
+          }
+          return sc;
+        });
+      }
+
+      // 7. Verificación final
+      const verificationTotal = updatedCriteria
+        .filter(sc => sc.category === category)
+        .reduce((sum, sc) => sum + sc.weight, 0);
+      
+      console.log(`✅ Final total for ${category}: ${verificationTotal.toFixed(2)}%`);
+      
+      if (Math.abs(verificationTotal - 100) > 0.01) {
+        console.warn(`⚠️ Warning: Total doesn't sum to 100%: ${verificationTotal.toFixed(2)}%`);
+      }
+
+      return { ...prev, selectedCriteria: updatedCriteria };
+    });
   };
 
   const resetToOriginal = () => {
