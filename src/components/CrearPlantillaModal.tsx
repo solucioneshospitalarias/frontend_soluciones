@@ -46,11 +46,22 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
     }
   }, [show]);
 
+  // ✅ CORRECCIÓN: Filtrar solo criterios ACTIVOS
   const loadCriteria = async () => {
     setLoadingCriteria(true);
     try {
       const criteria = await getCriteria();
-      setAvailableCriteria(Array.isArray(criteria) ? criteria : []);
+      
+      // Filtrar solo criterios ACTIVOS (is_active === true)
+      const activeCriteria = Array.isArray(criteria) 
+        ? criteria.filter(c => c.is_active === true) 
+        : [];
+      
+      console.log('📋 Total criteria fetched:', criteria.length);
+      console.log('✅ Active criteria:', activeCriteria.length);
+      console.log('❌ Inactive criteria filtered out:', criteria.length - activeCriteria.length);
+      
+      setAvailableCriteria(activeCriteria);
     } catch (err) {
       console.error('Error loading criteria:', err);
       setError('Error al cargar los criterios disponibles');
@@ -76,7 +87,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
         ...prev.selectedCriteria,
         {
           criteriaId: criteria.id,
-          weight: criteria.weight * 100 || 10,
+          weight: 0,
           category: criteria.category,
           isLocked: false,
         },
@@ -143,40 +154,87 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
       .reduce((sum, sc) => sum + sc.weight, 0);
   };
 
+  // ✅ CORRECCIÓN: Normalización inclusiva (incluye criterios con peso 0)
   const normalizeWeightsByCategory = (targetCategory: 'productividad' | 'conducta_laboral' | 'habilidades') => {
+    console.log(`🔄 Starting normalization for category: ${targetCategory}`);
+    
     setForm(prev => {
       let updatedCriteria = [...prev.selectedCriteria];
+      
+      // 1. Filtrar criterios de la categoría objetivo
       const categoryCriteria = updatedCriteria.filter(sc => sc.category === targetCategory);
+      
+      console.log(`📊 Category items for ${targetCategory}:`, categoryCriteria.length);
+      
+      // ✅ Separar criterios bloqueados y desbloqueados (incluye criterios con peso 0)
       const lockedCriteria = categoryCriteria.filter(sc => sc.isLocked);
       const unlockedCriteria = categoryCriteria.filter(sc => !sc.isLocked);
+      
+      console.log(`🔒 Locked items: ${lockedCriteria.length}`);
+      console.log(`🔓 Unlocked items: ${unlockedCriteria.length} (including zero-weight items)`);
+      console.log(`   Unlocked IDs:`, unlockedCriteria.map(sc => sc.criteriaId));
 
+      if (unlockedCriteria.length === 0) {
+        console.warn(`⚠️ No unlocked items in ${targetCategory} to normalize`);
+        return prev;
+      }
+
+      // 2. Calcular peso bloqueado total
       const lockedWeight = lockedCriteria.reduce((sum, sc) => sum + sc.weight, 0);
+      console.log(`💰 Total locked weight: ${lockedWeight.toFixed(2)}%`);
+      
+      // 3. Calcular peso disponible para distribuir
       const remainingWeight = Math.max(0, 100 - lockedWeight);
+      console.log(`💵 Remaining weight to distribute: ${remainingWeight.toFixed(2)}%`);
+      
+      // 4. ✅ DISTRIBUIR EQUITATIVAMENTE entre TODOS los criterios desbloqueados
       const unlockedCount = unlockedCriteria.length;
+      const weightPerCriteria = remainingWeight / unlockedCount;
+      
+      console.log(`⚖️ Weight per unlocked item: ${weightPerCriteria.toFixed(2)}%`);
 
-      if (unlockedCount > 0) {
-        const weightPerCriteria = remainingWeight / unlockedCount;
+      // 5. Aplicar el nuevo peso a todos los criterios desbloqueados
+      updatedCriteria = updatedCriteria.map(sc => {
+        if (sc.category === targetCategory && !sc.isLocked) {
+          const newWeight = Number(weightPerCriteria.toFixed(2));
+          console.log(`  → Criteria ${sc.criteriaId}: ${sc.weight.toFixed(2)}% → ${newWeight}%`);
+          return { ...sc, weight: newWeight };
+        }
+        return sc;
+      });
+
+      // 6. Ajuste de precisión para asegurar que sume exactamente 100%
+      const finalCategoryCriteria = updatedCriteria.filter(sc => sc.category === targetCategory);
+      const finalTotal = finalCategoryCriteria.reduce((sum, sc) => sum + sc.weight, 0);
+      
+      console.log(`🧮 Total after distribution: ${finalTotal.toFixed(2)}%`);
+
+      // Si hay diferencia por redondeo, ajustar en el último criterio desbloqueado
+      if (Math.abs(finalTotal - 100) > 0.01 && unlockedCriteria.length > 0) {
+        const adjustment = 100 - finalTotal;
+        const lastUnlocked = unlockedCriteria[unlockedCriteria.length - 1];
+        
         updatedCriteria = updatedCriteria.map(sc => {
-          if (sc.category === targetCategory && !sc.isLocked) {
-            return { ...sc, weight: Number(weightPerCriteria.toFixed(2)) };
+          if (sc.criteriaId === lastUnlocked.criteriaId) {
+            const adjustedWeight = Number((sc.weight + adjustment).toFixed(2));
+            console.log(`  🔧 Final adjustment on criteria ${sc.criteriaId}: ${sc.weight.toFixed(2)}% → ${adjustedWeight}%`);
+            return { ...sc, weight: adjustedWeight };
           }
           return sc;
         });
-
-        const finalCategoryCriteria = updatedCriteria.filter(sc => sc.category === targetCategory);
-        const finalTotal = finalCategoryCriteria.reduce((sum, sc) => sum + sc.weight, 0);
-        if (Math.abs(finalTotal - 100) > 0.01 && unlockedCriteria.length > 0) {
-          const lastUnlocked = unlockedCriteria[unlockedCriteria.length - 1];
-          updatedCriteria = updatedCriteria.map(sc => {
-            if (sc.criteriaId === lastUnlocked.criteriaId) {
-              return { ...sc, weight: Number((sc.weight + (100 - finalTotal)).toFixed(2)) };
-            }
-            return sc;
-          });
-        }
       }
 
-      console.log(`🔄 Normalized weights for ${targetCategory}:`, JSON.stringify(updatedCriteria, null, 2));
+      // 7. Verificación final
+      const verificationTotal = updatedCriteria
+        .filter(sc => sc.category === targetCategory)
+        .reduce((sum, sc) => sum + sc.weight, 0);
+      
+      console.log(`✅ Final total for ${targetCategory}: ${verificationTotal.toFixed(2)}%`);
+      
+      if (Math.abs(verificationTotal - 100) > 0.01) {
+        console.warn(`⚠️ Warning: Total doesn't sum to 100%: ${verificationTotal.toFixed(2)}%`);
+      }
+
       return { ...prev, selectedCriteria: updatedCriteria };
     });
   };
@@ -381,7 +439,6 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                               <div className="flex-1">
                                 <p className="font-medium text-sm">{criteria.name}</p>
                                 <p className="text-xs text-gray-500">{criteria.description}</p>
-                                <p className="text-xs text-purple-600">Peso sugerido: {(criteria.weight * 100).toFixed(2)}%</p>
                                 <p className="text-xs text-blue-600">{criteria.category}</p>
                               </div>
                               <button
@@ -440,7 +497,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                                   <button
                                     type="button"
                                     onClick={(e) => {
-                                      e.stopPropagation(); // Prevent category toggle
+                                      e.stopPropagation();
                                       normalizeWeightsByCategory(category);
                                     }}
                                     className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition-colors"
@@ -451,7 +508,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                                   <button
                                     type="button"
                                     onClick={(e) => {
-                                      e.stopPropagation(); // Prevent category toggle
+                                      e.stopPropagation();
                                       resetCategoryWeights(category);
                                     }}
                                     className="p-1 hover:bg-gray-200 rounded"
