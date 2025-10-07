@@ -432,7 +432,6 @@ const GestionEvaluacionesPage: React.FC = () => {
   // ==================== FUNCIONES DE ELIMINACIÓN ====================
   const handleDelete = async (type: string, id: number, itemName?: string) => {
     const typeNames = {
-      period: 'período',
       criteria: 'criterio',
       template: 'plantilla',
       evaluation: 'evaluación'
@@ -451,10 +450,6 @@ const GestionEvaluacionesPage: React.FC = () => {
         try {
           console.log(`🗑️ Deleting ${type} with id:`, id);
           switch (type) {
-            case 'period':
-              await deletePeriod(id);
-              setPeriods(prev => prev.filter(item => item.id !== id));
-              break;
             case 'criteria':
               await deleteCriteria(id);
               setCriteria(prev => prev.filter(item => item.id !== id));
@@ -643,7 +638,7 @@ const GestionEvaluacionesPage: React.FC = () => {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-semibold text-gray-900">{period.name}</h4>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full border ${period.is_active ? getStatusColor('active') : getStatusColor('pending')}`}>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full border ${period.is_active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-amber-100 text-amber-700 border-amber-200'}`}>
                           {period.is_active ? 'Activo' : 'Inactivo'}
                         </span>
                       </div>
@@ -667,18 +662,6 @@ const GestionEvaluacionesPage: React.FC = () => {
                           disabled={isDeleting}
                         >
                           <Edit className="w-4 h-4 text-blue-600" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete('period', period.id, period.name)}
-                          className="p-2 hover:bg-red-50 rounded-lg"
-                          title="Eliminar período"
-                          disabled={isDeleting}
-                        >
-                          {isDeleting ? (
-                            <RefreshCw className="w-4 h-4 text-red-500 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          )}
                         </button>
                       </div>
                     </div>
@@ -823,7 +806,7 @@ const GestionEvaluacionesPage: React.FC = () => {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-semibold text-gray-900">{template.name}</h4>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full border ${template.is_active ? getStatusColor('active') : getStatusColor('pending')}`}>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full border ${template.is_active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-amber-100 text-amber-700 border-amber-200'}`}>
                           {template.is_active ? 'Activa' : 'Inactiva'}
                         </span>
                       </div>
