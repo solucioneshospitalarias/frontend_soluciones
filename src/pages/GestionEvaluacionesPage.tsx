@@ -90,7 +90,8 @@ const GestionEvaluacionesPage: React.FC = () => {
   const [criteria, setCriteria] = useState<Criteria[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTermConfig, setSearchTermConfig] = useState('');
+  const [searchTermEvaluations, setSearchTermEvaluations] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'todos' | string>('todos');
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'pending' | 'completed' | 'overdue'>('todos');
   const [deletingItems, setDeletingItems] = useState<Set<number>>(new Set());
@@ -336,35 +337,36 @@ const GestionEvaluacionesPage: React.FC = () => {
 
   const filteredPeriods = useMemo(() =>
     periods.filter(p =>
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.description?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-    ), [periods, searchTerm]
+      p.name.toLowerCase().includes(searchTermConfig.toLowerCase()) ||
+      (p.description?.toLowerCase() || '').includes(searchTermConfig.toLowerCase())
+    ), [periods, searchTermConfig]
   );
 
   const filteredCriteria = useMemo(() =>
     criteria
       .filter(c => c.is_active) // Solo criterios activos
       .filter(c =>
-        c.description.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        (c.name.toLowerCase().includes(searchTermConfig.toLowerCase()) ||
+         c.description.toLowerCase().includes(searchTermConfig.toLowerCase())) &&
         (selectedCategory === 'todos' || c.category === selectedCategory)
-      ), [criteria, searchTerm, selectedCategory]
+      ), [criteria, searchTermConfig, selectedCategory]
   );
 
   const filteredTemplates = useMemo(() =>
     templates.filter(t =>
-      t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (t.description?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-    ), [templates, searchTerm]
+      t.name.toLowerCase().includes(searchTermConfig.toLowerCase()) ||
+      (t.description?.toLowerCase() || '').includes(searchTermConfig.toLowerCase())
+    ), [templates, searchTermConfig]
   );
 
   // ==================== FILTRO DE EVALUACIONES CON MAPPING DE ESTADOS ====================
   const filteredEvaluations = useMemo(() => {
-    console.log('🔍 Filtering evaluations with searchTerm:', searchTerm, 'filtroEstado:', filtroEstado);
+    console.log('🔍 Filtering evaluations with searchTerm:', searchTermEvaluations, 'filtroEstado:', filtroEstado);
     const result = evaluations.filter(e => {
       const matchesSearch =
-        e.employee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        e.evaluator_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        e.period_name.toLowerCase().includes(searchTerm.toLowerCase());
+        e.employee_name.toLowerCase().includes(searchTermEvaluations.toLowerCase()) ||
+        e.evaluator_name.toLowerCase().includes(searchTermEvaluations.toLowerCase()) ||
+        e.period_name.toLowerCase().includes(searchTermEvaluations.toLowerCase());
       
       const normalizedStatus = mapApiStatusToFilter(e.status);
       const matchesState = filtroEstado === 'todos' || normalizedStatus === filtroEstado;
@@ -375,7 +377,7 @@ const GestionEvaluacionesPage: React.FC = () => {
     });
     console.log('📊 Filtered Evaluations result:', result.length, 'evaluations:', result.map(e => ({ id: e.id, status: e.status })));
     return result;
-  }, [evaluations, searchTerm, filtroEstado]);
+  }, [evaluations, searchTermEvaluations, filtroEstado]);
 
   // ==================== FUNCIONES AUXILIARES ====================
   const getStatusColor = (status: string) => {
@@ -561,13 +563,6 @@ const GestionEvaluacionesPage: React.FC = () => {
     });
   };
 
-  // ==================== FUNCIÓN PARA LIMPIAR FILTROS ====================
-  const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedCategory('todos');
-    setFiltroEstado('todos');
-  };
-
   // ==================== COMPONENTE STAT CARD ====================
   const StatCard: React.FC<{
     title: string;
@@ -608,13 +603,13 @@ const GestionEvaluacionesPage: React.FC = () => {
                   type="text"
                   placeholder="Buscar períodos..."
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  value={searchTermConfig}
+                  onChange={e => setSearchTermConfig(e.target.value)}
                 />
               </div>
-              {searchTerm && (
+              {searchTermConfig && (
                 <button
-                  onClick={clearFilters}
+                  onClick={() => setSearchTermConfig('')}
                   className="flex items-center gap-1 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
                 >
                   <X className="w-4 h-4" />
@@ -626,7 +621,7 @@ const GestionEvaluacionesPage: React.FC = () => {
               {filteredPeriods.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>{searchTerm ? 'No se encontraron períodos con los filtros aplicados' : 'No hay períodos configurados'}</p>
+                  <p>{searchTermConfig ? 'No se encontraron períodos con los filtros aplicados' : 'No hay períodos configurados'}</p>
                 </div>
               ) : (
                 filteredPeriods.map(period => {
@@ -682,8 +677,8 @@ const GestionEvaluacionesPage: React.FC = () => {
                   type="text"
                   placeholder="Buscar criterios..."
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  value={searchTermConfig}
+                  onChange={e => setSearchTermConfig(e.target.value)}
                 />
               </div>
               <select
@@ -697,9 +692,9 @@ const GestionEvaluacionesPage: React.FC = () => {
                   </option>
                 ))}
               </select>
-              {(searchTerm || selectedCategory !== 'todos') && (
+              {(searchTermConfig || selectedCategory !== 'todos') && (
                 <button
-                  onClick={clearFilters}
+                  onClick={() => { setSearchTermConfig(''); setSelectedCategory('todos'); }}
                   className="flex items-center gap-1 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
                 >
                   <X className="w-4 h-4" />
@@ -771,13 +766,13 @@ const GestionEvaluacionesPage: React.FC = () => {
                   type="text"
                   placeholder="Buscar plantillas..."
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  value={searchTermConfig}
+                  onChange={e => setSearchTermConfig(e.target.value)}
                 />
               </div>
-              {searchTerm && (
+              {searchTermConfig && (
                 <button
-                  onClick={clearFilters}
+                  onClick={() => setSearchTermConfig('')}
                   className="flex items-center gap-1 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
                 >
                   <X className="w-4 h-4" />
@@ -789,7 +784,7 @@ const GestionEvaluacionesPage: React.FC = () => {
               {filteredTemplates.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <FileCheck className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>{searchTerm ? 'No se encontraron plantillas con los filtros aplicados' : 'No hay plantillas configurados'}</p>
+                  <p>{searchTermConfig ? 'No se encontraron plantillas con los filtros aplicados' : 'No hay plantillas configurados'}</p>
                 </div>
               ) : (
                 filteredTemplates.map(template => {
@@ -1018,7 +1013,8 @@ const GestionEvaluacionesPage: React.FC = () => {
                       key={tab}
                       onClick={() => {
                         setActiveTab(tab);
-                        clearFilters();
+                        setSearchTermConfig('');
+                        setSelectedCategory('todos');
                       }}
                       className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition ${colorClass}`}
                     >
@@ -1058,8 +1054,8 @@ const GestionEvaluacionesPage: React.FC = () => {
                   type="text"
                   placeholder="Buscar evaluaciones..."
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  value={searchTermEvaluations}
+                  onChange={e => setSearchTermEvaluations(e.target.value)}
                 />
               </div>
               <select
@@ -1072,9 +1068,9 @@ const GestionEvaluacionesPage: React.FC = () => {
                 <option value="completed">Realizada</option>
                 <option value="overdue">Atrasada</option>
               </select>
-              {(searchTerm || filtroEstado !== 'todos') && (
+              {(searchTermEvaluations || filtroEstado !== 'todos') && (
                 <button
-                  onClick={clearFilters}
+                  onClick={() => { setSearchTermEvaluations(''); setFiltroEstado('todos'); }}
                   className="flex items-center gap-1 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
                 >
                   <X className="w-4 h-4" />
@@ -1088,7 +1084,7 @@ const GestionEvaluacionesPage: React.FC = () => {
               {filteredEvaluations.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium mb-2">{searchTerm || filtroEstado !== 'todos' ? 'No se encontraron evaluaciones con los filtros aplicados' : 'No hay evaluaciones'}</p>
+                  <p className="text-lg font-medium mb-2">{searchTermEvaluations || filtroEstado !== 'todos' ? 'No se encontraron evaluaciones con los filtros aplicados' : 'No hay evaluaciones'}</p>
                   <p className="text-sm text-center max-w-md mx-auto">
                     No hay evaluaciones disponibles para visualizar.
                   </p>
