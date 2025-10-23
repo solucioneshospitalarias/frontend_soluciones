@@ -290,7 +290,7 @@ const OrganizationalConfigPage: React.FC = () => {
 
       {/* Tabs */}
       <div className="max-w-6xl mx-auto mb-6">
-        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-2 inline-flex gap-2">
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-2 flex flex-col min-[450px]:flex-row gap-2">
           <button
             onClick={() => setActiveTab('departments')}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
@@ -318,7 +318,7 @@ const OrganizationalConfigPage: React.FC = () => {
 
       {/* Search and Actions */}
       <div className="max-w-6xl mx-auto mb-6 bg-white rounded-xl shadow-md border border-gray-100 p-6">
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
