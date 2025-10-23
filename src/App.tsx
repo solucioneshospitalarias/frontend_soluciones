@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/authContext';
 import LoginPage from './pages/auth/LoginPage';
@@ -50,18 +50,46 @@ const SmartRedirect = () => {
 };
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 800);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth <= 800;
+      setIsSidebarOpen(!isMobile);
+    };
+
+    handleResize(); // inicial
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleToggle = () => {
+    setIsSidebarOpen((prev) => !prev);
+  };
 
   return (
     <>
-      <div className="flex">
+      <div className="relative flex">
         <Sidebar
           isOpen={isSidebarOpen}
-          toggle={() => setIsSidebarOpen(!isSidebarOpen)}
+          toggle={handleToggle}
           onOpenChangePassword={() => setShowChangePasswordModal(true)}
         />
-        <main className={`transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'} p-6 w-full`}>
+
+        {/* Overlay con blur para pantallas pequeñas */}
+        {isSidebarOpen && window.innerWidth <= 800 && (
+          <div
+            onClick={handleToggle}
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 transition-opacity duration-300"
+          />
+        )}
+
+        <main
+          className={`transition-all duration-300 p-6 w-full ${
+            isSidebarOpen && window.innerWidth > 800 ? 'ml-64' : 'ml-0'
+          }`}
+        >
           {children}
         </main>
       </div>
@@ -73,6 +101,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
     </>
   );
 };
+
 
 const AppContent: React.FC = () => (
   <Router>
