@@ -264,15 +264,15 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
                   <div className="p-5">
                     <div className="mb-4">
                       <span className="text-sm font-medium text-gray-900 mb-3 block">Calificación</span>
-                      <div className="grid grid-cols-5 gap-3">
+                      <div className="flex flex-col sm:flex-row gap-3">
                         {[1, 2, 3, 4, 5].map((rating) => (
                           <button
                             key={rating}
                             onClick={() => handleScoreChange(scoreItem.id, rating)}
                             className={`p-3 border rounded-lg transition-all duration-200 ${getScoreColor(rating, scores[scoreItem.id] === rating)}`}
                           >
-                            <div className="text-center">
-                              <div className="text-lg font-bold text-gray-800 mb-1">{rating}</div>
+                            <div className="flex flex-row justify-between items-center sm:flex-col sm:text-center w-full">
+                              <div className="text-lg font-bold text-gray-800 sm:mb-1">{rating}</div>
                               <div className="text-xs text-gray-600">{getScoreLabel(rating)}</div>
                             </div>
                           </button>
@@ -303,8 +303,9 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
         {/* Footer */}
         {evaluation && !loading && (
           <div className="border-t border-gray-200 p-6 bg-white">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              {/* Estado de la evaluación */}
+              <div className="flex items-center gap-2 text-center sm:text-left justify-center sm:justify-start">
                 {isComplete() ? (
                   <div className="flex items-center gap-2 text-green-600">
                     <CheckCircle className="w-5 h-5" />
@@ -316,19 +317,20 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
                   </div>
                 )}
               </div>
-              
-              <div className="flex gap-3">
+
+              {/* Botones */}
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <button
                   onClick={handleClose}
                   disabled={submitting}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 w-full sm:w-auto"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={!isComplete() || submitting}
-                  className="px-6 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  className="px-6 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
                   {submitting ? (
                     <>
