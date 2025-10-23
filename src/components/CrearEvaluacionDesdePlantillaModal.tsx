@@ -92,9 +92,6 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
         referenceService.getFormReferences(),
         servicioEvaluaciones.getPeriods(),
       ]);
-      console.log('Users loaded:', userData);
-      console.log('References loaded:', refData);
-      console.log('Periods loaded:', periodsData);
       setUsers(userData);
       setReferences(refData);
       setPeriods(periodsData);
@@ -318,9 +315,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
         employee_ids: selectedEmployees,
       };
       
-      console.log('🔄 Creating evaluations from template:', payload);
       const data = await createEvaluationsFromTemplate(payload);
-      console.log('✅ Evaluations created:', data);
 
       onCreated(data);
       setConfirmationState({

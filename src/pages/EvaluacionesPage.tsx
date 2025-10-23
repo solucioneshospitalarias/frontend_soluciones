@@ -40,22 +40,6 @@ const EvaluacionesPage: React.FC = () => {
     data: ResumenEvaluacionDTO | null;
   }>({ id: null, data: null });
 
-  // Log component mount and misEvaluaciones state
-  useEffect(() => {
-    console.log("EvaluacionesPage mounted");
-    console.log("misEvaluaciones state:", {
-      as_evaluator: {
-        evaluations: misEvaluaciones.as_evaluator?.evaluations?.map(e => ({
-          id: e.id,
-          employee_name: e.employee_name,
-          status: e.status,
-        })),
-        summary: misEvaluaciones.as_evaluator?.summary,
-      },
-    });
-    return () => console.log("EvaluacionesPage unmounted");
-  }, [misEvaluaciones]);
-
   // Initialize filter and clear search term
   useEffect(() => {
     establecerFiltroEstado("pending");
@@ -139,41 +123,17 @@ const EvaluacionesPage: React.FC = () => {
         (filtroEstado === "completed" &&
           (normalizedStatus === "completed" || normalizedStatus === "realizada"));
       if (!coincideBusqueda || !coincidenEstado) {
-        console.log(
-          `Evaluation filtered out: ID=${evaluacion.id}, employee_name=${
-            evaluacion.employee_name
-          }, status=${evaluacion.status}, normalizedStatus=${normalizedStatus}, coincideBusqueda=${coincideBusqueda}, coincidenEstado=${coincidenEstado}`
-        );
       }
       return coincideBusqueda && coincidenEstado;
     }
   );
 
-  useEffect(() => {
-    console.log(
-      "📊 Evaluaciones como evaluador filtradas:",
-      evaluacionesEvaluadorFiltradas.length,
-      "terminoBusqueda:",
-      terminoBusqueda,
-      "filtroEstado:",
-      filtroEstado,
-      "Evaluations:",
-      evaluacionesEvaluadorFiltradas.map((e) => ({
-        id: e.id,
-        employee_name: e.employee_name,
-        status: e.status,
-      }))
-    );
-  }, [evaluacionesEvaluadorFiltradas, terminoBusqueda, filtroEstado]);
-
   const handleRealizarEvaluacion = (evaluacionId: number): void => {
-    console.log("Abriendo evaluación ID:", evaluacionId);
     setEvaluacionSeleccionada({ id: evaluacionId, data: null });
     setModalRealizarOpen(true);
   };
 
   const handleVerReporte = (evaluacionId: number): void => {
-    console.log("Ver reporte de evaluación:", evaluacionId);
     const selectedEval = evaluacionesComoEvaluador.find(
       (evaluacion: ResumenEvaluacionDTO) => evaluacion.id === evaluacionId
     );
@@ -382,12 +342,6 @@ const EvaluacionesPage: React.FC = () => {
                   <div className="divide-y divide-gray-200">
                     {evaluacionesEvaluadorFiltradas.map(
                       (evaluacion: ResumenEvaluacionDTO) => {
-                        console.log(
-                          "Rendering evaluation:",
-                          evaluacion.id,
-                          evaluacion.employee_name,
-                          evaluacion.status
-                        );
                         return (
                           <div
                             key={evaluacion.id}
@@ -423,15 +377,14 @@ const EvaluacionesPage: React.FC = () => {
                                 {evaluacion.status.toLowerCase() === "pending" ||
                                 evaluacion.status.toLowerCase() === "pendiente" ||
                                 evaluacion.status.toLowerCase() === "incomplete" ? (
-                                  <button
-                                    onClick={() =>
-                                      handleRealizarEvaluacion(evaluacion.id)
-                                    }
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all duration-200"
-                                  >
-                                    <Play className="w-4 h-4" />
-                                    Calificar Ahora
-                                  </button>
+                                <button
+                                  onClick={() => handleRealizarEvaluacion(evaluacion.id)}
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all duration-200"
+                                >
+                                  <Play className="w-4 h-4" />
+                                  <span className="hidden sm:inline">Calificar Ahora</span>
+                                </button>
+
                                 ) : evaluacion.status.toLowerCase() === "overdue" ||
                                   evaluacion.status.toLowerCase() === "vencida" ||
                                   evaluacion.status.toLowerCase() === "atrasada" ? (
