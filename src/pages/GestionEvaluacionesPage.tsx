@@ -234,7 +234,6 @@ const GestionEvaluacionesPage: React.FC = () => {
     setError(null);
 
     try {
-      console.log('🔄 Loading all data from API...');
       const [periodsData, criteriaData, templatesData, evaluationsData] = await Promise.all([
         getPeriods().catch(err => {
           console.warn('Periods endpoint failed:', err);
@@ -253,9 +252,6 @@ const GestionEvaluacionesPage: React.FC = () => {
           return [];
         })
       ]);
-
-      console.log('✅ All data loaded successfully');
-      console.log('📊 Evaluations loaded:', evaluationsData);
 
       setPeriods(Array.isArray(periodsData) ? periodsData : []);
       setCriteria(Array.isArray(criteriaData) ? criteriaData : []);
@@ -361,7 +357,6 @@ const GestionEvaluacionesPage: React.FC = () => {
 
   // ==================== FILTRO DE EVALUACIONES CON MAPPING DE ESTADOS ====================
   const filteredEvaluations = useMemo(() => {
-    console.log('🔍 Filtering evaluations with searchTerm:', searchTermEvaluations, 'filtroEstado:', filtroEstado);
     const result = evaluations.filter(e => {
       const matchesSearch =
         e.employee_name.toLowerCase().includes(searchTermEvaluations.toLowerCase()) ||
@@ -371,11 +366,8 @@ const GestionEvaluacionesPage: React.FC = () => {
       const normalizedStatus = mapApiStatusToFilter(e.status);
       const matchesState = filtroEstado === 'todos' || normalizedStatus === filtroEstado;
       
-      console.log(`Evaluation ID: ${e.id}, employee_name: "${e.employee_name}", status: "${e.status}" → normalized: "${normalizedStatus}", matchesSearch: ${matchesSearch}, matchesState: ${matchesState}`);
-      
       return matchesSearch && matchesState;
     });
-    console.log('📊 Filtered Evaluations result:', result.length, 'evaluations:', result.map(e => ({ id: e.id, status: e.status })));
     return result;
   }, [evaluations, searchTermEvaluations, filtroEstado]);
 
@@ -450,7 +442,6 @@ const GestionEvaluacionesPage: React.FC = () => {
         setDeletingItems(prev => new Set(prev).add(id));
 
         try {
-          console.log(`🗑️ Deleting ${type} with id:`, id);
           switch (type) {
             case 'criteria':
               await deleteCriteria(id);
@@ -465,7 +456,6 @@ const GestionEvaluacionesPage: React.FC = () => {
               setEvaluations(prev => prev.filter(item => item.id !== id));
               break;
           }
-          console.log(`✅ ${type} eliminado exitosamente`);
           showConfirmation({
             title: '¡Eliminado!',
             message: `El ${typeName} se ha eliminado exitosamente.`,
@@ -548,10 +538,8 @@ const GestionEvaluacionesPage: React.FC = () => {
   };
 
   const handleTemplateCreated = (newTemplate: Template) => {
-    console.log('🔄 Adding new template:', newTemplate);
     setTemplates(prev => {
       const updatedTemplates = [newTemplate, ...prev];
-      console.log('✅ Updated templates state:', updatedTemplates);
       return updatedTemplates;
     });
     setShowCrearPlantillaModal(false);
@@ -922,17 +910,17 @@ const GestionEvaluacionesPage: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl text-white">
-                <BarChart3 className="w-8 h-8" />
+                <BarChart3 className="w-4 h-4 md:w-8 md:h-8" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Sistema de Evaluaciones</h1>
-                <p className="text-gray-600 mt-1">Gestión integral de evaluaciones al personal</p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Sistema de Evaluaciones</h1>
+                <p className="text-sm sm:text-base text-gray-600 mt-1">Gestión integral de evaluaciones al personal</p>
               </div>
             </div>
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
             <StatCard
               title="Períodos"
               value={stats.totalPeriods}
@@ -979,11 +967,11 @@ const GestionEvaluacionesPage: React.FC = () => {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-2 gap-6 max-[1024px]:grid-cols-1">
           {/* Left Column: Configuration */}
-          <div className="col-span-5 flex flex-col">
+          <div className="flex flex-col">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex-1 flex flex-col">
-              <div className="flex items-center justify-between mb-6">
+             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-sm">
                     <Settings className="w-5 h-5 text-white" />
@@ -1002,7 +990,7 @@ const GestionEvaluacionesPage: React.FC = () => {
               </div>
 
               {/* Tab Navigation */}
-              <div className="flex bg-gray-50 rounded-xl p-1 mb-4">
+              <div className="flex flex-col sm:flex-row bg-gray-50 rounded-xl p-1 mb-4 gap-2 sm:gap-0">
                 {(['periodos', 'criterios', 'plantillas'] as const).map(tab => {
                   const icon = tab === 'periodos' ? Calendar : tab === 'criterios' ? FileCheck : FileCheck;
                   const colorClass = activeTab === tab
@@ -1033,7 +1021,7 @@ const GestionEvaluacionesPage: React.FC = () => {
           </div>
 
           {/* Right Column: Evaluations */}
-          <div className="col-span-7 flex flex-col bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl shadow-sm">
@@ -1047,7 +1035,7 @@ const GestionEvaluacionesPage: React.FC = () => {
             </div>
 
             {/* Search and Filter */}
-            <div className="flex gap-2 mb-4">
+            <div className="flex flex-col sm:flex-row gap-2 mb-4">
               <div className="relative flex-1">
                 <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
                 <input
@@ -1080,77 +1068,68 @@ const GestionEvaluacionesPage: React.FC = () => {
             </div>
 
             {/* Evaluations List */}
-            <div className="max-h-[400px] overflow-y-auto rounded-lg border border-gray-200 p-4">
-              {filteredEvaluations.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium mb-2">{searchTermEvaluations || filtroEstado !== 'todos' ? 'No se encontraron evaluaciones con los filtros aplicados' : 'No hay evaluaciones'}</p>
-                  <p className="text-sm text-center max-w-md mx-auto">
-                    No hay evaluaciones disponibles para visualizar.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                  {filteredEvaluations.map(evaluation => {
-                    const isDeleting = deletingItems.has(evaluation.id);
-                    return (
-                      <div
-                        key={evaluation.id}
-                        className={`group p-6 border border-gray-200 rounded-xl bg-white hover:shadow-lg hover:border-orange-200 transition ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
-                      >
-                        <div className="flex justify-between items-start mb-4">
-                          <h3 className="font-semibold text-gray-900 text-lg">{evaluation.employee_name}</h3>
-                          <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(evaluation.status)}`}>
-                            {getStatusDisplay(evaluation.status)}
-                          </span>
-                        </div>
-                        <div className="space-y-2 mb-4 text-sm text-gray-600">
-                          <div className="flex justify-between">
-                            <span>Evaluador:</span>
-                            <span className="font-medium">{evaluation.evaluator_name}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Período:</span>
-                            <span className="font-medium">{evaluation.period_name}</span>
-                          </div>
-                          {evaluation.completed_at && (
-                            <div className="flex justify-between">
-                              <span>Completada:</span>
-                              <span className="font-medium">{formatDate(evaluation.completed_at)}</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => {
-                              setViewingEvaluationId(evaluation.id);
-                              setShowVerEvaluacionModal(true);
-                            }}
-                            className="p-2 hover:bg-blue-50 rounded-lg"
-                            title="Ver evaluación"
-                            disabled={isDeleting}
-                          >
-                            <Eye className="w-4 h-4 text-blue-600" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete('evaluation', evaluation.id, evaluation.employee_name)}
-                            className="p-2 hover:bg-red-50 rounded-lg"
-                            title="Eliminar evaluación"
-                            disabled={isDeleting}
-                          >
-                            {isDeleting ? (
-                              <RefreshCw className="w-4 h-4 text-red-500 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4 text-red-500" />
-                            )}
-                          </button>
-                        </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              {filteredEvaluations.map(evaluation => {
+                const isDeleting = deletingItems.has(evaluation.id);
+                return (
+                  <div
+                    key={evaluation.id}
+                    className={`group p-6 md:p-7 border border-gray-200 rounded-2xl bg-white shadow-sm hover:shadow-lg hover:border-orange-200 transition-all duration-300 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
+                  >
+                    <div className="flex justify-between items-start mb-5">
+                      <h3 className="font-semibold text-gray-900 text-lg">{evaluation.employee_name}</h3>
+                      <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(evaluation.status)}`}>
+                        {getStatusDisplay(evaluation.status)}
+                      </span>
+                    </div>
+
+                    <div className="space-y-3 mb-5 text-sm text-gray-600">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Evaluador:</span>
+                        <span className="font-medium text-gray-800">{evaluation.evaluator_name}</span>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Período:</span>
+                        <span className="font-medium text-gray-800">{evaluation.period_name}</span>
+                      </div>
+                      {evaluation.completed_at && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Completada:</span>
+                          <span className="font-medium text-gray-800">{formatDate(evaluation.completed_at)}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => {
+                          setViewingEvaluationId(evaluation.id);
+                          setShowVerEvaluacionModal(true);
+                        }}
+                        className="p-2.5 hover:bg-blue-50 rounded-lg"
+                        title="Ver evaluación"
+                        disabled={isDeleting}
+                      >
+                        <Eye className="w-5 h-5 text-blue-600" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete('evaluation', evaluation.id, evaluation.employee_name)}
+                        className="p-2.5 hover:bg-red-50 rounded-lg"
+                        title="Eliminar evaluación"
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? (
+                          <RefreshCw className="w-5 h-5 text-red-500 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-5 h-5 text-red-500" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+
           </div>
         </div>
       </div>
