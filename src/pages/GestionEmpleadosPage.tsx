@@ -47,8 +47,6 @@ const GestionEmpleadosPage: React.FC = () => {
         getUsers(),
         referenceService.getFormReferences()
       ]);
-      console.log('Users cargados:', userData);
-      console.log('References cargadas:', refData);
       setUsers(userData);
       setReferences(refData);
     } catch (err) {
@@ -167,19 +165,18 @@ const GestionEmpleadosPage: React.FC = () => {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl text-white">
-            <Users className="w-8 h-8" />
+          <div className="p-2 sm:p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl text-white">
+            <Users className="w-6 h-6 sm:w-8 sm:h-8" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-xl sm:text-3xl font-bold text-gray-900">
               Gestión de Empleados
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-sm sm:text-base text-gray-600 mt-1">
               Administra el personal de tu organización de manera eficiente
             </p>
           </div>
         </div>
-
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatCard 
@@ -354,50 +351,61 @@ const GestionEmpleadosPage: React.FC = () => {
                 <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Empleado</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Contacto</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Cargo</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Departamento</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Estado</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 hidden sm:table-cell">Contacto</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 hidden sm:table-cell">Cargo</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 hidden sm:table-cell">Departamento</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 hidden sm:table-cell">Estado</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Acciones</th>
                   </tr>
                 </thead>
+
                 <tbody className="divide-y divide-gray-200">
                   {filteredUsers.map((user, index) => {
-                    const fullName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
-                    console.log(`User ${user.id}:`, { 
-                      position: user.position, 
-                      position_id: user.position_id, 
-                      department: user.department, 
-                      department_id: user.department_id 
-                    });
+                    const fullName =
+                      user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
+
                     return (
-                      <tr key={user.id} className={`hover:bg-gray-50 transition-colors ${
-                        index % 2 === 0 ? 'bg-white' : 'bg-gray-25'
-                      }`}>
+                      <tr
+                        key={user.id}
+                        className={`hover:bg-gray-50 transition-colors ${
+                          index % 2 === 0 ? 'bg-white' : 'bg-gray-25'
+                        }`}
+                      >
+                        {/* Empleado */}
                         <td className="px-6 py-4">
                           <div className="text-sm font-semibold text-gray-900">{fullName}</div>
                         </td>
-                        <td className="px-6 py-4">
+
+                        {/* Contacto */}
+                        <td className="px-6 py-4 hidden sm:table-cell">
                           <div className="text-sm text-gray-900">{user.email}</div>
                         </td>
-                        <td className="px-6 py-4">
+
+                        {/* Cargo */}
+                        <td className="px-6 py-4 hidden sm:table-cell">
                           <div className="flex items-center text-sm text-gray-900">
                             <Briefcase className="w-4 h-4 mr-2 text-gray-400" />
                             {user.position || '—'}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+
+                        {/* Departamento */}
+                        <td className="px-6 py-4 hidden sm:table-cell">
                           <div className="flex items-center text-sm text-gray-900">
                             <Building className="w-4 h-4 mr-2 text-gray-400" />
                             {user.department || '—'}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                            user.is_active
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
+
+                        {/* Estado */}
+                        <td className="px-6 py-4 hidden sm:table-cell">
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                              user.is_active
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
                             {user.is_active ? (
                               <>
                                 <UserCheck className="w-3 h-3 mr-1" />
@@ -411,23 +419,25 @@ const GestionEmpleadosPage: React.FC = () => {
                             )}
                           </span>
                         </td>
+
+                        {/* Acciones */}
                         <td className="px-6 py-4">
                           <div className="flex items-center space-x-2">
-                            <button 
+                            <button
                               onClick={() => handleVerEmpleado(user.id)}
                               className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                               title="Ver detalles"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleEditarEmpleado(user.id)}
                               className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                               title="Editar empleado"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleEliminarEmpleado(user)}
                               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                               title="Eliminar empleado"
@@ -440,6 +450,7 @@ const GestionEmpleadosPage: React.FC = () => {
                     );
                   })}
                 </tbody>
+
               </table>
             </div>
           </div>
