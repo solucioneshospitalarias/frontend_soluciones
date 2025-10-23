@@ -617,20 +617,21 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                     <button
                       type="submit"
                       disabled={loading || loadingUser || loadingReferences}
-                      className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-6 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-6 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="w-5 h-5 sm:w-4 sm:h-4 animate-spin" />
                           Actualizando...
                         </>
                       ) : (
                         <>
-                          <Save className="w-4 h-4" />
+                          <Save className="w-5 h-5 sm:w-4 sm:h-4" />
                           Actualizar Empleado
                         </>
                       )}
                     </button>
+
                   </div>
                 </div>
               )}
