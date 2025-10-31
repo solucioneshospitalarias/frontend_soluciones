@@ -24,7 +24,7 @@ import soluciones from '../assets/soluciones-ico.png';
 interface SidebarProps {
   isOpen: boolean;
   toggle: () => void;
-  onOpenChangePassword?: () => void; // ← opcional
+  onOpenChangePassword?: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle, onOpenChangePassword }) => {
@@ -51,7 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle, onOpenChangePassword 
 
   const menuItems = [
     ...(canAccessDashboard(userRole)
-      ? [{ id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/dashboard' }]
+      ? [{ id: 'dashboard', label: 'Panel General', icon: BarChart3, path: '/dashboard' }]
       : []),
     ...(canManageEvaluations(userRole)
       ? [{ id: 'evaluaciones', label: 'Sistema de Evaluaciones', icon: Activity, path: '/evaluaciones' }]
@@ -80,20 +80,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle, onOpenChangePassword 
 
   return (
     <>
-      {/* Botón de toggle siempre visible */}
-      <button
-        onClick={toggle}
-        className="fixed top-4 left-4 z-50 bg-white p-2 rounded-lg shadow-md hover:bg-gray-50 transition"
-      >
-        <Menu className="w-6 h-6 text-[#56B167]" />
-      </button>
-
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-screen w-64 bg-[#56B167] flex flex-col justify-between shadow-xl z-40 transition-transform duration-300 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed top-0 left-0 h-screen bg-[#56B167] flex flex-col justify-between shadow-xl z-40 transition-transform duration-300
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{ width: 'var(--sidebar-width)' }}
       >
+
         <div className="p-4">
           <div className="flex justify-center mb-6">
             <img src={soluciones} alt="Logo" className="w-16 h-16 object-contain" />
