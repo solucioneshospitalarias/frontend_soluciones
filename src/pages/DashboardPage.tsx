@@ -1,16 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Building2,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  ChevronRight,
-  BarChart3,
-  Loader2,
-  Target,
-  Award,
-  Info,
-} from 'lucide-react';
+import { Building2, Clock, CheckCircle, AlertCircle, ChevronRight, BarChart3, Loader2, Target, Award, Info, } from 'lucide-react';
 import {
   getDepartments,
   getDepartmentPeriodStats,
@@ -22,7 +11,7 @@ import {
 } from '../services/departmentService';
 import { getPeriods, type Period } from '../services/evaluationService';
 import VerReporteDepartamentoModal from '../components/VerReporteDepartamentoModal';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, Cell } from 'recharts';
 
 // =============== INTERFACES ===============
 interface DepartmentWithStats extends Department {
@@ -60,17 +49,14 @@ const DepartmentCard: React.FC<{
     : 0;
 
   return (
-    <div
-      onClick={onClick}
-      className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all cursor-pointer group"
-    >
+    <div onClick={onClick} className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md hover:-translate-y-1 transition-all duration-100 cursor-pointer group" >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-blue-600 rounded-lg text-white">
+          <div className="p-2 bg-green-600 rounded-lg text-white">
             <Building2 className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 text-base group-hover:text-blue-600 transition-colors">
+            <h3 className="font-semibold text-gray-900 text-base group-hover:transition-colors">
               {department.name}
             </h3>
             {department.employee_count ? (
@@ -80,7 +66,7 @@ const DepartmentCard: React.FC<{
             ) : null}
           </div>
         </div>
-        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
+        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-green-500 transition-colors" />
       </div>
 
       {department.evaluation_stats && (
@@ -93,7 +79,7 @@ const DepartmentCard: React.FC<{
           </div>
           <div className="w-full bg-gray-100 rounded-full h-1.5">
             <div
-              className="h-1.5 rounded-full bg-blue-600 transition-all"
+              className="h-1.5 rounded-full bg-green-300 transition-all"
               style={{ width: `${completionRate}%` }}
             />
           </div>
@@ -137,35 +123,35 @@ const DepartmentComparisonChart: React.FC<{
   }));
 
   const getBarColor = (value: number) => {
-    if (value >= 90) return '#10B981'; // Emerald
+    if (value >= 90) return '#56B167'; // Emerald
     if (value >= 80) return '#3B82F6'; // Blue
     if (value >= 70) return '#F59E0B'; // Amber
     return '#EF4444'; // Red
   };
 
   return (
-    <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm h-[600px] flex flex-col">
+    <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm h-[800px] flex flex-col">
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center mb-4">
+          <div className="p-2 text-black">
+            <BarChart3 className="w-6 h-6" />
+          </div>
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Rendimiento por Departamento</h2>
-            <p className="text-xs text-gray-500 mt-1">Puntuación promedio de evaluaciones completadas</p>
-          </div>
-          <div className="p-2 bg-blue-600 rounded-lg text-white">
-            <BarChart3 className="w-4 h-4" />
           </div>
         </div>
+        <p className="text-xs text-gray-500 mb-4">Puntuación promedio de evaluaciones completadas</p>
 
         {/* ✅ MENSAJE INFORMATIVO SOBRE EL CÁLCULO */}
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
           <div className="flex items-start gap-2">
-            <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-blue-700 leading-relaxed">
+            <Info className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-yellow-700 leading-relaxed">
               <strong>Nota:</strong> Los promedios reflejan únicamente las evaluaciones completadas. 
               Las evaluaciones pendientes no afectan el puntaje de desempeño.
             </p>
           </div>
-        </div>
+        </div>ow
 
         <select
           value={selectedPeriod?.id || ''}
@@ -173,7 +159,7 @@ const DepartmentComparisonChart: React.FC<{
             const period = periods.find((p: Period) => p.id === parseInt(e.target.value));
             if (period) onPeriodChange(period);
           }}
-          className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:border-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+          className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:border-green-500 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
         >
           <option value="">📊 Todos los períodos</option>
           {periods.map((period: Period) => (
@@ -185,18 +171,11 @@ const DepartmentComparisonChart: React.FC<{
       </div>
 
       {chartData.length > 0 ? (
-        <div className="flex-1">
+        <div className="flex-1 min-h-[160px] max-h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis
-                dataKey="name"
-                fontFamily="'Inter', sans-serif"
-                fontSize={12}
-                tick={{ fill: '#4B5563' }}
-                axisLine={{ stroke: '#e5e7eb' }}
-                tickLine={false}
-              />
+              <XAxis dataKey="name" hide />
               <YAxis
                 domain={[0, 100]}
                 fontFamily="'Inter', sans-serif"
@@ -215,60 +194,50 @@ const DepartmentComparisonChart: React.FC<{
                 }}
               />
               <Tooltip
+                cursor={{ fill: 'rgba(0,0,0,0.05)' }}
                 contentStyle={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                  backgroundColor: 'rgba(0, 0, 0, 0.85)',
                   border: 'none',
                   borderRadius: '8px',
                   fontFamily: "'Inter', sans-serif",
                   fontSize: 12,
-                  padding: '12px',
+                  padding: '10px 12px',
+                  color: '#fff',
                 }}
-                content={({ payload }) => {
-                  if (!payload || !payload[0]) return null;
-                  const data = payload[0].payload;
-                  return (
-                    <div className="text-white">
-                      <div className="font-semibold mb-2 border-b border-white/20 pb-2">
-                        {data.name}
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between gap-4">
-                          <span className="text-gray-300">Promedio:</span>
-                          <span className="font-semibold">{data.promedio.toFixed(1)}%</span>
-                        </div>
-                        <div className="flex justify-between gap-4">
-                          <span className="text-gray-300">Completadas:</span>
-                          <span className="font-semibold">{data.completadas} de {data.total}</span>
-                        </div>
-                        <div className="flex justify-between gap-4">
-                          <span className="text-gray-300">Completitud:</span>
-                          <span className="font-semibold">{data.completionRate.toFixed(1)}%</span>
-                        </div>
-                      </div>
-                      <div className="mt-2 pt-2 border-t border-white/20 text-xs text-gray-400">
-                        * Promedio solo de evaluaciones completadas
-                      </div>
-                    </div>
-                  );
-                }}
+                formatter={(value: number) => [
+                  <span style={{ color: '#fff', fontWeight: 600 }}>{`${value.toFixed(1)}%`}</span>,
+                  <span style={{ color: '#ccc' }}>Promedio</span>,
+                ]}
+                labelFormatter={(label) => (
+                  <span style={{ color: '#fff', fontWeight: 700 }}>{label}</span>
+                )}
               />
               <Bar
                 dataKey="promedio"
                 radius={[6, 6, 0, 0]}
                 barSize={40}
-                animationDuration={1000}
+                animationDuration={500}
                 animationEasing="ease-out"
               >
                 {chartData.map((entry, index) => (
-                  <Bar
-                    key={`${entry.name}-${index}`}
-                    dataKey="promedio"
-                    fill={getBarColor(entry.promedio)}
-                  />
+                  <Cell key={`cell-${index}`} fill={getBarColor(entry.promedio)} />
                 ))}
+
+                <LabelList
+                  dataKey="promedio"
+                  position="inside"
+                  formatter={(value: number) => `${value.toFixed(1)}%`}
+                  style={{
+                    fill: '#fff',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center h-[280px] text-center">
@@ -521,13 +490,26 @@ const DashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="p-4 min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-gradient-to-r from-green-500 to-green-600 rounded-xl text-white shadow-lg">
+            <BarChart3 className="w-4 h-4 md:w-8 md:h-8" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Panel General</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">
+              Datos en tiempo real sobre la productividad y desempeño promedio de cada equipo
+            </p>
+          </div>
+        </div>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Área de Reportes por Departamentos */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 h-[600px] flex flex-col">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 h-[800px] flex flex-col">
             <div className="flex items-center gap-2 mb-4">
-              <Building2 className="w-5 h-5 text-blue-600" />
+              <Building2 className="w-6 h-6" />
               <h2 className="text-lg font-semibold text-gray-900">Reportes por Departamentos</h2>
             </div>
             <p className="text-xs text-gray-500 mb-4">Selecciona un departamento para ver detalles y reportes</p>
@@ -537,7 +519,7 @@ const DashboardPage: React.FC = () => {
                 const period = periods.find((p: Period) => p.id === parseInt(e.target.value));
                 if (period) handleReportPeriodChange(period);
               }}
-              className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:border-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all mb-4"
+              className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:border-green-500 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all mb-4"
             >
               <option value="">📊 Todos los períodos</option>
               {periods.map((period: Period) => (
