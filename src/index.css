@@ -1,1 +1,13 @@
 @import "tailwindcss";
+
+@layer utilities {
+  @media (max-width: 270px) {
+    .@[270px]\:grid-cols-1 {
+      grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+    }
+  }
+}
+
+:root {
+  --sidebar-width: 256px;
+}

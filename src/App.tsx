@@ -10,6 +10,7 @@ import OrganizationalConfigPage from './pages/OrganizationalConfigPage';
 import Sidebar from './components/Sidebar';
 import ChangePasswordModal from './components/ChangePasswordModal';
 import { canAccessDashboard, getDefaultRouteByRole } from './utils/permissions';
+import TopContent from './components/TopContent';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -20,24 +21,24 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const userRole = user?.role?.name?.toLowerCase() || '';
-  
+
   if (!canAccessDashboard(userRole)) {
     const defaultRoute = getDefaultRouteByRole(userRole);
     return <Navigate to={defaultRoute} replace />;
   }
-  
+
   return <>{children}</>;
 };
 
 const AdminOnlyRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const userRole = user?.role?.name?.toLowerCase() || '';
-  
+
   if (userRole !== 'admin') {
     const defaultRoute = getDefaultRouteByRole(userRole);
     return <Navigate to={defaultRoute} replace />;
   }
-  
+
   return <>{children}</>;
 };
 
@@ -45,7 +46,7 @@ const SmartRedirect = () => {
   const { user } = useAuth();
   const userRole = user?.role?.name?.toLowerCase() || '';
   const defaultRoute = getDefaultRouteByRole(userRole);
-  
+
   return <Navigate to={defaultRoute} replace />;
 };
 
@@ -59,7 +60,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
       setIsSidebarOpen(!isMobile);
     };
 
-    handleResize(); // inicial
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -70,14 +71,15 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <>
-      <div className="relative flex">
+      <div className="relative flex min-h-screen bg-gray-50">
+        {/* Sidebar */}
         <Sidebar
           isOpen={isSidebarOpen}
           toggle={handleToggle}
           onOpenChangePassword={() => setShowChangePasswordModal(true)}
         />
 
-        {/* Overlay con blur para pantallas pequeñas */}
+        {/* Overlay para móviles */}
         {isSidebarOpen && window.innerWidth <= 800 && (
           <div
             onClick={handleToggle}
@@ -85,13 +87,18 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
           />
         )}
 
-        <main
-          className={`transition-all duration-300 p-6 w-full ${
-            isSidebarOpen && window.innerWidth > 800 ? 'ml-64' : 'ml-0'
+        {/* Contenedor principal con top bar */}
+        <div
+          className={`flex flex-col transition-all duration-300 ease-in-out w-full ${
+            isSidebarOpen && window.innerWidth > 800 ? 'ml-[var(--sidebar-width)]' : 'ml-0'
           }`}
         >
-          {children}
-        </main>
+          <TopContent
+            toggleSidebar={handleToggle}
+            isSidebarOpen={isSidebarOpen}
+          />
+          <main className="flex-1 p-6 mt-16">{children}</main>
+        </div>
       </div>
 
       <ChangePasswordModal
@@ -102,12 +109,11 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-
 const AppContent: React.FC = () => (
   <Router>
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      
+
       <Route
         path="/dashboard"
         element={
@@ -120,7 +126,7 @@ const AppContent: React.FC = () => (
           </ProtectedRoute>
         }
       />
-      
+
       <Route
         path="/employees"
         element={
@@ -133,7 +139,7 @@ const AppContent: React.FC = () => (
           </ProtectedRoute>
         }
       />
-      
+
       <Route
         path="/evaluaciones"
         element={
@@ -146,7 +152,7 @@ const AppContent: React.FC = () => (
           </ProtectedRoute>
         }
       />
-      
+
       <Route
         path="/organizational-config"
         element={
@@ -159,7 +165,7 @@ const AppContent: React.FC = () => (
           </ProtectedRoute>
         }
       />
-      
+
       <Route
         path="/mis-evaluaciones"
         element={
@@ -170,23 +176,23 @@ const AppContent: React.FC = () => (
           </ProtectedRoute>
         }
       />
-      
-      <Route 
-        path="/" 
+
+      <Route
+        path="/"
         element={
           <ProtectedRoute>
             <SmartRedirect />
           </ProtectedRoute>
-        } 
+        }
       />
-      
-      <Route 
-        path="*" 
+
+      <Route
+        path="*"
         element={
           <ProtectedRoute>
             <SmartRedirect />
           </ProtectedRoute>
-        } 
+        }
       />
     </Routes>
   </Router>
