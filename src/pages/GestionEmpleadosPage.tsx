@@ -134,7 +134,7 @@ const GestionEmpleadosPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 min-h-screen">
+    <div className="bg-gradient-to-br from-slate-50 to-gray-100 min-h-screen">
       {/* Modales */}
       <CrearEmpleadoModal
         show={showCrearModal}
@@ -165,7 +165,7 @@ const GestionEmpleadosPage: React.FC = () => {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 sm:p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl text-white">
+          <div className="p-3 bg-gradient-to-r from-green-500 to-green-600 rounded-xl text-white shadow-lg">
             <Users className="w-6 h-6 sm:w-8 sm:h-8" />
           </div>
           <div>
