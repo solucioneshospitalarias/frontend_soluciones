@@ -123,8 +123,8 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
 
   const getScoreLabel = (score: number) => {
     const labels = {
-      1: 'Necesita Mejora',
-      2: 'Por Debajo',
+      1: 'Por Debajo',
+      2: 'Necesita Mejora',
       3: 'Promedio',
       4: 'Bueno',
       5: 'Excelente',
