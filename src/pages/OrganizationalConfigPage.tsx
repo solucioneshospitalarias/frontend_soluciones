@@ -10,7 +10,8 @@ import {
   Loader2,
   CheckCircle,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Settings
 } from 'lucide-react';
 import { API_BASE_URL } from '../constants/api';
 
@@ -281,33 +282,41 @@ const OrganizationalConfigPage: React.FC = () => {
   );
 
   return (
-    <div className="p-4 bg-gray-50 min-h-screen">
+    <div className="bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="mb-8 max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Configuración Organizacional</h1>
-        <p className="text-gray-600 text-sm">Gestiona los departamentos y posiciones de la empresa</p>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-gradient-to-r from-green-500 to-green-600 rounded-xl text-white shadow-lg">
+            <Settings className="w-4 h-4 md:w-8 md:h-8" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Configuración Organizacional</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Gestiona los departamentos y posiciones de la empresa</p>
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}
-      <div className="max-w-6xl mx-auto mb-6">
+      <div className="mx-auto mb-6">
         <div className="bg-white rounded-xl shadow-md border border-gray-100 p-2 flex flex-col min-[450px]:flex-row gap-2">
           <button
             onClick={() => setActiveTab('departments')}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
               activeTab === 'departments'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg hover:from-green-600 hover:to-green-700 hover:shadow-xl'
+                : 'text-gray-600 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 hover:text-green-700 border border-transparent hover:border-green-300'
             }`}
           >
             <Building2 className="w-5 h-5" />
             Departamentos
           </button>
+
           <button
             onClick={() => setActiveTab('positions')}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
               activeTab === 'positions'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg hover:from-green-600 hover:to-green-700 hover:shadow-xl'
+                : 'text-gray-600 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 hover:text-green-700 border border-transparent hover:border-green-300'
             }`}
           >
             <Briefcase className="w-5 h-5" />
@@ -317,21 +326,21 @@ const OrganizationalConfigPage: React.FC = () => {
       </div>
 
       {/* Search and Actions */}
-      <div className="max-w-6xl mx-auto mb-6 bg-white rounded-xl shadow-md border border-gray-100 p-6">
+      <div className="mx-auto mb-6 bg-white rounded-xl shadow-md border border-gray-100 p-6">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder={`Buscar ${activeTab === 'departments' ? 'departamentos' : 'posiciones'}...`}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <button
             onClick={handleCreate}
-            className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium flex items-center gap-2"
+            className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-semibold flex items-center gap-2 transition-all shadow-lg hover:shadow-xl"
           >
             <Plus className="w-5 h-5" />
             Crear {activeTab === 'departments' ? 'Departamento' : 'Posición'}
@@ -341,14 +350,14 @@ const OrganizationalConfigPage: React.FC = () => {
 
       {/* Content */}
       {loading ? (
-        <div className="flex items-center justify-center py-12 max-w-6xl mx-auto">
+        <div className="flex items-center justify-center py-12 mx-auto">
           <div className="text-center">
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
             <p className="text-gray-600 text-sm font-medium">Cargando datos...</p>
           </div>
         </div>
       ) : (
-        <div className="max-w-6xl mx-auto">
+        <div className="mx-auto">
           {activeTab === 'departments' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredDepartments.map((dept) => (

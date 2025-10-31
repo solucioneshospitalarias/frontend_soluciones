@@ -10,6 +10,7 @@ import {
   Eye,
   Play,
   Filter,
+  Target,
 } from "lucide-react";
 import { useEvaluaciones } from "../hooks/useEvaluaciones";
 import { useFiltrosEvaluaciones } from "../hooks/useFiltrosEvaluaciones";
@@ -169,16 +170,19 @@ const EvaluacionesPage: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col p-6">
-      <div className="flex flex-col flex-grow max-w-5xl mx-auto w-full">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 font-sans">
-            Evaluaciones Asignadas
-          </h1>
-          <p className="text-gray-600 text-sm mt-1">
-            Administra y completa las evaluaciones asignadas
-          </p>
-        </header>
+    <div className="h-screen bg-gray-50 flex flex-col">
+      <div className="flex flex-col flex-grow mx-auto w-full">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-gradient-to-r from-green-500 to-green-600 rounded-xl text-white shadow-lg">
+              <Target className="w-4 h-4 md:w-8 md:h-8" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Sistema de Evaluaciones</h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">Gestión integral de evaluaciones al personal</p>
+            </div>
+          </div>
+        </div>
 
         {cargando ? (
           <div className="flex items-center justify-center flex-grow">
