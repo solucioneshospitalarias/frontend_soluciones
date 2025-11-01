@@ -14,7 +14,7 @@ interface EditarPlantillaModalProps {
 interface SelectedCriteria {
   criteriaId: number;
   weight: number;
-  category: 'productividad' | 'conducta_laboral' | 'habilidades';
+  category: 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo';
   isLocked: boolean;
 }
 
@@ -43,11 +43,12 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
   const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [filterCategory, setFilterCategory] = useState<'todos' | 'productividad' | 'conducta_laboral' | 'habilidades'>('todos');
-  const [collapsedCategories, setCollapsedCategories] = useState<Record<'productividad' | 'conducta_laboral' | 'habilidades', boolean>>({
+  const [filterCategory, setFilterCategory] = useState<'todos' | 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo'>('todos');
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo', boolean>>({
     productividad: false,
     conducta_laboral: false,
     habilidades: false,
+    seguridad_trabajo: false,
   });
 
   useEffect(() => {
@@ -99,7 +100,21 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
           });
         });
       }
+
+      if (criteriaByCategory.seguridad_trabajo && Array.isArray(criteriaByCategory.seguridad_trabajo)) {
+        criteriaByCategory.seguridad_trabajo.forEach((tc: BackendTemplateCriteria) => {
+          result.push({
+            criteriaId: tc.criteria?.id || tc.id,
+            weight: tc.weight,
+            category: 'seguridad_trabajo',
+            isLocked: false
+          });
+        });
+      }
     }
+
+
+
     // Si viene como array (formato antiguo)
     else if (Array.isArray(templateCriteria)) {
       templateCriteria.forEach((tc) => {
@@ -108,7 +123,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
           result.push({
             criteriaId: tc.criteria_id,
             weight: tc.weight,
-            category: criteriaData.category as 'productividad' | 'conducta_laboral' | 'habilidades',
+            category: criteriaData.category as 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo',
             isLocked: false
           });
         }
@@ -183,7 +198,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
     const newSelected: SelectedCriteria = {
       criteriaId: criteria.id,
       weight: 0,
-      category: criteria.category as 'productividad' | 'conducta_laboral' | 'habilidades',
+      category: criteria.category as 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo',
       isLocked: false,
     };
 
@@ -200,7 +215,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
     }));
   };
 
-  const handleWeightChange = (criteriaId: number, newWeight: string, _category: 'productividad' | 'conducta_laboral' | 'habilidades') => {
+  const handleWeightChange = (criteriaId: number, newWeight: string, _category: 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo') => {
     const sanitizedWeight = sanitizeInputValue(newWeight, 0, 2);
     setForm(prev => ({
       ...prev,
@@ -219,7 +234,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
     }));
   };
 
-  const getTotalWeightByCategory = (category: 'productividad' | 'conducta_laboral' | 'habilidades') => {
+  const getTotalWeightByCategory = (category: 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo') => {
     return form.selectedCriteria
       .filter(sc => sc.category === category)
       .reduce((sum, sc) => sum + sc.weight, 0);
@@ -232,7 +247,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
   };
 
   // ✅ CORRECCIÓN 2: Normalización que incluye criterios con peso 0
-  const normalizeWeightsByCategory = (category: 'productividad' | 'conducta_laboral' | 'habilidades') => {
+  const normalizeWeightsByCategory = (category: 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo') => {
     console.log(`🔄 Starting normalization for category: ${category}`);
     
     setForm(prev => {
@@ -332,7 +347,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
     if (!form.name.trim()) return 'El nombre de la plantilla es requerido.';
     if (form.selectedCriteria.length === 0) return 'Debe seleccionar al menos un criterio.';
 
-    const categories: ('productividad' | 'conducta_laboral' | 'habilidades')[] = ['productividad', 'conducta_laboral', 'habilidades'];
+    const categories: ('productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo')[] = ['productividad', 'conducta_laboral', 'habilidades', 'seguridad_trabajo'];
     const validationErrors: string[] = [];
 
     categories.forEach(category => {
@@ -383,6 +398,10 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
           .filter(sc => sc.category === 'habilidades')
           .filter(sc => sc.weight > 0)
           .map(sc => ({ criteria_id: sc.criteriaId, weight: sc.weight })),
+        seguridad_trabajo: form.selectedCriteria
+          .filter(sc => sc.category === 'seguridad_trabajo')
+          .filter(sc => sc.weight > 0)
+          .map(sc => ({ criteria_id: sc.criteriaId, weight: sc.weight }))
       };
 
       const updateData: UpdateTemplateDTO = {
@@ -444,6 +463,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
     productividad: form.selectedCriteria.filter(sc => sc.category === 'productividad'),
     conducta_laboral: form.selectedCriteria.filter(sc => sc.category === 'conducta_laboral'),
     habilidades: form.selectedCriteria.filter(sc => sc.category === 'habilidades'),
+    seguridad_trabajo: form.selectedCriteria.filter(sc => sc.category === 'seguridad_trabajo'),
   };
 
   if (!show) return null;
@@ -558,13 +578,14 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                 <div className="mb-4">
                   <select
                     value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value as 'todos' | 'productividad' | 'conducta_laboral' | 'habilidades')}
+                    onChange={(e) => setFilterCategory(e.target.value as 'todos' | 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo')}
                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                   >
                     <option value="todos">Todos los criterios</option>
                     <option value="productividad">Productividad</option>
                     <option value="conducta_laboral">Conducta Laboral</option>
                     <option value="habilidades">Habilidades</option>
+                    <option value="seguridad_trabajo">Seguridad en el Trabajo</option>
                   </select>
                 </div>
 
@@ -599,7 +620,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
 
                 {/* Criterios seleccionados por categoría */}
                 <div className="space-y-4">
-                  {(['productividad', 'conducta_laboral', 'habilidades'] as const).map(category => {
+                  {(['productividad', 'conducta_laboral', 'habilidades', 'seguridad_trabajo'] as const).map(category => {
                     const categoryCriteria = groupedSelectedCriteria[category];
                     const totalWeight = getTotalWeightByCategory(category);
                     
