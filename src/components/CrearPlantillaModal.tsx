@@ -491,7 +491,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                               <div className="flex justify-between items-center mb-2 cursor-pointer" onClick={() => toggleCategoryCollapse(category)}>
                                 <h6 className="font-semibold text-gray-800 flex items-center gap-2">
                                   {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                  {category === 'productividad' ? 'Productividad' : category === 'conducta_laboral' ? 'Conducta Laboral' : 'Habilidades' }
+                                  {category === 'productividad' ? 'Productividad' : category === 'conducta_laboral' ? 'Conducta Laboral' : category === 'habilidades' ? 'Habilidades' : 'Seguridad y Salud en el Trabajo'}
                                   <span className="ml-2 text-sm text-gray-500">({categoryCriteria.length})</span>
                                 </h6>
                                 <div className="flex items-center gap-2">
