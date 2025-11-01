@@ -12,7 +12,7 @@ interface CrearCriterioModalProps {
 interface CriteriaForm {
   name: string;
   description: string;
-  category: 'productividad' | 'conducta_laboral' | 'habilidades' | '';
+  category: 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo' | '';
 }
 
 const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, onCreated }) => {
@@ -31,6 +31,7 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
     { value: 'productividad', label: 'Productividad' },
     { value: 'conducta_laboral', label: 'Conducta Laboral' },
     { value: 'habilidades', label: 'Habilidades' },
+    { value: 'seguridad_trabajo', label: 'Seguridad y salud en el trabajo' },
   ];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -46,7 +47,7 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
     
     // Validate category
     if (!validCategories.some(cat => cat.value === form.category)) {
-      return 'Categoría no válida. Seleccione Productividad, Conducta Laboral o Habilidades.';
+      return 'Categoría no válida. Seleccione Productividad, Conducta Laboral, Habilidades o Seguridad y salud en el trabajo.';
     }
     
     return null;
@@ -68,7 +69,7 @@ const CrearCriterioModal: React.FC<CrearCriterioModalProps> = ({ show, onClose, 
       const criteriaData: CreateCriteriaDTO = {
         name: form.name.trim(),
         description: form.description.trim(),
-        category: form.category as 'productividad' | 'conducta_laboral' | 'habilidades',
+        category: form.category as 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo'
       };
 
       console.log('🔄 Creating criteria with data:', criteriaData);
