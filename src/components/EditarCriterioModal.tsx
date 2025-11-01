@@ -125,7 +125,7 @@ const EditarCriterioModal: React.FC<EditarCriterioModalProps> = ({
         name: form.name?.trim(),
         description: form.description?.trim(),
         weight: form.weight,
-        category: form.category as 'productividad' | 'conducta_laboral' | 'habilidades',
+        category: form.category as 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo',
       };
 
       await updateCriteria(criteriaId, payload);
@@ -281,6 +281,7 @@ const EditarCriterioModal: React.FC<EditarCriterioModalProps> = ({
                       <option value="productividad">Productividad</option>
                       <option value="conducta_laboral">Conducta Laboral</option>
                       <option value="habilidades">Habilidades</option>
+                      <option value="seguridad_trabajo">Seguridad en el Trabajo</option>
                     </select>
                     {fieldErrors.category && (
                       <p className="text-red-600 text-sm mt-1">{fieldErrors.category}</p>
