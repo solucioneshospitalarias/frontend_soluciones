@@ -116,6 +116,8 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
         return 'bg-green-50 text-green-700 border-green-200';
       case 'habilidades':
         return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'seguridad_trabajo':
+        return 'bg-red-50 text-red-700 border-red-200';
       default:
         return 'bg-gray-100 text-gray-700 border-gray-300';
     }
@@ -239,6 +241,7 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
                             {scoreItem.criteria.category === 'productividad' ? 'Productividad' :
                              scoreItem.criteria.category === 'conducta_laboral' ? 'Conducta Laboral' :
                              scoreItem.criteria.category === 'habilidades' ? 'Habilidades' :
+                             scoreItem.criteria.category === 'seguridad_trabajo' ? 'Seguridad y Salud en el Trabajo' :
                              'Sin Categoría'}
                           </span>
                         </div>
