@@ -2,7 +2,7 @@ export interface Criteria {
   id: number;
   name: string;
   description: string;
-  category: 'productividad' | 'conducta_laboral' | 'habilidades';
+  category: 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo';
   weight: number;
   is_active: boolean;
   can_modify: boolean;
@@ -44,6 +44,7 @@ export interface TemplateCriteriaByCategory {
   productivity: BackendTemplateCriteria[];
   work_conduct: BackendTemplateCriteria[];
   skills: BackendTemplateCriteria[];
+  seguridad_trabajo: BackendTemplateCriteria[];
 }
 
 export interface Template {
@@ -60,6 +61,7 @@ export interface Template {
       productivity: number;
       work_conduct: number;
       skills: number;
+      seguridad_trabajo: number;
     };
     is_valid_weights: boolean;
   };
@@ -125,7 +127,7 @@ export interface CriterioEvaluacionDTO {
   description: string;
   weight: number;
   is_active: boolean;
-  category?: 'productividad' | 'conducta_laboral' | 'habilidades';
+  category?: 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo';
 }
 
 export interface RespuestaPuntuacionDTO {
@@ -242,7 +244,7 @@ export interface AverageScoreByDepartment {
 }
 
 export type EstadoEvaluacion = 'pending' | 'in_progress' | 'completed' | 'overdue';
-export type CategoríaCriterio = 'productividad' | 'conducta_laboral' | 'habilidades';
+export type CategoríaCriterio = 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo';
 export type ModoEvaluacion = 'evaluador' | 'empleado';
 
 export interface InfoPeso {
@@ -260,7 +262,7 @@ export interface OpcionPuntuacion {
 export interface CreateCriteriaDTO {
   name: string;
   description: string;
-  category: 'productividad' | 'conducta_laboral' | 'habilidades';
+  category: 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo';
 }
 
 export interface CreatePeriodDTO {
@@ -280,6 +282,7 @@ export interface CreateTemplateDTO {
     productivity: { criteria_id: number; weight: number }[];
     work_conduct: { criteria_id: number; weight: number }[];
     skills: { criteria_id: number; weight: number }[];
+    seguridad_trabajo: { criteria_id: number; weight: number }[];
   };
 }
 
@@ -306,7 +309,7 @@ export interface UpdateCriteriaDTO {
   name?: string;
   description?: string;
   weight?: number;
-  category?: 'productividad' | 'conducta_laboral' | 'habilidades';
+  category?: 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo';
 }
 
 export interface UpdateTemplateDTO {
@@ -317,6 +320,7 @@ export interface UpdateTemplateDTO {
     productivity: { criteria_id: number; weight: number }[];
     work_conduct: { criteria_id: number; weight: number }[];
     skills: { criteria_id: number; weight: number }[];
+    seguridad_trabajo: { criteria_id: number; weight: number }[];
   };
 }
 
@@ -333,7 +337,7 @@ export interface Evaluation {
   criteria: {
     criteriaId: number;
     description: string;
-    category: 'productividad' | 'conducta_laboral' | 'habilidades';
+    category: 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo';
     weight: number;
     score?: number;
   }[];
@@ -384,6 +388,17 @@ export function flattenTemplateCriteria(criteria: TemplateCriteria[] | TemplateC
         criteria_id: tc.criteria.id,
         weight: tc.weight,
         category: 'habilidades'
+      });
+    });
+  }
+  
+  if ('seguridad_trabajo' in criteria) {
+    criteria.seguridad_trabajo.forEach(tc => {
+      flattened.push({
+        id: tc.id,
+        criteria_id: tc.criteria.id,
+        weight: tc.weight,
+        category: 'seguridad_trabajo'
       });
     });
   }
