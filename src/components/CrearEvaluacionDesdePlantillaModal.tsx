@@ -33,6 +33,7 @@ interface GroupedCriteria {
   productividad: CriterionData[];
   conducta_laboral: CriterionData[];
   habilidades: CriterionData[];
+  seguridad_trabajo: CriterionData[];
 }
 
 interface BackendTemplateCriteria {
@@ -51,6 +52,7 @@ interface TemplateCriteriaByCategory {
   productivity?: BackendTemplateCriteria[];
   work_conduct?: BackendTemplateCriteria[];
   skills?: BackendTemplateCriteria[];
+  seguridad_trabajo?: BackendTemplateCriteria[];
 }
 
 const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantillaModalProps> = ({
@@ -165,14 +167,16 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
       return {
         productividad: [],
         conducta_laboral: [],
-        habilidades: []
+        habilidades: [],
+        seguridad_trabajo: []
       };
     }
 
     const result: GroupedCriteria = {
       productividad: [],
       conducta_laboral: [],
-      habilidades: []
+      habilidades: [],
+      seguridad_trabajo: []
     };
 
     if (typeof template.criteria === 'object' && !Array.isArray(template.criteria)) {
@@ -210,6 +214,17 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
           });
         });
       }
+      if (criteriaObj.seguridad_trabajo) {
+        criteriaObj.seguridad_trabajo.forEach((tc: BackendTemplateCriteria) => {
+          result.seguridad_trabajo.push({
+            id: tc.id,
+            criteria_id: tc.criteria.id,
+            weight: tc.weight,
+            name: tc.criteria.name
+          });
+        });
+      }
+      
     } else if (Array.isArray(template.criteria)) {
       const flattened = flattenTemplateCriteria(template.criteria);
       flattened.forEach(tc => {
