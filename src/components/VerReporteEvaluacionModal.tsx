@@ -232,6 +232,7 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
                     'productividad': 'Productividad',
                     'conducta_laboral': 'Conducta Laboral', 
                     'habilidades': 'Habilidades',
+                    'seguridad_trabajo': 'Seguridad y salud en el Trabajo',
                     'otros': 'Otros'
                   };
 
