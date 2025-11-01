@@ -68,6 +68,7 @@ interface TemplateCriteriaByCategory {
   productivity?: BackendTemplateCriteria[];
   work_conduct?: BackendTemplateCriteria[];
   skills?: BackendTemplateCriteria[];
+  seguridad_trabajo?: BackendTemplateCriteria[];
 }
 
 interface BackendTemplateCriteria {
@@ -179,7 +180,8 @@ const GestionEvaluacionesPage: React.FC = () => {
         const criteriaObj = template.criteria as TemplateCriteriaByCategory;
         criteriaCount = (criteriaObj.productivity?.length || 0) +
                       (criteriaObj.work_conduct?.length || 0) +
-                      (criteriaObj.skills?.length || 0);
+                      (criteriaObj.skills?.length || 0) +
+                      (criteriaObj.seguridad_trabajo?.length || 0);
       }
     }
     
@@ -199,7 +201,8 @@ const GestionEvaluacionesPage: React.FC = () => {
           const allCriteria: BackendTemplateCriteria[] = [
             ...(criteriaObj.productivity || []),
             ...(criteriaObj.work_conduct || []),
-            ...(criteriaObj.skills || [])
+            ...(criteriaObj.skills || []),
+            ...(criteriaObj.seguridad_trabajo || [])
           ];
           
           weights = allCriteria.map(c => c.weight || 0);
