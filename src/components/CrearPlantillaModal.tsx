@@ -12,7 +12,7 @@ interface CrearPlantillaModalProps {
 interface SelectedCriteria {
   criteriaId: number;
   weight: number;
-  category: 'productividad' | 'conducta_laboral' | 'habilidades';
+  category: 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo';
   isLocked: boolean;
 }
 
@@ -33,11 +33,12 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
   const [_loadingCriteria, setLoadingCriteria] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [filterCategory, setFilterCategory] = useState<'todos' | 'productividad' | 'conducta_laboral' | 'habilidades'>('todos');
-  const [collapsedCategories, setCollapsedCategories] = useState<Record<'productividad' | 'conducta_laboral' | 'habilidades', boolean>>({
+  const [filterCategory, setFilterCategory] = useState<'todos' | 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo'>('todos');
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo', boolean>>({
     productividad: false,
     conducta_laboral: false,
     habilidades: false,
+    seguridad_trabajo: false,
   });
 
   useEffect(() => {
@@ -132,7 +133,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
     }));
   };
 
-  const resetCategoryWeights = (targetCategory: 'productividad' | 'conducta_laboral' | 'habilidades') => {
+  const resetCategoryWeights = (targetCategory: 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo') => {
     setForm(prev => ({
       ...prev,
       selectedCriteria: prev.selectedCriteria.map(sc =>
@@ -141,21 +142,21 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
     }));
   };
 
-  const toggleCategoryCollapse = (category: 'productividad' | 'conducta_laboral' | 'habilidades') => {
+  const toggleCategoryCollapse = (category: 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo') => {
     setCollapsedCategories(prev => ({
       ...prev,
       [category]: !prev[category],
     }));
   };
 
-  const getTotalWeightByCategory = (category: 'productividad' | 'conducta_laboral' | 'habilidades') => {
+  const getTotalWeightByCategory = (category: 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo') => {
     return form.selectedCriteria
       .filter(sc => sc.category === category)
       .reduce((sum, sc) => sum + sc.weight, 0);
   };
 
   // ✅ CORRECCIÓN: Normalización inclusiva (incluye criterios con peso 0)
-  const normalizeWeightsByCategory = (targetCategory: 'productividad' | 'conducta_laboral' | 'habilidades') => {
+  const normalizeWeightsByCategory = (targetCategory: 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo') => {
     console.log(`🔄 Starting normalization for category: ${targetCategory}`);
     
     setForm(prev => {
@@ -240,7 +241,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
   };
 
   const normalizeAllWeights = () => {
-    const categories: ('productividad' | 'conducta_laboral' | 'habilidades')[] = ['productividad', 'conducta_laboral', 'habilidades'];
+    const categories: ('productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo')[] = ['productividad', 'conducta_laboral', 'habilidades', 'seguridad_trabajo'];
     categories.forEach(category => normalizeWeightsByCategory(category));
   };
 
@@ -248,7 +249,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
     if (!form.name.trim()) return 'El nombre de la plantilla es obligatorio.';
     if (form.selectedCriteria.length === 0) return 'Debe seleccionar al menos un criterio.';
 
-    const categories: ('productividad' | 'conducta_laboral' | 'habilidades')[] = ['productividad', 'conducta_laboral', 'habilidades'];
+    const categories: ('productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo')[] = ['productividad', 'conducta_laboral', 'habilidades', 'seguridad_trabajo'];
     const validationErrors: string[] = [];
 
     categories.forEach(category => {
@@ -290,6 +291,9 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
         skills: form.selectedCriteria
           .filter(sc => sc.category === 'habilidades')
           .map(sc => ({ criteria_id: sc.criteriaId, weight: sc.weight })),
+        seguridad_trabajo: form.selectedCriteria
+          .filter(sc => sc.category === 'seguridad_trabajo')
+          .map(sc => ({ criteria_id: sc.criteriaId, weight: sc.weight }))
       };
 
       const templateData: CreateTemplateDTO = {
@@ -344,6 +348,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
     productividad: form.selectedCriteria.filter(sc => sc.category === 'productividad'),
     conducta_laboral: form.selectedCriteria.filter(sc => sc.category === 'conducta_laboral'),
     habilidades: form.selectedCriteria.filter(sc => sc.category === 'habilidades'),
+    seguridad_trabajo: form.selectedCriteria.filter(sc => sc.category === 'seguridad_trabajo'),
   };
 
   if (!show) return null;
@@ -416,7 +421,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                     <h5 className="font-medium text-gray-700 mb-3">Criterios Disponibles</h5>
                     <select
                       value={filterCategory}
-                      onChange={e => setFilterCategory(e.target.value as 'todos' | 'productividad' | 'conducta_laboral' | 'habilidades')}
+                      onChange={e => setFilterCategory(e.target.value as 'todos' | 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo')}
                       className="w-full p-2 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-purple-500"
                       disabled={loading}
                     >
@@ -424,6 +429,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                       <option value="productividad">Productividad</option>
                       <option value="conducta_laboral">Conducta Laboral</option>
                       <option value="habilidades">Habilidades</option>
+                      <option value="seguridad_trabajo">Seguridad y salud en el Trabajo</option>
                     </select>
                     <div className="border border-gray-200 rounded-lg p-4 max-h-80 overflow-y-auto">
                       {filteredAvailableCriteria.length === 0 ? (
@@ -476,7 +482,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                       <p className="text-gray-500 text-sm">No hay criterios seleccionados</p>
                     ) : (
                       <div className="space-y-4">
-                        {(['productividad', 'conducta_laboral', 'habilidades'] as const).map(category => {
+                        {(['productividad', 'conducta_laboral', 'habilidades', 'seguridad_trabajo'] as const).map(category => {
                           const categoryCriteria = groupedSelectedCriteria[category];
                           if (categoryCriteria.length === 0) return null;
                           const isCollapsed = collapsedCategories[category];
@@ -485,7 +491,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                               <div className="flex justify-between items-center mb-2 cursor-pointer" onClick={() => toggleCategoryCollapse(category)}>
                                 <h6 className="font-semibold text-gray-800 flex items-center gap-2">
                                   {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                  {category === 'productividad' ? 'Productividad' : category === 'conducta_laboral' ? 'Conducta Laboral' : 'Habilidades'}
+                                  {category === 'productividad' ? 'Productividad' : category === 'conducta_laboral' ? 'Conducta Laboral' : 'Habilidades' }
                                   <span className="ml-2 text-sm text-gray-500">({categoryCriteria.length})</span>
                                 </h6>
                                 <div className="flex items-center gap-2">
