@@ -29,6 +29,7 @@ interface BackendTemplate {
     productivity?: BackendTemplateCriteria[] | null;
     work_conduct?: BackendTemplateCriteria[] | null;
     skills?: BackendTemplateCriteria[] | null;
+    seguridad_trabajo?: BackendTemplateCriteria[] | null;
   };
   summary: {
     total_criteria: number;
@@ -37,6 +38,7 @@ interface BackendTemplate {
       productivity: number;
       work_conduct: number;
       skills: number;
+      seguridad_trabajo: number;
     };
     is_valid_weights: boolean;
   };
@@ -98,7 +100,8 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
     const categoryMap: Record<string, string> = {
       'productivity': 'Productividad',
       'work_conduct': 'Conducta Laboral',
-      'skills': 'Habilidades'
+      'skills': 'Habilidades',
+      'seguridad_trabajo': 'Seguridad y salud en el Trabajo',
     };
     return categoryMap[category] || category;
   };
@@ -107,7 +110,8 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
     const colorMap: Record<string, string> = {
       'productivity': 'bg-blue-50 text-blue-800',
       'work_conduct': 'bg-green-50 text-green-800',
-      'skills': 'bg-purple-50 text-purple-800'
+      'skills': 'bg-purple-50 text-purple-800',
+      'seguridad_trabajo': 'bg-yellow-50 text-yellow-800',
     };
     return colorMap[category] || 'bg-gray-50 text-gray-800';
   };
@@ -309,6 +313,29 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {mapCategory(template.criteria.skills, 'skills')}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Seguridad y salud en el Trabajo */}
+                  {getCategoryLength(template.criteria.seguridad_trabajo) > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <h5 className="font-medium text-gray-800 text-lg">
+                            {getCategoryDisplayName('seguridad_trabajo')}
+                          </h5>
+                          <span className={`px-3 py-1 text-sm font-medium rounded-full ${getCategoryColor('seguridad_trabajo')}`}>
+                            {getCategoryLength(template.criteria.seguridad_trabajo)} criterio{getCategoryLength(template.criteria.seguridad_trabajo) !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <span className="text-sm font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-lg">
+                          {getCategoryWeight('seguridad_trabajo').toFixed(2)}%
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {mapCategory(template.criteria.seguridad_trabajo, 'seguridad_trabajo')}
                       </div>
                     </div>
                   )}
