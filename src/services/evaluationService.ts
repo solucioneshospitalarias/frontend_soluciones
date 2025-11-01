@@ -69,6 +69,7 @@ export interface CreateManualEvaluationsDTO {
     productivity: Array<{ criteria_id: number; weight: number }>;
     work_conduct: Array<{ criteria_id: number; weight: number }>;
     skills: Array<{ criteria_id: number; weight: number }>;
+    seguridad_trabajo: Array<{ criteria_id: number; weight: number }>;
   };
 }
 
@@ -975,6 +976,7 @@ class ServicioEvaluaciones {
       productividad: "bg-blue-100 text-blue-800",
       conducta_laboral: "bg-green-100 text-green-800",
       habilidades: "bg-purple-100 text-purple-800",
+      seguridad_trabajo: "bg-red-100 text-red-800",
     };
     return mapaColores[categoria] || "bg-gray-100 text-gray-800";
   }
