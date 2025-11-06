@@ -226,7 +226,7 @@ const GestionEmpleadosPage: React.FC = () => {
             onClick={() => setShowFilters(!showFilters)}
             className={`relative px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 ${
               showFilters || activeFiltersCount > 0
-                ? 'bg-blue-500 text-white shadow-lg'
+                ? 'bg-green-500 text-white shadow-lg'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
