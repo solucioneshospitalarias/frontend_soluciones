@@ -364,8 +364,8 @@ const OrganizationalConfigPage: React.FC = () => {
                 <div key={dept.id} className="bg-white rounded-xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition-all">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                        <Building2 className="w-5 h-5 text-blue-600" />
+                      <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                        <Building2 className="w-5 h-5 text-green-600" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900">{dept.name}</h3>
@@ -408,8 +408,8 @@ const OrganizationalConfigPage: React.FC = () => {
                       <tr key={pos.id} className="hover:bg-gray-50 transition">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                              <Briefcase className="w-4 h-4 text-blue-600" />
+                            <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
+                              <Briefcase className="w-4 h-4 text-green-600" />
                             </div>
                             <div>
                               <p className="font-medium text-gray-900">{pos.name}</p>
