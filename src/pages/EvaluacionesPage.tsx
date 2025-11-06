@@ -113,16 +113,19 @@ const EvaluacionesPage: React.FC = () => {
         evaluacion.period_name
           ?.toLowerCase()
           .includes(terminoBusqueda.toLowerCase());
-      const normalizedStatus = evaluacion.status.toLowerCase().replace(/\s/g, "");
+      const normalizedStatus = evaluacion.status
+        .toLowerCase()
+        .replace(/\s/g, "");
       const coincidenEstado =
         filtroEstado === "todos" ||
         (filtroEstado === "pending" &&
           (normalizedStatus === "pending" ||
-           normalizedStatus === "pendiente" ||
-           normalizedStatus === "incomplete" ||
-           normalizedStatus === "pendiente_")) ||
+            normalizedStatus === "pendiente" ||
+            normalizedStatus === "incomplete" ||
+            normalizedStatus === "pendiente_")) ||
         (filtroEstado === "completed" &&
-          (normalizedStatus === "completed" || normalizedStatus === "realizada"));
+          (normalizedStatus === "completed" ||
+            normalizedStatus === "realizada"));
       if (!coincideBusqueda || !coincidenEstado) {
       }
       return coincideBusqueda && coincidenEstado;
@@ -178,8 +181,12 @@ const EvaluacionesPage: React.FC = () => {
               <Target className="w-4 h-4 md:w-8 md:h-8" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Sistema de Evaluaciones</h1>
-              <p className="text-sm sm:text-base text-gray-600 mt-1">Gestión integral de evaluaciones al personal</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                Sistema de Evaluaciones
+              </h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">
+                Gestión integral de evaluaciones al personal
+              </p>
             </div>
           </div>
         </div>
@@ -229,7 +236,7 @@ const EvaluacionesPage: React.FC = () => {
                   onClick={handleToggleVerTodas}
                   className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 text-sm ${
                     filtroEstado === "todos"
-                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      ? "bg-gradient-to-r from-green-500 to-green-600 text-white hover:bg-green-600"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
@@ -276,7 +283,7 @@ const EvaluacionesPage: React.FC = () => {
               <div
                 onClick={handleFilterPending}
                 className={`bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer ${
-                  filtroEstado === "pending" ? "ring-2 ring-indigo-500" : ""
+                  filtroEstado === "pending" ? "ring-2 ring-amber-500" : ""
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -296,7 +303,7 @@ const EvaluacionesPage: React.FC = () => {
               <div
                 onClick={handleFilterCompleted}
                 className={`bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer ${
-                  filtroEstado === "completed" ? "ring-2 ring-indigo-500" : ""
+                  filtroEstado === "completed" ? "ring-2 ring-emerald-500" : ""
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -305,11 +312,13 @@ const EvaluacionesPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-gray-900">
-                      {evaluacionesComoEvaluador.filter(
-                        (e) =>
-                          e.status.toLowerCase() === "realizada" ||
-                          e.status.toLowerCase() === "completed"
-                      ).length}
+                      {
+                        evaluacionesComoEvaluador.filter(
+                          (e) =>
+                            e.status.toLowerCase() === "realizada" ||
+                            e.status.toLowerCase() === "completed"
+                        ).length
+                      }
                     </p>
                     <p className="text-gray-600 text-sm font-medium">
                       Completadas
@@ -322,7 +331,8 @@ const EvaluacionesPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm border border-gray-100 flex-grow flex flex-col">
               <div className="px-6 py-4 border-b border-gray-200 bg-indigo-50 flex-shrink-0">
                 <h3 className="text-lg font-semibold text-gray-900 font-sans">
-                  Evaluaciones por Realizar ({evaluacionesEvaluadorFiltradas.length})
+                  Evaluaciones por Realizar (
+                  {evaluacionesEvaluadorFiltradas.length})
                 </h3>
                 <p className="text-sm text-gray-600">
                   Empleados que debes evaluar
@@ -362,7 +372,9 @@ const EvaluacionesPage: React.FC = () => {
                                 <div className="space-y-2 text-sm text-gray-600">
                                   <div className="flex items-center gap-2">
                                     <Calendar className="w-4 h-4 text-gray-500" />
-                                    <span>Período: {evaluacion.period_name}</span>
+                                    <span>
+                                      Período: {evaluacion.period_name}
+                                    </span>
                                   </div>
                                   {evaluacion.completed_at && (
                                     <div className="flex items-center gap-2">
@@ -378,20 +390,29 @@ const EvaluacionesPage: React.FC = () => {
                                 </div>
                               </div>
                               <div className="flex gap-2 ml-4">
-                                {evaluacion.status.toLowerCase() === "pending" ||
-                                evaluacion.status.toLowerCase() === "pendiente" ||
-                                evaluacion.status.toLowerCase() === "incomplete" ? (
-                                <button
-                                  onClick={() => handleRealizarEvaluacion(evaluacion.id)}
-                                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all duration-200"
-                                >
-                                  <Play className="w-4 h-4" />
-                                  <span className="hidden sm:inline">Calificar Ahora</span>
-                                </button>
-
-                                ) : evaluacion.status.toLowerCase() === "overdue" ||
-                                  evaluacion.status.toLowerCase() === "vencida" ||
-                                  evaluacion.status.toLowerCase() === "atrasada" ? (
+                                {evaluacion.status.toLowerCase() ===
+                                  "pending" ||
+                                evaluacion.status.toLowerCase() ===
+                                  "pendiente" ||
+                                evaluacion.status.toLowerCase() ===
+                                  "incomplete" ? (
+                                  <button
+                                    onClick={() =>
+                                      handleRealizarEvaluacion(evaluacion.id)
+                                    }
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all duration-200"
+                                  >
+                                    <Play className="w-4 h-4" />
+                                    <span className="hidden sm:inline">
+                                      Calificar Ahora
+                                    </span>
+                                  </button>
+                                ) : evaluacion.status.toLowerCase() ===
+                                    "overdue" ||
+                                  evaluacion.status.toLowerCase() ===
+                                    "vencida" ||
+                                  evaluacion.status.toLowerCase() ===
+                                    "atrasada" ? (
                                   <button
                                     disabled
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-gray-300 text-gray-600 rounded-lg font-medium cursor-not-allowed transition-all duration-200"
@@ -401,7 +422,9 @@ const EvaluacionesPage: React.FC = () => {
                                   </button>
                                 ) : (
                                   <button
-                                    onClick={() => handleVerReporte(evaluacion.id)}
+                                    onClick={() =>
+                                      handleVerReporte(evaluacion.id)
+                                    }
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all duration-200"
                                   >
                                     <Eye className="w-4 h-4" />
