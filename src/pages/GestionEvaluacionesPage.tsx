@@ -593,7 +593,7 @@ const GestionEvaluacionesPage: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Buscar períodos..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
                   value={searchTermConfig}
                   onChange={e => setSearchTermConfig(e.target.value)}
                 />
@@ -620,7 +620,7 @@ const GestionEvaluacionesPage: React.FC = () => {
                   return (
                     <div
                       key={period.id}
-                      className={`group p-4 border border-gray-200 rounded-xl bg-white hover:shadow-lg hover:border-blue-200 transition mb-3 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
+                      className={`group p-4 border border-gray-200 rounded-xl bg-white hover:shadow-lg hover:border-green-200 transition mb-3 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
                     >
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-semibold text-gray-900">{period.name}</h4>
@@ -643,11 +643,11 @@ const GestionEvaluacionesPage: React.FC = () => {
                             setEditingPeriodId(period.id);
                             setShowEditarPeriodoModal(true);
                           }}
-                          className="p-2 hover:bg-blue-50 rounded-lg"
+                          className="p-2 hover:bg-green-50 rounded-lg"
                           title="Editar período"
                           disabled={isDeleting}
                         >
-                          <Edit className="w-4 h-4 text-blue-600" />
+                          <Edit className="w-4 h-4 text-green-700" />
                         </button>
                       </div>
                     </div>
@@ -667,13 +667,13 @@ const GestionEvaluacionesPage: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Buscar criterios..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
                   value={searchTermConfig}
                   onChange={e => setSearchTermConfig(e.target.value)}
                 />
               </div>
               <select
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="px-4 py-2 border border-gray-300 rounded-lg"
                 value={selectedCategory}
                 onChange={e => setSelectedCategory(e.target.value)}
               >
@@ -711,7 +711,7 @@ const GestionEvaluacionesPage: React.FC = () => {
                         <h4 className="font-semibold text-gray-900">{criterio.name}</h4>
                       </div>
                       <div className="text-sm text-gray-600 space-y-2">
-                        <span className="inline-block bg-gray-200 px-3 py-1 rounded-full text-sm font-medium text-gray-800">{formatCategory(criterio.category)}</span>
+                        <span className="inline-block bg-green-100 px-3 py-1 rounded-full text-sm font-medium text-gray-800">{formatCategory(criterio.category)}</span>
                         <p className="text-gray-700 leading-relaxed">{criterio.description}</p>
                       </div>
                       <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -756,7 +756,7 @@ const GestionEvaluacionesPage: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Buscar plantillas..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
                   value={searchTermConfig}
                   onChange={e => setSearchTermConfig(e.target.value)}
                 />
@@ -788,7 +788,7 @@ const GestionEvaluacionesPage: React.FC = () => {
                   return (
                     <div
                       key={template.id}
-                      className={`group p-4 border border-gray-200 rounded-xl bg-white hover:shadow-lg hover:border-purple-200 transition mb-3 ${isDeleting || isCloning ? 'opacity-50 pointer-events-none' : ''}`}
+                      className={`group p-4 border border-gray-200 rounded-xl bg-white hover:shadow-lg hover:border-green-200 transition mb-3 ${isDeleting || isCloning ? 'opacity-50 pointer-events-none' : ''}`}
                     >
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-semibold text-gray-900">{template.name}</h4>
@@ -906,13 +906,13 @@ const GestionEvaluacionesPage: React.FC = () => {
 
   // ==================== COMPONENTE PRINCIPAL ====================
   return (
-    <div className="p-6 bg-gradient-to-br from-slate-50 to-gray-100 min-h-screen">
+    <div className="bg-gradient-to-br from-slate-50 to-gray-100 min-h-screen">
       <div className="max-w-8xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl text-white">
+              <div className="p-3 bg-gradient-to-r from-green-500 to-green-600 rounded-xl text-white shadow-lg">
                 <BarChart3 className="w-4 h-4 md:w-8 md:h-8" />
               </div>
               <div>
@@ -976,7 +976,7 @@ const GestionEvaluacionesPage: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex-1 flex flex-col">
              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-sm">
+                  <div className="p-3 bg-green-600 rounded-xl shadow-sm">
                     <Settings className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -986,7 +986,7 @@ const GestionEvaluacionesPage: React.FC = () => {
                 </div>
                 <button
                   onClick={handleCreate}
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg shadow-sm hover:from-blue-600 hover:to-blue-700 transition"
+                  className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg shadow-sm hover:from-green-600 hover:to-green-700 transition"
                 >
                   <Plus className="w-4 h-4" /> Crear
                 </button>
@@ -997,7 +997,7 @@ const GestionEvaluacionesPage: React.FC = () => {
                 {(['periodos', 'criterios', 'plantillas'] as const).map(tab => {
                   const icon = tab === 'periodos' ? Calendar : tab === 'criterios' ? FileCheck : FileCheck;
                   const colorClass = activeTab === tab
-                    ? 'bg-white text-blue-600 shadow-sm border border-blue-100'
+                    ? 'bg-white text-green-700 shadow-sm border border-green-100'
                     : 'text-gray-600 hover:text-gray-900';
                   return (
                     <button
@@ -1027,7 +1027,7 @@ const GestionEvaluacionesPage: React.FC = () => {
           <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl shadow-sm">
+                <div className="p-3 bg-green-600 rounded-xl shadow-sm">
                   <Activity className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -1044,13 +1044,13 @@ const GestionEvaluacionesPage: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Buscar evaluaciones..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
                   value={searchTermEvaluations}
                   onChange={e => setSearchTermEvaluations(e.target.value)}
                 />
               </div>
               <select
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="px-4 py-2 border border-gray-300 rounded-lg"
                 value={filtroEstado}
                 onChange={e => setFiltroEstado(e.target.value as 'todos' | 'pending' | 'completed' | 'overdue')}
               >
@@ -1077,7 +1077,7 @@ const GestionEvaluacionesPage: React.FC = () => {
                 return (
                   <div
                     key={evaluation.id}
-                    className={`group p-6 md:p-7 border border-gray-200 rounded-2xl bg-white shadow-sm hover:shadow-lg hover:border-orange-200 transition-all duration-300 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
+                    className={`group p-6 md:p-7 border border-gray-200 rounded-2xl bg-white shadow-sm hover:shadow-lg hover:border-green-200 transition-all duration-300 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
                   >
                     <div className="flex justify-between items-start mb-5">
                       <h3 className="font-semibold text-gray-900 text-lg">{evaluation.employee_name}</h3>
