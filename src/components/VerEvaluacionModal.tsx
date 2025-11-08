@@ -92,6 +92,7 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
       productividad: 'bg-blue-50 text-blue-700 border-blue-200',
       conducta_laboral: 'bg-green-50 text-green-700 border-green-200',
       habilidades: 'bg-purple-50 text-purple-700 border-purple-200',
+      seguridad_trabajo: 'bg-red-50 text-red-700 border-red-200',
     };
     return category ? (colors[category] || 'bg-gray-50 text-gray-700 border-gray-200') : 'bg-gray-50 text-gray-700 border-gray-200';
   };
@@ -101,6 +102,7 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
       productividad: 'Productividad',
       conducta_laboral: 'Conducta Laboral',
       habilidades: 'Habilidades',
+      seguridad_trabajo: 'Seguridad y salud en el Trabajo',
     };
     return category ? (labels[category] || category) : 'Sin categoría';
   };
@@ -137,11 +139,11 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
       // Normalizar pesos si suman más de 100
       return evaluation.scores.reduce((sum, score) => {
         const normalizedWeight = (score.weight / totalWeight) * 100;
-        return sum + ((score.score ?? 0) / 5) * normalizedWeight;
+        return sum + ((score.score ?? 0) / 100) * normalizedWeight;
       }, 0);
     } else {
       return evaluation.scores.reduce((sum, score) => {
-        return sum + ((score.score ?? 0) / 5) * score.weight;
+        return sum + ((score.score ?? 0) / 100) * score.weight;
       }, 0);
     }
   };
@@ -275,7 +277,7 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
                         {formatNumber(
                           evaluation.scores.reduce((sum, s) => sum + (s.score ?? 0), 0) / evaluation.scores.length,
                           1
-                        )}<span className="text-lg text-gray-500">/5</span>
+                        )}<span className="text-lg text-gray-500">/100</span>
                       </p>
                     </div>
                   </div>
@@ -367,7 +369,7 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
                                   </span>
                                   {scoreItem.score !== undefined && scoreItem.score !== null && (
                                     <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
-                                      {scoreItem.score}/5
+                                      {scoreItem.score}/100
                                     </span>
                                   )}
                                 </div>
