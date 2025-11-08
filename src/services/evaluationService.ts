@@ -1,52 +1,11 @@
 import { API_BASE_URL } from "../constants/api";
 
-export type {
-  Criteria,
-  Period,
-  Template,
-  Evaluation,
-  Employee,
-  CreateCriteriaDTO,
-  CreatePeriodDTO,
-  CreateTemplateDTO,
-  UpdateTemplateDTO,
-  CreateEvaluationsFromTemplateDTO,
-  UpdatePeriodDTO,
-  EvaluacionParaCalificarDTO,
-  ResumenEvaluacionDTO,
-  MisEvaluacionesRespuestaDTO,
-  PuntuacionCriterioDTO,
-  FiltrosEvaluacionParams,
-  EvaluationListByPeriodResponseDTO,
-  AverageByDepartmentResponseDTO,
-  EmployeePerformanceResponseDTO,
-  PendingByDepartmentResponseDTO,
-  AverageScoreByDepartment,
-} from "../types/evaluation";
+export type { Criteria, Period, Template, Evaluation, Employee, CreateCriteriaDTO, CreatePeriodDTO, CreateTemplateDTO, UpdateTemplateDTO, CreateEvaluationsFromTemplateDTO, UpdatePeriodDTO, EvaluacionParaCalificarDTO, ResumenEvaluacionDTO, MisEvaluacionesRespuestaDTO, PuntuacionCriterioDTO, FiltrosEvaluacionParams, EvaluationListByPeriodResponseDTO, AverageByDepartmentResponseDTO, EmployeePerformanceResponseDTO, PendingByDepartmentResponseDTO, AverageScoreByDepartment, } from "../types/evaluation";
 
-import type {
-  Criteria,
-  Period,
-  Template,
-  Evaluation,
-  Employee,
-  CreateCriteriaDTO,
-  UpdateCriteriaDTO,
-  CreatePeriodDTO,
-  CreateTemplateDTO,
-  UpdateTemplateDTO,
-  CreateEvaluationsFromTemplateDTO,
-  UpdatePeriodDTO,
-  EvaluacionParaCalificarDTO,
-  ResumenEvaluacionDTO,
-  MisEvaluacionesRespuestaDTO,
-  PuntuacionCriterioDTO,
-  FiltrosEvaluacionParams,
-  EvaluationListByPeriodResponseDTO,
-  AverageByDepartmentResponseDTO,
-  EmployeePerformanceResponseDTO,
-  PendingByDepartmentResponseDTO,
-} from "../types/evaluation";
+import type { Criteria, Period, Template, Evaluation, Employee, CreateCriteriaDTO, UpdateCriteriaDTO, CreatePeriodDTO, CreateTemplateDTO, UpdateTemplateDTO, CreateEvaluationsFromTemplateDTO, UpdatePeriodDTO, EvaluacionParaCalificarDTO, ResumenEvaluacionDTO, MisEvaluacionesRespuestaDTO, PuntuacionCriterioDTO, FiltrosEvaluacionParams, EvaluationListByPeriodResponseDTO, AverageByDepartmentResponseDTO, EmployeePerformanceResponseDTO, PendingByDepartmentResponseDTO, } from "../types/evaluation";
+
+const MIN_SCORE = 1;
+const MAX_SCORE = 100;
 
 // Interface for single evaluation creation
 export interface CreateSingleEvaluationDTO {
@@ -799,8 +758,8 @@ class ServicioEvaluaciones {
       console.log("📤 Enviando puntuaciones para evaluación:", evaluacionId, puntuaciones);
 
       for (const puntuacion of puntuaciones) {
-        if (puntuacion.score < 1 || puntuacion.score > 5) {
-          throw new ErrorEvaluacion(`Puntuación fuera del rango (1-5): ${puntuacion.score}`, 400);
+        if (puntuacion.score < MIN_SCORE || puntuacion.score > MAX_SCORE) {
+          throw new ErrorEvaluacion(`Puntuación fuera del rango (1-100): ${puntuacion.score}`, 400);
         }
       }
 
@@ -983,7 +942,7 @@ class ServicioEvaluaciones {
 
   validarPuntuaciones(puntuaciones: Record<number, number>, criteriosRequeridos: number[]): boolean {
     return criteriosRequeridos.every(
-      (criterioId) => puntuaciones[criterioId] !== undefined && puntuaciones[criterioId] >= 1 && puntuaciones[criterioId] <= 5
+      (criterioId) => puntuaciones[criterioId] !== undefined && puntuaciones[criterioId] >= MIN_SCORE && puntuaciones[criterioId] <= MAX_SCORE
     );
   }
 
