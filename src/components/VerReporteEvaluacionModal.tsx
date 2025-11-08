@@ -108,11 +108,11 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
     if (totalWeight > 100) {
       performancePercentage = detailedEvaluation.scores.reduce((sum, score) => {
         const normalizedWeight = (score.weight / totalWeight) * 100;
-        return sum + ((score.score ?? 0) / 5) * normalizedWeight;
+        return sum + ((score.score ?? 0) / 100) * normalizedWeight;
       }, 0);
     } else {
       performancePercentage = detailedEvaluation.scores.reduce((sum, score) => {
-        return sum + ((score.score ?? 0) / 5) * score.weight;
+        return sum + ((score.score ?? 0) / 100) * score.weight;
       }, 0);
     }
   }
@@ -210,7 +210,7 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
                         1
                       )}
                     </div>
-                    <div className="text-xs text-slate-500">Promedio (1-5)</div>
+                    <div className="text-xs text-slate-500">Promedio (1-100)</div>
                   </div>
                 </div>
               </div>
@@ -246,11 +246,11 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
                       </h4>
                       <div className="grid grid-cols-2 gap-3">
                         {scores?.map((scoreItem) => {
-                          const individualScorePercentage = ((scoreItem.score ?? 0) / 5) * 100;
+                          const individualScorePercentage = (scoreItem.score ?? 0);
                           const totalWeight = detailedEvaluation.scores?.reduce((sum, s) => sum + s.weight, 0) ?? 100;
                           const normalizedWeight = totalWeight > 100 ? (scoreItem.weight / totalWeight) * 100 : scoreItem.weight;
                           const normalizedContribution = totalWeight > 100 ? 
-                            ((scoreItem.score ?? 0) / 5) * normalizedWeight : (scoreItem.contribution_points ?? scoreItem.weighted_score ?? 0);
+                            ((scoreItem.score ?? 0) / 100) * normalizedWeight : (scoreItem.contribution_points ?? scoreItem.weighted_score ?? 0);
                           
                           return (
                             <div key={scoreItem.id} className="border border-slate-200 rounded-lg p-3 bg-white">
