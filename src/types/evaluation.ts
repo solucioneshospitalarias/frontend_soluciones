@@ -94,7 +94,7 @@ export interface Employee {
 
 export interface PuntuacionCriterioDTO {
   assigned_criteria_id: number;
-  score: number; // 1-5
+  score: number; // 1-100
 }
 
 export interface InfoBasicaUsuarioDTO {
