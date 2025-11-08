@@ -33,7 +33,7 @@ export const formatPercentage = (
  * Calcula el puntaje ponderado
  */
 export const calculateWeightedScore = (score: number, weight: number): number => {
-  const weighted = (score / 5) * weight;
+  const weighted = (score * weight) / 100;
   return roundTo(weighted, 2);
 };
 
