@@ -64,7 +64,8 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
   };
 
   const handleScoreChange = (assignedCriteriaId: number, score: number): void => {
-    setScores((prev) => ({ ...prev, [assignedCriteriaId]: score }));
+    const validScore = Math.min(Math.max(Math.round(score), 0), 100);
+    setScores((prev) => ({ ...prev, [assignedCriteriaId]: validScore }));
   };
 
   const handleCommentChange = (assignedCriteriaId: number, comment: string): void => {
@@ -123,28 +124,22 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
     }
   };
 
-  const getScoreLabel = (score: number) => {
-    const labels = {
-      1: 'Por Debajo',
-      2: 'Necesita Mejora',
-      3: 'Promedio',
-      4: 'Bueno',
-      5: 'Excelente',
-    };
-    return labels[score as keyof typeof labels] || '';
+  const getScoreColorByValue = (score: number): string => {
+    if (score === 0) return 'bg-gray-300';
+    if (score < 40) return 'bg-red-500';
+    if (score < 60) return 'bg-orange-500';
+    if (score < 75) return 'bg-yellow-500';
+    if (score < 90) return 'bg-blue-500';
+    return 'bg-green-500';
   };
 
-  const getScoreColor = (score: number, isSelected: boolean) => {
-    if (!isSelected) return 'border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50';
-    
-    const colors = {
-      1: 'border-red-500 bg-red-50',
-      2: 'border-orange-500 bg-orange-50',
-      3: 'border-yellow-500 bg-yellow-50',
-      4: 'border-blue-500 bg-blue-50',
-      5: 'border-green-500 bg-green-50',
-    };
-    return colors[score as keyof typeof colors] || '';
+  const getScoreLabel = (score: number): string => {
+    if (score === 0) return 'Sin calificar';
+    if (score < 40) return 'Por Debajo';
+    if (score < 60) return 'Necesita Mejora';
+    if (score < 75) return 'Promedio';
+    if (score < 90) return 'Bueno';
+    return 'Excelente';
   };
 
   if (!show) return null;
@@ -256,7 +251,7 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
                       </div>
                       {scores[scoreItem.id] > 0 && (
                         <div className="text-right">
-                          <div className="text-lg font-bold text-slate-700">{scores[scoreItem.id]}/5</div>
+                          <div className="text-lg font-bold text-slate-700">{scores[scoreItem.id]}/100</div>
                           <div className="text-xs text-slate-500">{getScoreLabel(scores[scoreItem.id])}</div>
                         </div>
                       )}
@@ -266,20 +261,55 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
                   {/* Rating Section */}
                   <div className="p-5">
                     <div className="mb-4">
-                      <span className="text-sm font-medium text-gray-900 mb-3 block">Calificación</span>
-                      <div className="flex flex-col sm:flex-row gap-3">
-                        {[1, 2, 3, 4, 5].map((rating) => (
-                          <button
-                            key={rating}
-                            onClick={() => handleScoreChange(scoreItem.id, rating)}
-                            className={`p-3 border rounded-lg transition-all duration-200 ${getScoreColor(rating, scores[scoreItem.id] === rating)}`}
-                          >
-                            <div className="flex flex-row justify-between items-center sm:flex-col sm:text-center w-full">
-                              <div className="text-lg font-bold text-gray-800 sm:mb-1">{rating}</div>
-                              <div className="text-xs text-gray-600">{getScoreLabel(rating)}</div>
-                            </div>
-                          </button>
-                        ))}
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-gray-900">Calificación</span>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={scores[scoreItem.id] || ''}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                              handleScoreChange(scoreItem.id, value);
+                            }}
+                            placeholder="0"
+                            className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center font-semibold text-gray-800 focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Slider Bar */}
+                      <div className="space-y-2">
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={scores[scoreItem.id] || 0}
+                          onChange={(e) => handleScoreChange(scoreItem.id, parseInt(e.target.value))}
+                          className="w-full h-3 rounded-lg appearance-none cursor-pointer slider-custom"
+                          style={{
+                            background: `linear-gradient(to right, ${
+                              scores[scoreItem.id] > 0 
+                                ? getScoreColorByValue(scores[scoreItem.id]).replace('bg-', '')
+                                : '#d1d5db'
+                            } 0%, ${
+                              scores[scoreItem.id] > 0
+                                ? getScoreColorByValue(scores[scoreItem.id]).replace('bg-', '')
+                                : '#d1d5db'
+                            } ${scores[scoreItem.id] || 0}%, #e5e7eb ${scores[scoreItem.id] || 0}%, #e5e7eb 100%)`
+                          }}
+                        />
+                        
+                        {/* Scale Labels */}
+                        <div className="flex justify-between text-xs text-gray-500 px-1">
+                          <span>0</span>
+                          <span>25</span>
+                          <span>50</span>
+                          <span>75</span>
+                          <span>100</span>
+                        </div>
                       </div>
                     </div>
 
