@@ -129,7 +129,9 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
 
     // Si el backend ya lo calculó, usarlo
     if (evaluation.performance_percentage !== undefined && evaluation.performance_percentage !== null) {
-      return evaluation.performance_percentage;
+      const val = evaluation.performance_percentage;
+      // Si viene en 0–1 o 0–5, ajustamos
+      return val <= 1 ? val * 100 : val <= 5 ? (val / 5) * 100 : val;
     }
 
     // Calcular manualmente
@@ -139,11 +141,11 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
       // Normalizar pesos si suman más de 100
       return evaluation.scores.reduce((sum, score) => {
         const normalizedWeight = (score.weight / totalWeight) * 100;
-        return sum + ((score.score ?? 0) / 100) * normalizedWeight;
+        return sum + (score.score ?? 0) * (normalizedWeight / 100);
       }, 0);
     } else {
       return evaluation.scores.reduce((sum, score) => {
-        return sum + ((score.score ?? 0) / 100) * score.weight;
+        return sum + (score.score ?? 0) * (score.weight / 100);
       }, 0);
     }
   };
