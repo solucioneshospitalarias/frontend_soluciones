@@ -100,23 +100,26 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
   if (!show) return null;
 
   // Corregir cálculo del porcentaje
-  let performancePercentage = detailedEvaluation?.performance_percentage ?? detailedEvaluation?.weighted_score ?? 0;
-  
-  if (performancePercentage > 100 && detailedEvaluation?.scores) {
-    const totalWeight = detailedEvaluation.scores.reduce((sum, score) => sum + score.weight, 0);
-    
+  let performancePercentage = 0;
+
+  if (detailedEvaluation?.scores) {
+    const totalWeight = detailedEvaluation.scores.reduce((sum, s) => sum + s.weight, 0);
+
     if (totalWeight > 100) {
-      performancePercentage = detailedEvaluation.scores.reduce((sum, score) => {
-        const normalizedWeight = (score.weight / totalWeight) * 100;
-        return sum + ((score.score ?? 0) / 100) * normalizedWeight;
+      performancePercentage = detailedEvaluation.scores.reduce((sum, s) => {
+        const normalizedWeight = (s.weight / totalWeight) * 100;
+        return sum + (s.score ?? 0) * (normalizedWeight / 100);
       }, 0);
     } else {
-      performancePercentage = detailedEvaluation.scores.reduce((sum, score) => {
-        return sum + ((score.score ?? 0) / 100) * score.weight;
+      performancePercentage = detailedEvaluation.scores.reduce((sum, s) => {
+        return sum + (s.score ?? 0) * (s.weight / 100);
       }, 0);
     }
+  } else {
+    performancePercentage = detailedEvaluation?.performance_percentage ?? detailedEvaluation?.weighted_score ?? 0;
   }
-  
+
+    
   const performanceStyle = getPerformanceLevel(performancePercentage);
 
   return (
@@ -270,10 +273,10 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
                               {/* Estrellas */}
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex gap-1">
-                                  {[1, 2, 3, 4, 5].map((star) => (
+                                  {[20, 40, 60, 80, 100].map((threshold) => (
                                     <span
-                                      key={star}
-                                      className={`text-sm ${star <= (scoreItem.score ?? 0) ? 'text-yellow-500' : 'text-slate-300'}`}
+                                      key={threshold}
+                                      className={`text-sm ${(scoreItem.score ?? 0) >= threshold ? 'text-yellow-500' : 'text-slate-300'}`}
                                     >
                                       ★
                                     </span>
