@@ -359,8 +359,8 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
         {/* Success State */}
         {showSuccess ? (
           <div className="text-center py-8">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FileCheck className="w-8 h-8 text-purple-600" />
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FileCheck className="w-8 h-8 text-green-600" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">¡Plantilla Creada!</h3>
             <p className="text-gray-600">La plantilla se ha configurado exitosamente.</p>
@@ -370,7 +370,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-                <FileCheck className="w-6 h-6 text-purple-500" />
+                <FileCheck className="w-6 h-6 text-green-500" />
                 Crear Nueva Plantilla
               </h3>
               <button
@@ -397,7 +397,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                         onChange={handleChange}
                         type="text"
                         placeholder="Ej: Evaluación Anual, Evaluación Trimestral..."
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                         disabled={loading}
                       />
                     </div>
@@ -411,7 +411,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                         onChange={handleChange}
                         type="text"
                         placeholder="Descripción breve de la plantilla..."
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                         disabled={loading}
                       />
                     </div>
@@ -422,7 +422,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                     <select
                       value={filterCategory}
                       onChange={e => setFilterCategory(e.target.value as 'todos' | 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo')}
-                      className="w-full p-2 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-purple-500"
+                      className="w-full p-2 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-green-500"
                       disabled={loading}
                     >
                       <option value="todos">Todas las categorías</option>
@@ -450,10 +450,10 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                               <button
                                 type="button"
                                 onClick={() => addCriteria(criteria)}
-                                className="p-1 hover:bg-purple-100 rounded"
+                                className="p-1 hover:bg-green-100 rounded"
                                 disabled={loading}
                               >
-                                <Plus className="w-4 h-4 text-purple-600" />
+                                <Plus className="w-4 h-4 text-green-600" />
                               </button>
                             </div>
                           ))
@@ -470,7 +470,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                       <button
                         type="button"
                         onClick={normalizeAllWeights}
-                        className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition-colors"
+                        className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 transition-colors"
                         disabled={loading}
                       >
                         Normalizar Todo
@@ -506,7 +506,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                                       e.stopPropagation();
                                       normalizeWeightsByCategory(category);
                                     }}
-                                    className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition-colors"
+                                    className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 transition-colors"
                                     disabled={loading}
                                   >
                                     Normalizar
@@ -568,7 +568,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                                             value={sc.weight}
                                             onChange={e => updateCriteriaWeight(sc.criteriaId, e.target.value)}
                                             onBlur={() => lockCriteriaWeight(sc.criteriaId)}
-                                            className="flex-1 text-sm p-1 border border-gray-300 rounded focus:ring-1 focus:ring-purple-500"
+                                            className="flex-1 text-sm p-1 border border-gray-300 rounded focus:ring-1 focus:ring-green-500"
                                             placeholder="0.0"
                                             disabled={loading || sc.isLocked}
                                           />
@@ -602,7 +602,7 @@ const CrearPlantillaModal: React.FC<CrearPlantillaModalProps> = ({ show, onClose
                 <button
                   type="submit"
                   disabled={loading || form.selectedCriteria.length === 0}
-                  className="flex-1 bg-gradient-to-r from-purple-500 to-purple-600 text-white py-3 px-6 rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
