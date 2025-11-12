@@ -161,7 +161,7 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
       <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
           <h3 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-            <FileCheck className="w-6 h-6 text-purple-500" />
+            <FileCheck className="w-6 h-6 text-green-500" />
             Detalles de la Plantilla
             {template && <span className="text-lg text-gray-500">#{template.id}</span>}
           </h3>
@@ -189,7 +189,7 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
               {/* Información General */}
               <div className="border border-gray-200 rounded-xl p-6">
                 <h4 className="font-semibold text-gray-800 mb-6 text-xl flex items-center gap-2">
-                  <FileCheck className="w-5 h-5 text-purple-500" />
+                  <FileCheck className="w-5 h-5 text-green-500" />
                   Información General
                 </h4>
                 
@@ -241,7 +241,7 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
               {/* Criterios por Categoría */}
               <div className="border border-gray-200 rounded-xl p-6">
                 <h4 className="font-semibold text-gray-800 mb-6 text-xl flex items-center gap-2">
-                  <FileCheck className="w-5 h-5 text-purple-500" />
+                  <FileCheck className="w-5 h-5 text-green-500" />
                   Criterios
                 </h4>
                 
@@ -329,7 +329,7 @@ const VerPlantillaModal: React.FC<VerPlantillaModalProps> = ({
                             {getCategoryLength(template.criteria.seguridad_trabajo)} criterio{getCategoryLength(template.criteria.seguridad_trabajo) !== 1 ? 's' : ''}
                           </span>
                         </div>
-                        <span className="text-sm font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-lg">
+                        <span className="text-sm font-bold bg-yellow-50 text-yellow-800 px-3 py-1 rounded-lg">
                           {getCategoryWeight('seguridad_trabajo').toFixed(2)}%
                         </span>
                       </div>
