@@ -227,7 +227,7 @@ const EvaluacionesPage: React.FC = () => {
                   <input
                     type="text"
                     placeholder="Buscar por nombre de empleado o período..."
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg transition-all text-sm"
                     value={terminoBusqueda}
                     onChange={(e) => establecerTerminoBusqueda(e.target.value)}
                   />
