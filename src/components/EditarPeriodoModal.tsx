@@ -230,7 +230,7 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
       <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <h3 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-            <Calendar className="w-6 h-6 text-blue-500" />
+            <Calendar className="w-6 h-6 text-green-500" />
             Editar Período
             {period && <span className="text-lg text-gray-500">#{period.id}</span>}
           </h3>
@@ -273,7 +273,7 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
                       onChange={handleChange}
                       type="text"
                       placeholder="Ej: Q1 2025, Semestre I 2025..."
-                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
                         fieldErrors.name ? 'border-red-300' : 'border-gray-300'
                       }`}
                     />
@@ -292,7 +292,7 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
                       onChange={handleChange}
                       rows={3}
                       placeholder="Describe el propósito y objetivos de este período de evaluación..."
-                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none ${
+                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors resize-none ${
                         fieldErrors.description ? 'border-red-300' : 'border-gray-300'
                       }`}
                     />
@@ -318,7 +318,7 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
                       value={form.start_date || ''}
                       onChange={handleChange}
                       type="date"
-                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
                         fieldErrors.start_date ? 'border-red-300' : 'border-gray-300'
                       }`}
                     />
@@ -337,7 +337,7 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
                       onChange={handleChange}
                       type="date"
                       min={form.start_date || undefined}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
                         fieldErrors.end_date ? 'border-red-300' : 'border-gray-300'
                       }`}
                     />
@@ -368,7 +368,7 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
                       onChange={handleChange}
                       type="date"
                       min={form.start_date || undefined}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
                         fieldErrors.due_date ? 'border-red-300' : 'border-gray-300'
                       }`}
                     />
@@ -384,9 +384,9 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
 
               {/* Estado automático calculado */}
               {expectedStatus && (
-                <div className="border border-blue-200 rounded-xl p-4 bg-blue-50">
+                <div className="border border-green-200 rounded-xl p-4 bg-green-50">
                   <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    <Info className="w-4 h-4 text-blue-600" />
+                    <Info className="w-4 h-4 text-green-600" />
                     Estado del Período (Automático)
                   </h4>
                   <div className="flex items-center justify-between">
@@ -414,7 +414,7 @@ const EditarPeriodoModal: React.FC<EditarPeriodoModalProps> = ({
                 <button
                   type="submit"
                   disabled={loading || loadingPeriod}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-6 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
