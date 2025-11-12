@@ -263,8 +263,8 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
         {showSuccess ? (
           <div className="p-6">
             <div className="text-center py-8">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UserCheck className="w-8 h-8 text-blue-600" />
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <UserCheck className="w-8 h-8 text-green-600" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">¡Éxito!</h3>
               <p className="text-gray-600">{successMessage}</p>
@@ -274,7 +274,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
           <>
             <div className="flex justify-between items-center p-6 border-b border-gray-200">
               <h3 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-                <UserCheck className="w-6 h-6 text-blue-500" />
+                <UserCheck className="w-6 h-6 text-green-500" />
                 Editar Empleado
                 {user && <span className="text-lg text-gray-500">#{user.id}</span>}
               </h3>
@@ -290,7 +290,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
             <form onSubmit={handleSubmit} className="p-6">
               {(loadingUser || loadingReferences) ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                  <Loader2 className="w-8 h-8 animate-spin text-green-500" />
                   <span className="ml-2 text-gray-600">Cargando datos...</span>
                 </div>
               ) : (
@@ -317,7 +317,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                           value={form.first_name || ''}
                           onChange={handleChange}
                           type="text"
-                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
                             fieldErrors.first_name ? 'border-red-300' : 'border-gray-300'
                           }`}
                           placeholder="Nombre(s)"
@@ -337,7 +337,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                           value={form.last_name || ''}
                           onChange={handleChange}
                           type="text"
-                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
                             fieldErrors.last_name ? 'border-red-300' : 'border-gray-300'
                           }`}
                           placeholder="Apellidos"
@@ -358,7 +358,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                           value={form.email || ''}
                           onChange={handleChange}
                           type="email"
-                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
                             fieldErrors.email ? 'border-red-300' : 'border-gray-300'
                           }`}
                           placeholder="correo@empresa.com"
@@ -379,7 +379,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                           value={form.document || ''}
                           onChange={handleChange}
                           type="text"
-                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
                             fieldErrors.document ? 'border-red-300' : 'border-gray-300'
                           }`}
                           placeholder="Número de documento"
@@ -409,7 +409,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                           onChange={handleChange}
                           type="date"
                           max={new Date().toISOString().split('T')[0]}
-                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
                             fieldErrors.hire_date ? 'border-red-300' : 'border-gray-300'
                           }`}
                           disabled={loading}
@@ -428,7 +428,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                           name="role_id"
                           value={form.role_id ?? ''}
                           onChange={handleChange}
-                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
                             fieldErrors.role_id ? 'border-red-300' : 'border-gray-300'
                           }`}
                           disabled={loading}
@@ -454,7 +454,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                           name="position_id"
                           value={form.position_id ?? ''}
                           onChange={handleChange}
-                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
                             fieldErrors.position_id ? 'border-red-300' : 'border-gray-300'
                           }`}
                           disabled={loading}
@@ -471,7 +471,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                           <p className="text-red-600 text-sm mt-1">{fieldErrors.position_id}</p>
                         )}
                         {form.position_id && form.position_id > 0 && getSelectedPositionDepartment() && (
-                          <p className="text-sm text-blue-600 mt-1">
+                          <p className="text-sm text-green-600 mt-1">
                             📍 Departamento: {getSelectedPositionDepartment()}
                           </p>
                         )}
@@ -539,7 +539,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                               value={passwordForm.new_password}
                               onChange={handlePasswordChange}
                               minLength={6}
-                              className={`w-full p-3 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                              className={`w-full p-3 pr-10 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
                                 passwordErrors.new_password ? 'border-red-300' : 'border-gray-300'
                               }`}
                               placeholder="Mínimo 6 caracteres"
@@ -568,7 +568,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                             value={passwordForm.confirm_password}
                             onChange={handlePasswordChange}
                             minLength={6}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
                               passwordErrors.confirm_password ? 'border-red-300' : 'border-gray-300'
                             }`}
                             placeholder="Repite la contraseña"
@@ -617,7 +617,7 @@ const EditarEmpleadoModal: React.FC<EditarEmpleadoModalProps> = ({
                     <button
                       type="submit"
                       disabled={loading || loadingUser || loadingReferences}
-                      className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-6 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading ? (
                         <>
