@@ -373,7 +373,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-600 rounded-xl text-white">
+            <div className="p-3 bg-green-600 rounded-xl text-white">
               <Users className="w-6 h-6" />
             </div>
             <div>
@@ -406,9 +406,9 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                 <div className="col-span-12 md:col-span-4 space-y-6">
                   {/* Template Summary */}
                   {template && (
-                    <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-6 border border-purple-200">
+                    <div className="bg-green-50 rounded-xl p-6 border border-green-200">
                       <div className="flex items-center gap-2 mb-4">
-                        <FileCheck className="w-5 h-5 text-purple-600" />
+                        <FileCheck className="w-5 h-5 text-green-600" />
                         <h3 className="font-semibold text-gray-900">Información de la Plantilla</h3>
                       </div>
                       <div className="space-y-3">
@@ -461,7 +461,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                     <select
                       value={periodId}
                       onChange={handlePeriodChange}
-                      className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500"
                       disabled={loading}
                     >
                       <option value="">Seleccione un período</option>
@@ -506,7 +506,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                   <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-medium text-gray-900 text-base">
-                        <Filter className="w-4 h-4 inline mr-2 text-blue-600" />
+                        <Filter className="w-4 h-4 inline mr-2 text-green-600" />
                         Filtros
                       </h3>
                       {activeFiltersCount > 0 && (
@@ -524,7 +524,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                         <select
                           value={filters.department}
                           onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
-                          className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
+                          className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 text-sm"
                           disabled={loading}
                         >
                           <option value="">Todos los departamentos</option>
@@ -537,7 +537,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                         <select
                           value={filters.position}
                           onChange={(e) => setFilters(prev => ({ ...prev, position: e.target.value }))}
-                          className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
+                          className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 text-sm"
                           disabled={loading}
                         >
                           <option value="">Todos los cargos</option>
@@ -552,22 +552,22 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                   {/* Evaluator Selection */}
                   <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                     <div className="flex items-center gap-2 mb-4">
-                      <User className="w-5 h-5 text-blue-600" />
+                      <User className="w-5 h-5 text-green-600" />
                       <h3 className="font-semibold text-gray-900 text-base">Evaluador *</h3>
                     </div>
 
                     {selectedEvaluator && (
-                      <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
+                      <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-blue-900 text-base">
+                          <p className="font-medium text-base">
                             {selectedEvaluator.name || `${selectedEvaluator.first_name || ''} ${selectedEvaluator.last_name || ''}`.trim()}
                           </p>
-                          <p className="text-sm text-blue-600">{selectedEvaluator.position || '—'} | {selectedEvaluator.department || '—'}</p>
+                          <p className="text-sm">{selectedEvaluator.position || '—'} | {selectedEvaluator.department || '—'}</p>
                         </div>
                         <button
                           type="button"
                           onClick={() => setEvaluatorId(null)}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="text-green-600 hover:text-green-800"
                         >
                           <X className="w-5 h-5" />
                         </button>
@@ -581,7 +581,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                         placeholder="Buscar evaluador..."
                         value={searchTermEvaluator}
                         onChange={(e) => setSearchTermEvaluator(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 text-sm"
                         disabled={loading}
                       />
                     </div>
@@ -595,7 +595,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                             key={user.id}
                             className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
                               evaluatorId === user.id 
-                                ? 'bg-blue-50 border-blue-200' 
+                                ? 'bg-green-50 border-green-200' 
                                 : 'hover:bg-gray-50 border-transparent'
                             }`}
                             onClick={() => handleEvaluatorSelect(user.id)}
@@ -606,7 +606,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                               checked={evaluatorId === user.id}
                               onChange={() => handleEvaluatorSelect(user.id)}
                               disabled={loading}
-                              className="w-4 h-4 text-blue-500 focus:ring-blue-500"
+                              className="w-4 h-4 text-green-500 focus:ring-green-500"
                             />
                             <div className="flex-1 min-w-0">
                               <p className="text-base font-medium text-gray-900 truncate">
@@ -713,7 +713,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50 text-base"
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-xl hover:from-green-600 hover:to-green-700 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50 text-base"
                   disabled={loading || !template}
                 >
                   {loading ? (
