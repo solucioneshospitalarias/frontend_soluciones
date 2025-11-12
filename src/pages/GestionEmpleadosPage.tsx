@@ -217,7 +217,7 @@ const GestionEmpleadosPage: React.FC = () => {
               placeholder="Buscar por nombre, email, cargo o departamento..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl transition-colors"
             />
           </div>
 
@@ -259,7 +259,7 @@ const GestionEmpleadosPage: React.FC = () => {
                 <select
                   value={filters.status}
                   onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value as FilterState['status'] }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
                   <option value="all">Todos</option>
                   <option value="active">Activos</option>
@@ -273,7 +273,7 @@ const GestionEmpleadosPage: React.FC = () => {
                 <select
                   value={filters.department}
                   onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
                   <option value="">Todos los departamentos</option>
                   {references.departments?.map(dept => (
@@ -288,7 +288,7 @@ const GestionEmpleadosPage: React.FC = () => {
                 <select
                   value={filters.position}
                   onChange={(e) => setFilters(prev => ({ ...prev, position: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
                   <option value="">Todos los cargos</option>
                   {references.positions?.map(pos => (
