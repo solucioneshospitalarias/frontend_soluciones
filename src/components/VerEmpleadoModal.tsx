@@ -113,9 +113,9 @@ const VerEmpleadoModal: React.FC<VerEmpleadoModalProps> = ({
 
     return (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl w-full max-w-3xl max-h-[95vh] flex flex-col shadow-2xl">
+            <div className="bg-white rounded-xl w-full max-w-3xl max-h-[95vh] flex flex-col shadow-2xl rounded-tl-2xl rounded-tr-2xl">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-slate-600 to-slate-700 text-white p-6">
+                <div className="bg-gradient-to-r from-slate-600 to-slate-700 text-white p-6 rounded-tl-2xl rounded-tr-2xl">
                     <div className="flex items-center justify-between">
                         <div className="text-center flex-1">
                             <h2 className="text-2xl font-bold mb-2">
@@ -144,7 +144,7 @@ const VerEmpleadoModal: React.FC<VerEmpleadoModalProps> = ({
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 p-6 overflow-y-auto">
+                <div className="flex-1 p-6 overflow-y-auto rounded-tl-2xl rounded-tr-2xl">
                     {loading && (
                         <div className="flex items-center justify-center py-12">
                             <Loader2 className="w-8 h-8 animate-spin text-slate-600" />
