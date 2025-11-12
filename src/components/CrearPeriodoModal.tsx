@@ -239,8 +239,8 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
         {/* Success State */}
         {showSuccess ? (
           <div className="text-center py-8">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Calendar className="w-8 h-8 text-blue-600" />
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Calendar className="w-8 h-8 text-green-600" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">¡Período Creado!</h3>
             <p className="text-gray-600">El período se ha configurado exitosamente.</p>
@@ -251,7 +251,7 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-                <Calendar className="w-6 h-6 text-blue-500" />
+                <Calendar className="w-6 h-6 text-green-500" />
                 Crear Nuevo Período
               </h3>
               <button 
@@ -279,7 +279,7 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
                     onChange={handleChange}
                     type="text"
                     placeholder="Ej: Q1 2025, Semestre I 2025..."
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                     disabled={loading}
                   />
                 </div>
@@ -295,7 +295,7 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
                     onChange={handleChange}
                     rows={3}
                     placeholder="Describe el propósito y objetivos de este período de evaluación..."
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors resize-none"
                     disabled={loading}
                   />
                 </div>
@@ -310,7 +310,7 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
                       key={suggestion}
                       type="button"
                       onClick={() => setForm(prev => ({ ...prev, name: suggestion }))}
-                      className="text-xs px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 rounded-full transition-colors border border-blue-200"
+                      className="text-xs px-3 py-1 bg-green-50 hover:bg-green-100 text-green-700 hover:text-green-800 rounded-full transition-colors border border-green-200"
                       disabled={loading}
                     >
                       {suggestion}
@@ -330,7 +330,7 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
                     value={form.startDate}
                     onChange={handleChange}
                     type="date"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                     disabled={loading}
                   />
                 </div>
@@ -345,7 +345,7 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
                     onChange={handleChange}
                     type="date"
                     min={form.startDate}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                     disabled={loading}
                   />
                 </div>
@@ -359,7 +359,7 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
                       <button
                         type="button"
                         onClick={suggestDueDate}
-                        className="text-xs text-blue-600 hover:text-blue-700"
+                        className="text-xs text-green-600 hover:text-green-700"
                         disabled={loading}
                       >
                         Sugerir
@@ -372,7 +372,7 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
                     onChange={handleChange}
                     type="date"
                     min={form.startDate}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                     disabled={loading}
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -383,9 +383,9 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
 
               {/* ✅ Estado automático calculado */}
               {expectedStatus && (
-                <div className="border border-blue-200 rounded-xl p-4 bg-blue-50">
+                <div className="border border-green-200 rounded-xl p-4 bg-green-50">
                   <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    <Info className="w-4 h-4 text-blue-600" />
+                    <Info className="w-4 h-4 text-green-600" />
                     Estado del Período (Automático)
                   </h4>
                   <div className="flex items-center justify-between">
@@ -410,22 +410,22 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
 
               {/* ✅ Preview mejorado */}
               {form.name && form.startDate && form.endDate && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-blue-800 mb-2">Vista previa:</h4>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-green-800 mb-2">Vista previa:</h4>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <p className="font-medium text-blue-900">{form.name}</p>
-                      <p className="text-sm text-blue-700 mb-2">{formatDateRange()}</p>
+                      <p className="font-medium text-green-900">{form.name}</p>
+                      <p className="text-sm text-green-700 mb-2">{formatDateRange()}</p>
                       {form.description && (
-                        <p className="text-xs text-blue-600 mb-2">"{form.description}"</p>
+                        <p className="text-xs text-green-600 mb-2">"{form.description}"</p>
                       )}
-                      <div className="flex items-center gap-4 text-xs text-blue-600">
+                      <div className="flex items-center gap-4 text-xs text-green-600">
                         {form.dueDate && (
                           <span>Límite: {formatDate(form.dueDate)}</span>
                         )}
                       </div>
                     </div>
-                    <Calendar className="w-8 h-8 text-blue-500 ml-4" />
+                    <Calendar className="w-8 h-8 text-green-500 ml-4" />
                   </div>
                 </div>
               )}
@@ -435,7 +435,7 @@ const CrearPeriodoModal: React.FC<CrearPeriodoModalProps> = ({ show, onClose, on
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-6 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
