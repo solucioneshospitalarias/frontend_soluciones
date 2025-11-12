@@ -473,16 +473,16 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
       <div className="bg-white rounded-2xl p-6 w-full max-w-4xl max-h-[95vh] overflow-y-auto shadow-2xl">
         {loadingData ? (
           <div className="text-center py-8">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Cargando plantilla...</h3>
             <p className="text-gray-600">Obteniendo información de la plantilla</p>
           </div>
         ) : showSuccess ? (
           <div className="text-center py-8">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FileCheck className="w-8 h-8 text-purple-600" />
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FileCheck className="w-8 h-8 text-green-600" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">¡Plantilla Actualizada!</h3>
             <p className="text-gray-600">Los cambios se han guardado exitosamente.</p>
@@ -491,7 +491,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
           <>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-                <FileCheck className="w-6 h-6 text-purple-500" />
+                <FileCheck className="w-6 h-6 text-green-500" />
                 Editar Plantilla
                 {originalTemplate && (
                   <span className="text-lg font-normal text-gray-600">
@@ -536,7 +536,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                     name="name"
                     value={form.name}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="Ej: Evaluación Desarrolladores Q1 2025"
                   />
                 </div>
@@ -550,7 +550,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                     value={form.description}
                     onChange={handleChange}
                     rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="Describe el propósito de esta plantilla..."
                   />
                 </div>
@@ -562,7 +562,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                     name="is_active"
                     checked={form.is_active}
                     onChange={handleChange}
-                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                   />
                   <label htmlFor="is_active" className="ml-2 block text-sm text-gray-700">
                     Plantilla activa (disponible para crear evaluaciones)
@@ -579,7 +579,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                   <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value as 'todos' | 'productividad' | 'conducta_laboral' | 'habilidades' | 'seguridad_trabajo')}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                   >
                     <option value="todos">Todos los criterios</option>
                     <option value="productividad">Productividad</option>
@@ -604,14 +604,14 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                           className={`flex items-center justify-between p-3 rounded-lg text-left transition-colors ${
                             isSelected
                               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                              : 'bg-white border border-gray-200 hover:bg-purple-50 hover:border-purple-300'
+                              : 'bg-white border border-gray-200 hover:bg-green-50 hover:border-green-300'
                           }`}
                         >
                           <div className="flex-1">
                             <p className="font-medium text-sm">{criteria.name}</p>
                             <p className="text-xs text-gray-500">{criteria.category}</p>
                           </div>
-                          {!isSelected && <Plus className="w-4 h-4 text-purple-500" />}
+                          {!isSelected && <Plus className="w-4 h-4 text-green-500" />}
                         </button>
                       );
                     })}
@@ -693,7 +693,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                                         value={formatForInput(sc.weight, 2)}
                                         onChange={(e) => handleWeightChange(sc.criteriaId, e.target.value, category)}
                                         disabled={sc.isLocked}
-                                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 disabled:text-gray-500"
+                                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500 disabled:bg-gray-100 disabled:text-gray-500"
                                         min="0"
                                         max="100"
                                         step={getInputStep(2)}
@@ -732,7 +732,7 @@ const EditarPlantillaModal: React.FC<EditarPlantillaModalProps> = ({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
                   {loading ? (
                     <>
