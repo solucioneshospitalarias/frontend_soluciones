@@ -163,8 +163,8 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FileCheck className="w-5 h-5 text-blue-600" />
+            <div className="p-2 bg-green-100 rounded-lg">
+              <FileCheck className="w-5 h-5 text-green-600" />
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">Detalles de Evaluación</h2>
@@ -256,10 +256,10 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
 
               {/* Puntaje Final (solo si está completada) */}
               {isCompleted && (
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
+                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-xl p-6">
                   <div className="flex items-center justify-center gap-6">
                     <div className="flex items-center gap-3">
-                      <Award className="w-8 h-8 text-blue-600" />
+                      <Award className="w-8 h-8 text-green-600" />
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Puntaje Final</p>
                         <div className="flex items-baseline gap-2">
@@ -366,7 +366,7 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
                                   </p>
                                 </div>
                                 <div className="flex flex-col items-end gap-2 ml-4">
-                                  <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium whitespace-nowrap">
+                                  <span className="px-2 py-1 bg-gray-200 rounded text-xs font-medium whitespace-nowrap">
                                     {formatPercentage(scoreItem.weight, true, 1)}
                                   </span>
                                   {scoreItem.score !== undefined && scoreItem.score !== null && (
