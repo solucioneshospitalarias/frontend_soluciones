@@ -88,7 +88,7 @@ const EliminarEmpleadoModal: React.FC<EliminarEmpleadoModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+      <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl">
         
         {/* ✅ Success State */}
         {showSuccess ? (
@@ -194,7 +194,7 @@ const EliminarEmpleadoModal: React.FC<EliminarEmpleadoModalProps> = ({
                 {/* Employee Info */}
                 <div className="bg-gray-50 rounded-lg p-4 text-left">
                   <div className="flex items-center mb-3">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
+                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
                       {user.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                     </div>
                     <div>
