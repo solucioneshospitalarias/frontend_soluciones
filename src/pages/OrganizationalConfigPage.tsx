@@ -333,7 +333,7 @@ const OrganizationalConfigPage: React.FC = () => {
             <input
               type="text"
               placeholder={`Buscar ${activeTab === 'departments' ? 'departamentos' : 'posiciones'}...`}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg transition"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -485,7 +485,7 @@ const OrganizationalConfigPage: React.FC = () => {
                     value={formData.name || ''}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg transition"
                   />
                 </div>
 
@@ -497,7 +497,7 @@ const OrganizationalConfigPage: React.FC = () => {
                     value={formData.description || ''}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg transition"
                   />
                 </div>
 
@@ -510,7 +510,7 @@ const OrganizationalConfigPage: React.FC = () => {
                       value={(formData as PositionFormData).department_id || ''}
                       onChange={(e) => setFormData({ ...formData, department_id: parseInt(e.target.value) })}
                       required
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg transition"
                     >
                       <option value="">Selecciona un departamento</option>
                       {departments.map(d => (
@@ -533,7 +533,7 @@ const OrganizationalConfigPage: React.FC = () => {
                 <button
                   onClick={handleSubmitForm}
                   disabled={formLoading}
-                  className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {formLoading ? (
                     <>
