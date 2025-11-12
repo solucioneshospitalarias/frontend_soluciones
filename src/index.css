@@ -11,3 +11,8 @@
 :root {
   --sidebar-width: 256px;
 }
+
+input[type="radio"],
+input[type="checkbox"] {
+  accent-color: #16a34a;
+}
