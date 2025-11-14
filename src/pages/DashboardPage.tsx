@@ -151,7 +151,7 @@ const DepartmentComparisonChart: React.FC<{
               Las evaluaciones pendientes no afectan el puntaje de desempeño.
             </p>
           </div>
-        </div>ow
+        </div>
 
         <select
           value={selectedPeriod?.id || ''}
