@@ -99,27 +99,12 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
 
   if (!show) return null;
 
-  // Corregir cálculo del porcentaje
-  let performancePercentage = 0;
+  const performancePercentage =
+    detailedEvaluation?.performance_percentage ??
+    detailedEvaluation?.weighted_score ??
+    0
+  ;
 
-  if (detailedEvaluation?.scores) {
-    const totalWeight = detailedEvaluation.scores.reduce((sum, s) => sum + s.weight, 0);
-
-    if (totalWeight > 100) {
-      performancePercentage = detailedEvaluation.scores.reduce((sum, s) => {
-        const normalizedWeight = (s.weight / totalWeight) * 100;
-        return sum + (s.score ?? 0) * (normalizedWeight / 100);
-      }, 0);
-    } else {
-      performancePercentage = detailedEvaluation.scores.reduce((sum, s) => {
-        return sum + (s.score ?? 0) * (s.weight / 100);
-      }, 0);
-    }
-  } else {
-    performancePercentage = detailedEvaluation?.performance_percentage ?? detailedEvaluation?.weighted_score ?? 0;
-  }
-
-    
   const performanceStyle = getPerformanceLevel(performancePercentage);
 
   return (
