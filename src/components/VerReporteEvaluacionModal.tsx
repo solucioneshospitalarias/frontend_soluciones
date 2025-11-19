@@ -183,7 +183,7 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
               <div className="col-span-1">
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-6 text-center">
                   <div className="text-4xl font-bold text-slate-700 mb-2">
-                    {formatNumber(performancePercentage, 1)}%
+                    {formatNumber(performancePercentage, 0)}%
                   </div>
                   <div className="text-sm text-slate-500 mb-3">Puntaje Final</div>
                   <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${performanceStyle.bgColorClass} ${performanceStyle.textColorClass}`}>
@@ -247,7 +247,7 @@ const VerReporteEvaluacionModal: React.FC<VerReporteEvaluacionModalProps> = ({
                                 <div className="flex-1 min-w-0">
                                   <h5 className="font-medium text-slate-700 text-sm leading-tight">{scoreItem.criteria.name}</h5>
                                   <div className="text-xs text-slate-500 mt-1">
-                                    Peso: {formatPercentage(normalizedWeight, true, 1)}
+                                    Peso: {formatPercentage(normalizedWeight, true, 0)}
                                   </div>
                                 </div>
                                 <div className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded ml-2">
