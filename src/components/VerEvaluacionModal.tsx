@@ -264,7 +264,7 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
                         <p className="text-sm text-gray-600 mb-1">Puntaje Final</p>
                         <div className="flex items-baseline gap-2">
                           <span className="text-4xl font-bold text-gray-900">
-                            {formatNumber(performanceScore, 1)}%
+                            {formatNumber(performanceScore, 0)}%
                           </span>
                           <span className={`px-3 py-1 rounded-full text-sm font-medium ${performanceStyle.bgColorClass} ${performanceStyle.textColorClass}`}>
                             {performanceStyle.text}
@@ -348,7 +348,7 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
                           <div className="flex items-center justify-between">
                             <h4 className="font-medium text-sm">{getCategoryLabel(category)}</h4>
                             <span className="text-xs font-medium">
-                              {scores.length} criterio{scores.length !== 1 ? 's' : ''} • {formatPercentage(totalWeight, false, 1)}%
+                              {scores.length} criterio{scores.length !== 1 ? 's' : ''} • {formatPercentage(totalWeight, false, 0)}%
                             </span>
                           </div>
                         </div>
@@ -367,7 +367,7 @@ const VerEvaluacionModal: React.FC<VerEvaluacionModalProps> = ({
                                 </div>
                                 <div className="flex flex-col items-end gap-2 ml-4">
                                   <span className="px-2 py-1 bg-gray-200 rounded text-xs font-medium whitespace-nowrap">
-                                    {formatPercentage(scoreItem.weight, true, 1)}
+                                    {formatPercentage(scoreItem.weight, true, 0)}
                                   </span>
                                   {scoreItem.score !== undefined && scoreItem.score !== null && (
                                     <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
