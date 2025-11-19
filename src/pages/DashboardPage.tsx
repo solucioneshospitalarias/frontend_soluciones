@@ -205,7 +205,7 @@ const DepartmentComparisonChart: React.FC<{
                   color: '#fff',
                 }}
                 formatter={(value: number) => [
-                  <span style={{ color: '#fff', fontWeight: 600 }}>{`${value.toFixed(1)}%`}</span>,
+                  <span style={{ color: '#fff', fontWeight: 600 }}>{`${value.toFixed(0)}%`}</span>,
                   <span style={{ color: '#ccc' }}>Promedio</span>,
                 ]}
                 labelFormatter={(label) => (
@@ -226,7 +226,7 @@ const DepartmentComparisonChart: React.FC<{
                 <LabelList
                   dataKey="promedio"
                   position="inside"
-                  formatter={(value: number) => `${value.toFixed(1)}%`}
+                  formatter={(value: number) => `${value.toFixed(0)}%`}
                   style={{
                     fill: '#fff',
                     fontSize: 12,
@@ -258,7 +258,7 @@ const DepartmentComparisonChart: React.FC<{
                 <span className="text-xs font-medium text-gray-700">Promedio General</span>
               </div>
               <p className="text-base font-semibold text-gray-900">
-                {(sortedData.reduce((acc, d) => acc + d.promedio, 0) / sortedData.length).toFixed(1)}%
+                {(sortedData.reduce((acc, d) => acc + d.promedio, 0) / sortedData.length).toFixed(0)}%
               </p>
               <p className="text-xs text-gray-500 mt-0.5">
                 De {sortedData.reduce((acc, d) => acc + d.completadas, 0)} evaluaciones
@@ -273,7 +273,7 @@ const DepartmentComparisonChart: React.FC<{
                 {sortedData[0]?.name}
               </p>
               <p className="text-xs text-gray-500 mt-0.5">
-                {sortedData[0]?.promedio.toFixed(1)}%
+                {sortedData[0]?.promedio.toFixed(0)}%
               </p>
             </div>
           </div>
