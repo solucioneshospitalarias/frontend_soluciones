@@ -149,7 +149,7 @@ const VerReporteDepartamentoModal: React.FC<DepartmentModalProps> = ({
                     <Award className="w-4 h-4 text-blue-600" />
                     <span className="text-sm font-medium text-slate-700">Promedio</span>
                   </div>
-                  <p className="text-base font-semibold text-slate-900">{stats.average_score.toFixed(0)}</p>
+                  <p className="text-base font-semibold text-slate-900">{stats.average_score.toFixed(0)}%</p>
                   <p className="text-xs text-slate-500 mt-1">Puntuación promedio</p>
                 </div>
               </div>
