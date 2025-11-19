@@ -1071,7 +1071,7 @@ const GestionEvaluacionesPage: React.FC = () => {
             </div>
 
             {/* Evaluations List */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
               {filteredEvaluations.map(evaluation => {
                 const isDeleting = deletingItems.has(evaluation.id);
                 return (
