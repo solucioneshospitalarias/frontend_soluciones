@@ -36,6 +36,7 @@ const EvaluacionesPage: React.FC = () => {
 
   const [modalRealizarOpen, setModalRealizarOpen] = useState(false);
   const [modalReporteOpen, setModalReporteOpen] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [evaluacionSeleccionada, setEvaluacionSeleccionada] = useState<{
     id: number | null;
     data: ResumenEvaluacionDTO | null;
@@ -149,7 +150,11 @@ const EvaluacionesPage: React.FC = () => {
     refrescarEvaluaciones();
     setModalRealizarOpen(false);
     setEvaluacionSeleccionada({ id: null, data: null });
+
+    setShowSuccessToast(true);
+    setTimeout(() => setShowSuccessToast(false), 2000);
   };
+
 
   const handleReporteCerrado = (): void => {
     setModalReporteOpen(false);
@@ -461,6 +466,21 @@ const EvaluacionesPage: React.FC = () => {
           </div>
         )}
       </div>
+      {showSuccessToast && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white px-8 py-6 rounded-2xl shadow-2xl text-center border border-gray-200 animate-scaleIn">
+            <CheckCircle className="w-10 h-10 text-green-600 mx-auto mb-3" />
+
+            <h3 className="text-xl font-semibold text-gray-800">
+              ¡Evaluación completada!
+            </h3>
+
+            <p className="text-gray-600 mt-1">
+              La evaluación fue enviada correctamente.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
