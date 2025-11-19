@@ -41,7 +41,7 @@ export const calculateWeightedScore = (score: number, weight: number): number =>
  * Obtiene el nivel de desempeño basado en el porcentaje
  */
 export const getPerformanceLevel = (percentage: number) => {
-  if (percentage >= 90) {
+  if (percentage >= 95) {
     return {
       text: 'EXCELENTE',
       description: 'Desempeño sobresaliente',
@@ -54,7 +54,7 @@ export const getPerformanceLevel = (percentage: number) => {
       borderColorClass: 'border-emerald-200'
     };
   }
-  if (percentage >= 75) {
+  if (percentage >= 80) {
     return {
       text: 'BUEN DESEMPEÑO',
       description: 'Desempeño satisfactorio con oportunidades',
@@ -69,7 +69,7 @@ export const getPerformanceLevel = (percentage: number) => {
   }
   if (percentage >= 60) {
     return {
-      text: 'SATISFACTORIO',
+      text: 'NECESITA MEJORA',
       description: 'Cumple con las expectativas básicas',
       color: '#f59e0b',
       bgColor: '#fef3c7',
@@ -81,7 +81,7 @@ export const getPerformanceLevel = (percentage: number) => {
     };
   }
   return {
-    text: 'NECESITA MEJORA',
+    text: 'INEFICIENTE',
     description: 'Requiere plan de desarrollo',
     color: '#ef4444',
     bgColor: '#fee2e2',
