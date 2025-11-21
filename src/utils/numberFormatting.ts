@@ -112,9 +112,9 @@ export const generateRecommendation = (
 ): string => {
   let base = '';
   
-  if (percentage >= 90) {
+  if (percentage >= 95) {
     base = 'Excelente desempeño. Mantener el nivel y considerar para roles de liderazgo o mentoría.';
-  } else if (percentage >= 75) {
+  } else if (percentage >= 80) {
     base = 'Buen desempeño general. Enfocar esfuerzos en los criterios con menor puntuación para alcanzar la excelencia.';
   } else if (percentage >= 60) {
     base = 'Desempeño satisfactorio. Se recomienda crear un plan de mejora específico para los criterios más débiles.';
