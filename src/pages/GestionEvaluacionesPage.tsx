@@ -800,7 +800,6 @@ const GestionEvaluacionesPage: React.FC = () => {
                         <p className="text-gray-600">{template.description}</p>
                         <div className="flex justify-between">
                           <span>Criterios: {criteriaCount}</span>
-                          <span className="text-xs">Pesos: {criteriaWeights}</span>
                         </div>
                       </div>
                       <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
