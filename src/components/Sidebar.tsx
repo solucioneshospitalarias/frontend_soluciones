@@ -88,19 +88,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle, onOpenChangePassword 
       >
 
         <div className="p-4">
-          <div className="flex justify-center mb-6">
-            <img src={soluciones} alt="Logo" className="w-16 h-16 object-contain" />
-          </div>
-
           <div ref={menuRef} className="relative mb-6">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center justify-between w-full px-4 py-3 bg-white/10 hover:bg-white/20 rounded-lg"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                  <UserIcon className="w-6 h-6 text-[#56B167]" />
-                </div>
+                  <img 
+                    src={soluciones} 
+                    alt="Logo" 
+                    className="w-10 h-10 object-contain"
+                  />
                 <div className="text-left min-w-0">
                   <p className="text-white font-medium text-sm truncate">{user?.first_name || 'Usuario'}</p>
                   <p className="text-white/70 text-xs">{user?.role?.name?.toUpperCase() || 'ROL'}</p>
