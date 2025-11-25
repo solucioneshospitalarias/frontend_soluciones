@@ -82,7 +82,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle, onOpenChangePassword 
     <>
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-screen bg-[#000000cf] flex flex-col justify-between shadow-xl z-40 transition-transform duration-300
+        className={`fixed top-0 left-0 h-screen bg-[#222222] flex flex-col justify-between shadow-xl z-40 transition-transform duration-300
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
         style={{ width: 'var(--sidebar-width)' }}
       >
