@@ -153,7 +153,7 @@ const DepartmentComparisonChart: React.FC<{
           </div>
         </div>
 
-        <select
+        {/* <select
           value={selectedPeriod?.id || ''}
           onChange={(e) => {
             const period = periods.find((p: Period) => p.id === parseInt(e.target.value));
@@ -167,7 +167,7 @@ const DepartmentComparisonChart: React.FC<{
               📅 {period.name}
             </option>
           ))}
-        </select>
+        </select> */}
       </div>
 
       {chartData.length > 0 ? (
