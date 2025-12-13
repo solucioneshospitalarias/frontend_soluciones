@@ -1070,66 +1070,88 @@ const GestionEvaluacionesPage: React.FC = () => {
             </div>
 
             {/* Evaluations List */}
-            <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
-              {filteredEvaluations.map(evaluation => {
-                const isDeleting = deletingItems.has(evaluation.id);
-                return (
-                  <div
-                    key={evaluation.id}
-                    className={`group p-6 md:p-7 border border-gray-200 rounded-2xl bg-white shadow-sm hover:shadow-lg hover:border-green-200 transition-all duration-300 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
-                  >
-                    <div className="flex justify-between items-start mb-5">
-                      <h3 className="font-semibold text-gray-900 text-lg">{evaluation.employee_name}</h3>
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(evaluation.status)}`}>
-                        {getStatusDisplay(evaluation.status)}
-                      </span>
-                    </div>
+            <div className="max-h-[400px] overflow-y-auto p-4 rounded-2xl border border-gray-200">
+              <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
+                {filteredEvaluations.map(evaluation => {
+                  const isDeleting = deletingItems.has(evaluation.id);
+                  return (
+                    <div
+                      key={evaluation.id}
+                      className={`group p-6 md:p-7 border border-gray-200 rounded-2xl bg-white shadow-sm hover:shadow-lg hover:border-green-200 transition-all duration-300 ${
+                        isDeleting ? 'opacity-50 pointer-events-none' : ''
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-5">
+                        <h3 className="font-semibold text-gray-900 text-lg">
+                          {evaluation.employee_name}
+                        </h3>
+                        <span
+                          className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(
+                            evaluation.status
+                          )}`}
+                        >
+                          {getStatusDisplay(evaluation.status)}
+                        </span>
+                      </div>
 
-                    <div className="space-y-3 mb-5 text-sm text-gray-600">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Evaluador:</span>
-                        <span className="font-medium text-gray-800">{evaluation.evaluator_name}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Período:</span>
-                        <span className="font-medium text-gray-800">{evaluation.period_name}</span>
-                      </div>
-                      {evaluation.completed_at && (
+                      <div className="space-y-3 mb-5 text-sm text-gray-600">
                         <div className="flex justify-between">
-                          <span className="text-gray-500">Completada:</span>
-                          <span className="font-medium text-gray-800">{formatDate(evaluation.completed_at)}</span>
+                          <span className="text-gray-500">Evaluador:</span>
+                          <span className="font-medium text-gray-800">
+                            {evaluation.evaluator_name}
+                          </span>
                         </div>
-                      )}
-                    </div>
-
-                    <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => {
-                          setViewingEvaluationId(evaluation.id);
-                          setShowVerEvaluacionModal(true);
-                        }}
-                        className="p-2.5 hover:bg-green-50 rounded-lg"
-                        title="Ver evaluación"
-                        disabled={isDeleting}
-                      >
-                        <Eye className="w-5 h-5 text-green-600" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete('evaluation', evaluation.id, evaluation.employee_name)}
-                        className="p-2.5 hover:bg-red-50 rounded-lg"
-                        title="Eliminar evaluación"
-                        disabled={isDeleting}
-                      >
-                        {isDeleting ? (
-                          <RefreshCw className="w-5 h-5 text-red-500 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-5 h-5 text-red-500" />
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Período:</span>
+                          <span className="font-medium text-gray-800">
+                            {evaluation.period_name}
+                          </span>
+                        </div>
+                        {evaluation.completed_at && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Completada:</span>
+                            <span className="font-medium text-gray-800">
+                              {formatDate(evaluation.completed_at)}
+                            </span>
+                          </div>
                         )}
-                      </button>
+                      </div>
+
+                      <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => {
+                            setViewingEvaluationId(evaluation.id);
+                            setShowVerEvaluacionModal(true);
+                          }}
+                          className="p-2.5 hover:bg-green-50 rounded-lg"
+                          title="Ver evaluación"
+                          disabled={isDeleting}
+                        >
+                          <Eye className="w-5 h-5 text-green-600" />
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleDelete(
+                              'evaluation',
+                              evaluation.id,
+                              evaluation.employee_name
+                            )
+                          }
+                          className="p-2.5 hover:bg-red-50 rounded-lg"
+                          title="Eliminar evaluación"
+                          disabled={isDeleting}
+                        >
+                          {isDeleting ? (
+                            <RefreshCw className="w-5 h-5 text-red-500 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-5 h-5 text-red-500" />
+                          )}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
 
           </div>
