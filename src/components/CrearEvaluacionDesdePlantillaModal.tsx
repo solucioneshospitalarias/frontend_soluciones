@@ -78,6 +78,19 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
     position: '',
   });
 
+  // Función para verificar si un período está activo
+  const isPeriodActive = (period: Period): boolean => {
+    const now = new Date();
+    const startDate = new Date(period.start_date);
+    const dueDate = new Date(period.due_date);
+    return now >= startDate && now <= dueDate;
+  };
+
+  // Obtener períodos activos
+  const activePeriods = useMemo(() => {
+    return periods.filter(period => isPeriodActive(period));
+  }, [periods]);
+
   // Fetch employees, references, and periods
   useEffect(() => {
     if (show) {
@@ -138,7 +151,8 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
         bg: 'bg-green-50',
         border: 'border-green-200',
         label: 'Activo',
-        description: 'Disponible para evaluaciones'
+        description: 'Disponible para evaluaciones',
+        isActive: true
       };
     } else if (now < startDate) {
       return {
@@ -147,16 +161,18 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
         bg: 'bg-blue-50',
         border: 'border-blue-200',
         label: 'Próximo',
-        description: `Inicia el ${formatDate(period.start_date)}`
+        description: `Inicia el ${formatDate(period.start_date)}`,
+        isActive: false
       };
     } else {
       return {
         icon: Clock,
-        color: 'text-yellow-600',
-        bg: 'bg-yellow-50',
-        border: 'border-yellow-200',
-        label: 'No disponible',
-        description: 'Período no disponible'
+        color: 'text-gray-400',
+        bg: 'bg-gray-50',
+        border: 'border-gray-200',
+        label: 'Inactivo',
+        description: 'Período finalizado',
+        isActive: false
       };
     }
   };
@@ -289,7 +305,22 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
   };
 
   const handlePeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setPeriodId(parseInt(e.target.value) || '');
+    const value = e.target.value;
+    if (value === '') {
+      setPeriodId('');
+      return;
+    }
+    
+    const selectedPeriodId = parseInt(value);
+    const selectedPeriod = periods.find(p => p.id === selectedPeriodId);
+    
+    if (selectedPeriod && !isPeriodActive(selectedPeriod)) {
+      setError('No se puede seleccionar un período inactivo');
+      setPeriodId('');
+    } else {
+      setPeriodId(selectedPeriodId);
+      setError(null);
+    }
   };
 
   const toggleEmployee = (id: number) => {
@@ -304,6 +335,15 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
   const validateForm = (): string | null => {
     if (!evaluatorId) return 'Seleccione un evaluador';
     if (!periodId) return 'Seleccione un período';
+    
+    // Validar que el período esté activo
+    if (periodId) {
+      const selectedPeriod = periods.find(p => p.id === periodId);
+      if (selectedPeriod && !isPeriodActive(selectedPeriod)) {
+        return 'El período seleccionado no está activo';
+      }
+    }
+    
     if (selectedEmployees.length === 0) return 'Seleccione al menos un empleado a evaluar';
     return null;
   };
@@ -336,7 +376,7 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
       setConfirmationState({
         show: true,
         title: '¡Evaluaciones Creadas!',
-        message: `Se han creado ${data.count} evaluaciones exitosamente.`,
+        message: `Se han creado las evaluaciones exitosamente.`,
         type: 'success',
         onConfirm: () => setConfirmationState((prev: ConfirmationState) => ({ ...prev, show: false })),
         loading: false,
@@ -461,15 +501,22 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                     <select
                       value={periodId}
                       onChange={handlePeriodChange}
-                      className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500"
+                      className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={loading}
                     >
                       <option value="">Seleccione un período</option>
                       {periods.map(period => {
                         const status = getPeriodStatus(period);
+                        const isActive = status.isActive;
+                        
                         return (
-                          <option key={period.id} value={period.id}>
-                            {period.name} ({formatDate(period.start_date)} - {formatDate(period.due_date)}) - {status.label} {period.description ? `- ${period.description}` : ''}
+                          <option 
+                            key={period.id} 
+                            value={period.id}
+                            disabled={!isActive}
+                            className={!isActive ? 'text-gray-400' : ''}
+                          >
+                            {period.name} ({formatDate(period.start_date)} - {formatDate(period.due_date)}) - {status.label}
                           </option>
                         );
                       })}
@@ -482,19 +529,39 @@ const CrearEvaluacionDesdePlantillaModal: React.FC<CrearEvaluacionDesdePlantilla
                         {periods.slice(0, 3).map(period => {
                           const status = getPeriodStatus(period);
                           const StatusIcon = status.icon;
+                          const isActive = status.isActive;
+                          
                           return (
-                            <div key={period.id} className={`flex items-center gap-2 p-2 rounded-lg ${status.bg} ${status.border} border text-xs`}>
+                            <div 
+                              key={period.id} 
+                              className={`flex items-center gap-2 p-2 rounded-lg ${status.bg} ${status.border} border text-xs ${!isActive ? 'opacity-60' : ''}`}
+                            >
                               <StatusIcon className={`w-3 h-3 ${status.color}`} />
                               <div className="flex-1 min-w-0">
-                                <span className="font-medium text-gray-900 truncate">{period.name}</span>
+                                <span className={`font-medium ${isActive ? 'text-gray-900' : 'text-gray-500'} truncate`}>
+                                  {period.name}
+                                </span>
                                 <span className={`ml-2 ${status.color}`}>({status.label})</span>
                                 {period.description && (
                                   <span className="block text-gray-500 truncate">{period.description}</span>
                                 )}
                               </div>
+                              {!isActive && (
+                                <span className="text-xs text-gray-400 italic">No disponible</span>
+                              )}
                             </div>
                           );
                         })}
+                      </div>
+                    )}
+                    
+                    {/* Mostrar solo períodos activos */}
+                    {activePeriods.length === 0 && periods.length > 0 && (
+                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm text-yellow-700">
+                          <AlertCircle className="w-4 h-4 inline mr-1" />
+                          No hay períodos activos disponibles
+                        </p>
                       </div>
                     )}
                   </div>
