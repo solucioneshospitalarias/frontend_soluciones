@@ -125,7 +125,7 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
   };
 
   const getScoreLabel = (score: number): string => {
-    if (score < 60) return 'Ineficiente';
+    if (score < 60) return 'Deficiente';
     if (score < 80) return 'Necesita Mejora';
     if (score < 95) return 'Buen Desempeño';
     return 'Excelente';
@@ -212,50 +212,85 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
               {evaluation.scores.map((scoreItem, index) => (
                 <div key={scoreItem.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
 
-                  {/* Encabezado + Peso/Puntaje */}
+                  {/* Encabezado + Bloque de Rangos */}
                   <div className="p-5 border-b border-gray-100">
-                    <div className="flex flex-col sm:flex-row justify-between items-start">
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-4 items-start">
 
-                      <div className="flex-1">
+                      {/* Encabezado limitado */}
+                      <div className="min-w-0">
                         <div className="flex items-center gap-3 mb-2">
                           <div className="w-6 h-6 bg-slate-100 rounded text-slate-600 flex items-center justify-center text-sm font-medium">
                             {index + 1}
                           </div>
-                          <h3 className="text-lg font-semibold text-gray-900">{scoreItem.criteria.name}</h3>
-                          <span className={`px-2 py-1 text-xs font-medium rounded border ${getCategoryColor(scoreItem.criteria.category)}`}>
-                            {scoreItem.criteria.category === 'productividad'
-                              ? 'Productividad'
-                              : scoreItem.criteria.category === 'conducta_laboral'
-                              ? 'Conducta Laboral'
-                              : scoreItem.criteria.category === 'habilidades'
-                              ? 'Habilidades'
-                              : scoreItem.criteria.category === 'seguridad_trabajo'
-                              ? 'Seguridad y Salud en el Trabajo'
-                              : 'Sin Categoría'}
+
+                          <h3 className="text-lg font-semibold text-gray-900 truncate">
+                            {scoreItem.criteria.name}
+                          </h3>
+
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded border ${getCategoryColor(
+                              scoreItem.criteria.category
+                            )}`}
+                          >
+                            {scoreItem.criteria.category === "productividad"
+                              ? "Productividad"
+                              : scoreItem.criteria.category === "conducta_laboral"
+                              ? "Conducta Laboral"
+                              : scoreItem.criteria.category === "habilidades"
+                              ? "Habilidades"
+                              : scoreItem.criteria.category === "seguridad_trabajo"
+                              ? "Seguridad y Salud en el Trabajo"
+                              : "Sin Categoría"}
                           </span>
                         </div>
 
-                        <p className="text-gray-600 text-sm leading-relaxed mb-2">
+                        <p className="text-gray-600 text-sm leading-relaxed mb-2 line-clamp-2">
                           {scoreItem.criteria.description}
                         </p>
 
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-2 gap-2">
-                          <div className="flex items-center gap-2">
-                            <Award className="w-4 h-4 text-slate-600" />
-                            <span className="text-sm text-slate-600">
-                              Peso: {formatPercentage(scoreItem.weight, true, 0)}
-                            </span>
-                          </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Award className="w-4 h-4 text-slate-600" />
+                          <span className="text-sm text-slate-600">
+                            Peso: {formatPercentage(scoreItem.weight, true, 0)}
+                          </span>
 
                           {scores[scoreItem.id] > 0 && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg font-bold text-slate-700">{scores[scoreItem.id]}/100</span>
-                              <span className="text-xs text-slate-500">{getScoreLabel(scores[scoreItem.id])}</span>
+                            <div className="ml-auto flex items-center gap-2">
+                              <span className="text-lg font-bold text-slate-700">
+                                {scores[scoreItem.id]}/100
+                              </span>
+                              <span className="text-xs text-slate-500">
+                                {getScoreLabel(scores[scoreItem.id])}
+                              </span>
                             </div>
                           )}
                         </div>
-
                       </div>
+
+                      {/* Bloque de Rangos */}
+                      <div className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-700">
+                        <p className="font-semibold text-slate-800 mb-2">Rangos de evaluación</p>
+
+                        <ul className="space-y-1">
+                          <li className="flex justify-between">
+                            <span>1 – 60</span>
+                            <span className="text-red-600 font-medium">Deficiente</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>61 – 80</span>
+                            <span className="text-orange-600 font-medium">Necesita Mejora</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>81 - 95</span>
+                            <span className="text-yellow-600 font-medium">Buen Desempeño</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>96 – 100</span>
+                            <span className="text-green-600 font-medium">Excelente</span>
+                          </li>
+                        </ul>
+                      </div>
+
                     </div>
                   </div>
 
@@ -264,20 +299,20 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-gray-900">Calificación</span>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="number"
-                            min="1"
-                            max="100"
-                            value={scores[scoreItem.id] || ''}
-                            onChange={(e) => {
-                              const value = e.target.value === '' ? 0 : parseInt(e.target.value);
-                              handleScoreChange(scoreItem.id, value);
-                            }}
-                            placeholder="0"
-                            className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center font-semibold text-gray-800 focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-                          />
-                        </div>
+
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={scores[scoreItem.id] || ""}
+                          onChange={(e) => {
+                            const value =
+                              e.target.value === "" ? 0 : parseInt(e.target.value);
+                            handleScoreChange(scoreItem.id, value);
+                          }}
+                          placeholder="0"
+                          className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center font-semibold text-gray-800 focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                        />
                       </div>
 
                       <div className="space-y-2">
@@ -287,31 +322,38 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
                           max="100"
                           step="1"
                           value={scores[scoreItem.id] || 0}
-                          onChange={(e) => handleScoreChange(scoreItem.id, parseInt(e.target.value))}
+                          onChange={(e) =>
+                            handleScoreChange(scoreItem.id, parseInt(e.target.value))
+                          }
                           className="w-full h-3 rounded-lg appearance-none cursor-pointer slider-custom"
                           style={{
                             background: `
                               linear-gradient(to right,
-                                ${scores[scoreItem.id] <= 60 ? "#dc2626" : scores[scoreItem.id] <= 80 ? "#f59e0b" : scores[scoreItem.id] <= 95 ? "#fded5dff" : "#22c55e"}
-                                0%,
-                                ${scores[scoreItem.id]}%,
-                                ${scores[scoreItem.id] <= 60 ? "#dc2626" : scores[scoreItem.id] <= 80 ? "#f59e0b" : scores[scoreItem.id] <= 95 ? "#fded5dff" : "#22c55e"}
-                                ${scores[scoreItem.id]}%,
+                                ${
+                                  scores[scoreItem.id] <= 60
+                                    ? "#dc2626"
+                                    : scores[scoreItem.id] <= 80
+                                    ? "#f59e0b"
+                                    : scores[scoreItem.id] <= 95
+                                    ? "#fde047"
+                                    : "#22c55e"
+                                } 0%,
+                                ${
+                                  scores[scoreItem.id] <= 60
+                                    ? "#dc2626"
+                                    : scores[scoreItem.id] <= 80
+                                    ? "#f59e0b"
+                                    : scores[scoreItem.id] <= 95
+                                    ? "#fde047"
+                                    : "#22c55e"
+                                } ${scores[scoreItem.id]}%,
                                 #e5e7eb ${scores[scoreItem.id]}%,
                                 #e5e7eb 100%
                               )
-                            `
+                            `,
                           }}
-                           data-color={
-                            scores[scoreItem.id] <= 60
-                              ? "red"
-                              : scores[scoreItem.id] <= 80
-                              ? "orange"
-                              : scores[scoreItem.id] <= 95
-                              ? "yellow"
-                              : "green"
-                          }
                         />
+
                         <div className="flex justify-between text-xs text-gray-500 px-1">
                           <span>0</span>
                           <span>25</span>
@@ -327,14 +369,17 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
                         Comentarios (Opcional)
                       </label>
                       <textarea
-                        value={comments[scoreItem.id] || ''}
-                        onChange={(e) => handleCommentChange(scoreItem.id, e.target.value)}
+                        value={comments[scoreItem.id] || ""}
+                        onChange={(e) =>
+                          handleCommentChange(scoreItem.id, e.target.value)
+                        }
                         placeholder="Observaciones específicas..."
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 resize-none text-sm"
                         rows={2}
                       />
                     </div>
                   </div>
+
 
                 </div>
               ))}
