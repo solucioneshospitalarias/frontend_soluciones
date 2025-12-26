@@ -624,8 +624,18 @@ const GestionEvaluacionesPage: React.FC = () => {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-semibold text-gray-900">{period.name}</h4>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full border ${period.is_active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-amber-100 text-amber-700 border-amber-200'}`}>
-                          {period.is_active ? 'Activo' : 'Inactivo'}
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full border ${
+                          period.status === 'completed' 
+                            ? 'bg-blue-100 text-blue-700 border-blue-200' // Estilo para Completado (Azul)
+                            : period.is_active 
+                              ? 'bg-green-100 text-green-700 border-green-200' // Estilo para Activo (Verde)
+                              : 'bg-amber-100 text-amber-700 border-amber-200' // Estilo para Inactivo/Borrador (Ámbar)
+                        }`}>
+                          {period.status === 'completed' 
+                            ? 'Completado' 
+                            : period.is_active 
+                              ? 'Activo' 
+                              : 'Inactivo'}
                         </span>
                       </div>
                       <div className="text-sm text-gray-600 space-y-1">
