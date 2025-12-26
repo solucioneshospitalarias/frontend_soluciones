@@ -1,37 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Settings,
-  Calendar,
-  FileCheck,
-  Plus,
-  Play,
-  Search,
-  BarChart3,
-  Edit,
-  Copy,
-  Trash2,
-  X,
-  CheckCircle,
-  TrendingUp,
-  Activity,
-  Eye,
-  RefreshCw,
-  AlertCircle
-} from 'lucide-react';
-import {
-  getCriteria,
-  getPeriods,
-  getTemplates,
-  getEvaluations,
-  deleteCriteria,
-  deletePeriod,
-  deleteTemplate,
-  deleteEvaluation,
-  type Criteria,
-  type Period,
-  type Template,
-  type Evaluation
-} from '../services/evaluationService';
+import { Settings, Calendar, FileCheck, Plus, Play, Search, BarChart3, Edit, Copy, Trash2, X, CheckCircle, TrendingUp, Activity, Eye, RefreshCw, AlertCircle } from 'lucide-react';
+import { getCriteria, getPeriods, getTemplates, getEvaluations, deleteCriteria, deletePeriod, deleteTemplate, deleteEvaluation, type Criteria, type Period, type Template, type Evaluation } from '../services/evaluationService';
 import { type TemplateCriteria } from '../types/evaluation';
 import CrearCriterioModal from '../components/CrearCriterioModal';
 import CrearPeriodoModal from '../components/CrearPeriodoModal';
@@ -44,6 +13,7 @@ import VerPlantillaModal from '../components/VerPlantillaModal';
 import ClonarPlantillaModal from '../components/ClonarPlantillaModal';
 import CrearEvaluacionDesdePlantillaModal from '../components/CrearEvaluacionDesdePlantillaModal';
 import VerEvaluacionModal from '../components/VerEvaluacionModal';
+import Swal from 'sweetalert2';
 
 interface Stats {
   totalPeriods: number;
@@ -457,7 +427,17 @@ const GestionEvaluacionesPage: React.FC = () => {
             case 'evaluation':
               await deleteEvaluation(id);
               setEvaluations(prev => prev.filter(item => item.id !== id));
+              hideConfirmation();
+
+              Swal.fire({
+                icon: 'success',
+                title: 'Evaluación eliminada',
+                text: 'La evaluación se eliminó correctamente.',
+                confirmButtonColor: '#16a34a',
+              });
+
               break;
+
           }
           showConfirmation({
             title: '¡Eliminado!',
