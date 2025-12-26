@@ -256,20 +256,9 @@ export const getPeriods = async (): Promise<Period[]> => {
     const data = await handleResponse<Period[]>(response);
     console.log("✅ Periods loaded:", data);
 
-    if (data && data.length > 0) {
-      console.log("📊 First period structure:", JSON.stringify(data[0], null, 2));
-      console.log("📊 Period fields:", Object.keys(data[0]));
-    }
+    // ✅ Retorna directamente la data sin filtrar por fecha
+    return Array.isArray(data) ? data : [];
 
-    // Filtrar períodos para mostrar solo los no vencidos
-    const now = new Date();
-    const filteredPeriods = data.filter((period: Period) => {
-      const dueDate = new Date(period.due_date);
-      return dueDate >= now;
-    });
-
-    console.log("✅ Filtered periods:", filteredPeriods);
-    return Array.isArray(filteredPeriods) ? filteredPeriods : [];
   } catch (error: unknown) {
     console.error("❌ Error fetching periods:", error);
     const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener períodos";
