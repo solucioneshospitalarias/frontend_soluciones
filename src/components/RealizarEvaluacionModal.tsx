@@ -299,20 +299,21 @@ const RealizarEvaluacionModal: React.FC<RealizarEvaluacionModalProps> = ({
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-gray-900">Calificación</span>
-
-                        <input
-                          type="number"
-                          min="1"
-                          max="100"
-                          value={scores[scoreItem.id] || ""}
-                          onChange={(e) => {
-                            const value =
-                              e.target.value === "" ? 0 : parseInt(e.target.value);
-                            handleScoreChange(scoreItem.id, value);
-                          }}
-                          placeholder="0"
-                          className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center font-semibold text-gray-800 focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-                        />
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="number"
+                              min="1"
+                              max="100"
+                              value={scores[scoreItem.id] || ""}
+                              onChange={(e) => {
+                                const value =
+                                  e.target.value === "" ? 0 : parseInt(e.target.value);
+                                handleScoreChange(scoreItem.id, value);
+                              }}
+                              placeholder="0"
+                              className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center font-semibold text-gray-800 focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                            />
+                          </div>
                       </div>
 
                       <div className="space-y-2">
